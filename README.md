@@ -1,6 +1,6 @@
-# evidence-suite · 证据驱动写作 / 审查对抗套件
+# evidence-suite · 研究 Agent 的证据校验与溯源层（Evidence Integrity Layer）
 
-让 AI 写出的技术 / 学术文档**每一条论断都能追溯到来源**：写作方（evidence-writer）负责生产，审查方（evidence-reviewer）有罪推定、只找失败、严重即阻断，两者形成「提交 → 审查 → 判决 → 修订」的对抗循环。
+让研究 Agent（含 Deep Research / NVIDIA AI-Q 类系统）产出的技术 / 学术文档**每一条论断都能追溯到来源、并验证是否真能支撑该结论**：写作方（evidence-writer）负责生产，审查方（evidence-reviewer）有罪推定、只找失败、严重即阻断，两者形成「提交 → 审查 → 判决 → 修订」的对抗循环。
 
 ## 为什么需要它
 
@@ -12,7 +12,7 @@
 4. **证据与结论脱节**：有引用，但引用并不支撑结论。
 5. **证据不可追溯**：说不清某句话来自哪篇、哪页。
 
-本套件把「事实性论断必须挂 `[Sx]` 来源标记」作为硬约束，并用独立红队审查强制闭合。
+本套件把「证据类论断（E/M/N/L）必须挂 `[Sx]` 来源标记」作为硬约束，并用独立红队审查强制闭合。
 
 ## 它做什么
 
@@ -22,6 +22,23 @@
 
 - **写作者（evidence-writer）**：w1 文档适配 → w2 来源检索 → w3 验证语料（下载 / 校验 / 抽原文）→ w4 证据图谱 → w5 起草 → w6 修订 → w8 专家修订 → w9 导出。
 - **审查者（evidence-reviewer）**：r1 来源审计 → r2 诚实性自评 → r3 框架深度门 → r4 初稿审查 → r5 外部专家评审 → 终审门。
+
+## 定位：不是又一个研究引擎
+
+本套件**不负责研究检索规划**——那是 Deep Research / NVIDIA AI-Q 类系统（Intent / Planner / 并行 Researcher / RAG）的事。本套件负责**研究结果的证据可信度**：
+
+```
+研究 Agent（AI-Q / Deep Research）
+        ↓ 研究产物（报告 / 草稿）
+evidence-suite —— Claim 提取 → 分类 → 证据映射 → static/live 验证 → 反证 → 溯源
+        ↓
+交付物 + Evidence Manifest
+```
+
+- **AI-Q / Deep Research = 研究发动机**：尽可能高效地找、组织、综合信息。
+- **evidence-suite = 证据变速箱 + 刹车**：判断哪些信息真能支撑哪些 Claim，结果能否追溯回证据。
+
+入口是「给一份已有研究产物做 claim 级验证」，**不重复造 Planner / Researcher / Runtime**。
 
 ## 运行模式
 
@@ -47,6 +64,30 @@
 - 交付时 `finalize_draft.py --manifest` 产出 `evidence_manifest.json`（`[n]→来源` 可回溯），保留证据 provenance。
 
 详见 `shared/references/claim_evidence_layer.md`。
+
+## 互操作契约（Evidence Manifest）
+
+`finalize_draft.py --manifest` 产出 `evidence_manifest.json`，是 evidence-suite 与研究 Agent 之间的接口——研究产物进，验证后的 provenance 出。
+
+- **source-centric**（当前 `--manifest` 输出）：`[Sx] → [n] → source_id / title / url + claims[]`。
+- **claim-centric**（接口契约，可由 `06_evidence_map.json` 聚合导出）：
+
+```json
+{
+  "claim_id": "C-017",
+  "claim_class": "N",
+  "risk": "R3",
+  "claim_text": "……",
+  "evidence": [
+    { "source_id": "S-04", "authority": "A2", "freshness": "current",
+      "support_level": "direct", "evidence_status": "supported" }
+  ],
+  "verification_mode": "live",
+  "verdict": "supported"
+}
+```
+
+研究 Agent 只需产出 `claim → evidence → verdict` 结构即可被 Reviewer / 终审门消费；反之本套件产出的 verified manifest 也可回喂给研究 Agent 的 writer。
 
 ## 目录结构
 
