@@ -41,6 +41,7 @@
 
 12. **反证调和（Reconciliation）**：对每条核心 claim（P1–P3、T1–T3，及 superiority/novelty/causal/generalization 类），输出 `reconciliation` 字段（support_summary / contradiction_summary / verdict / rationale），走「支持 → 反证 → 调和 → 判决」四步，判决落 `evidence_status`；禁止"有 N 条来源 → PASS"。
 13. **Claim 分类（claim_class）**：对每个 `claim_to_write` 标注 `claim_class`（E external / M empirical / N normative / L literature / D definition / C calculation / U user_provided / J judgment，见 `claim_evidence_layer.md` 的 Claim Class）。**仅 E/M/N/L 类要求 `[Sx]`**；D/C/U/J 类不填 `supporting_sources`，只写 `claim_class` 与相应检查（D 一致性 / C 可复现 / U 标注来源 / J 推理链）。
+14. **风险分级（risk）**：对每个 E/M/N/L 类 claim 标注 `risk`（R0–R4，见 `claim_evidence_layer.md` 的 Risk Tier）——R1 静态单源、R2 ≥2 独立源、R3 primary+现行性+live、R4 独立复现/人工签核。默认普通事实 R1/R2，监管/安全/财务/结论类标 R3/R4。
 
 请输出 JSON：
 {
@@ -69,6 +70,7 @@
       "section": "",
       "claim_to_write": "",
       "claim_class": "M",
+      "risk": "R2",
       "supporting_sources": ["S1", "S2"],
       "source_support_levels": {"S1": "direct", "S2": "weak_inference"},
       "evidence_status": "partially_supported",

@@ -53,6 +53,29 @@ Every claim must expose:
 
 现有 `claim_type`（superiority / causal / novelty …）仍保留，但**只在 E/M/N/L 类内**作为"该外部证据需要什么"的细分：`claim_class` 决定"要不要外部证据"，`claim_type` 决定"要哪种外部证据"。
 
+## Risk Tier（风险分级：决定证据严谨度）
+
+对**证据类 claim**（E/M/N/L）按"出错后果"标注 `risk`，风险越高约束越重——**R0/R1 不要求回源、不要求人工签核，只有 R3/R4 才触发最重约束**：
+
+| risk | 含义 | 示例 | 证据要求 |
+|------|------|------|---------|
+| R0 | stylistic（措辞/格式） | 排版、术语统一 | 无证据（属非证据类 D/C/U/J） |
+| R1 | ordinary factual（普通事实） | 一般背景事实 | 静态单源（r1 static） |
+| R2 | important factual（重要事实） | 核心论据、方法依据 | ≥2 独立来源交叉 |
+| R3 | regulatory/safety/financial | 标准条款、安全限值、预算依据 | primary source + 现行性 + live 回源 |
+| R4 | safety-critical/legal/publication-critical | 事故结论、法律声明、投稿关键结论 | 独立复现 / 人工签核 |
+
+### Claim Class × Risk 证据约束矩阵
+
+| claim_class | R1 | R2 | R3 | R4 |
+|-------------|----|----|----|----|
+| E / M / L | 静态单源 | ≥2 独立源 | primary + 现行性 + live | 独立复现 / 人工签核 |
+| N 规范 | 静态单源 | ≥2 独立源 | **primary + 现行版本 + live** | 人工签核 |
+
+（D/C/U/J 非证据类不适用本表，按一致性 / 可复现 / 标注 / 推理链检查。）
+
+**原则**：Risk Tier 把"一律有罪推定"**缩小适用域**——默认普通事实为 R1/R2，仅安全/监管/财务/结论类上 R3/R4。
+
 ## Claim Type Taxonomy
 
 ### Claim Types
@@ -155,6 +178,7 @@ Each entry in `evidence_map[]` extends with:
   "section": "...",
   "claim_to_write": "...",
   "claim_class": "M",
+  "risk": "R2",
   "supporting_sources": ["S1"],
   "source_support_levels": {"S1": "direct"},
   "evidence_status": "supported",

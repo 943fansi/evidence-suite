@@ -42,6 +42,7 @@
 对 evidence_map 中的每个 key_problem (P1-P3)，逐条评估。
 
 > **判定依据是 `source_support_levels`（证据直接度）与 `evidence_status`（证据状态），不是"正文里有没有 [Sx]"**。一条仅由 `weak_inference`/`context_only` 支撑、`evidence_status=inferred/unsupported` 的 claim，即使挂了 `[Sx]`，也算"证据弱"。
+> **风险分级**：R3/R4（监管/安全/财务/关键结论）主张须有 primary source + 现行性 + live 回源，缺任一即降为高风险缺口；R1/R2 不强制回源。
 
 | 关键问题 | 证据支持度 | 直接度（direct / weak_inference / …） | evidence_status | 核心弱点 | 是否可通过邻接领域补强 |
 |----------|-----------|------------------------------|-----------------|---------|---------------------|
