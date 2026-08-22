@@ -104,6 +104,7 @@ evidence-suite/
 │   ├── schemas/         # manifest 互操作契约 JSON Schema（evidence_manifest / claim_manifest）
 │   ├── references/      # 按需加载的参考指南
 │   └── templates/       # 13 类文档模板
+├── examples/            # 最小示例（quickstart：一键复现净化→manifest→校验）
 ├── README.md
 ├── SECURITY.md
 └── LICENSE
@@ -137,7 +138,20 @@ evidence-suite/
 python tests/run_tests.py
 ```
 
-覆盖 `check_citations.py`（引用闭合 / 缺失 URL / 来源数下限 / 正文深度下限 / 数字引文闭合）、`validate_sources.py`（重复 URL / 可疑域名）、`validate_manifest.py`（manifest 契约校验：缺失字段 / 非法枚举）与 `download_reference_files.py` 的 SSRF 守卫，仅用 Python 标准库。
+覆盖 `check_citations.py`（引用闭合 / 缺失 URL / 来源数下限 / 正文深度下限 / 数字引文闭合）、`validate_sources.py`（重复 URL / 可疑域名 / 缺 authority / superseded 来源 / 非法枚举）、`validate_manifest.py`（manifest 契约校验：缺失字段 / 非法枚举）、`finalize_draft.py`（manifest 生成 / dry-run 预览）与 `download_reference_files.py` 的 SSRF 守卫，仅用 Python 标准库。
+
+## 最小演示（Quickstart）
+
+无需联网、无第三方依赖，一行复现「定稿净化 → manifest 产出 → 契约校验」闭环：
+
+```bash
+# Windows
+examples/quickstart/run_demo.ps1
+# macOS / Linux
+examples/quickstart/run_demo.sh
+```
+
+输入两条带 `[Sx]` 的论断 → 产出 `output/evidence_manifest.json`（source-centric）与 `output/claim_manifest.json`（claim-centric），并校验通过；期望输出见 `examples/quickstart/expected/`。
 
 ## 限制
 

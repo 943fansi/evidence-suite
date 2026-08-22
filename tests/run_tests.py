@@ -7,7 +7,11 @@ codes / JSON output. No third-party deps (Python stdlib only).
 Coverage:
   - check_citations.py: citation closure (orphaned/unused), missing URL,
     --min-sources / --min-chars gates, --academic numeric closure.
-  - validate_sources.py: clean corpus pass, duplicate URL block, suspect domain block.
+  - validate_sources.py: clean corpus pass, duplicate URL block, suspect domain block,
+    missing authority/freshness block, superseded freshness block, illegal authority block.
+  - finalize_draft.py: manifest generation (source/claim-centric), dry-run preview.
+  - validate_manifest.py: contract validation (missing fields / illegal enums).
+  - download_reference_files.py: SSRF guard (pure function, no network).
 
 Usage:
   python tests/run_tests.py
@@ -134,6 +138,32 @@ SUSPECT_DOMAIN_CORPUS = """\
 }
 """
 
+MISSING_META_CORPUS = """\
+{
+  "sources": [
+    {"source_id": "S1", "title": "A", "url": "https://example.com/a", "access_status": "confirmed", "type": "report"}
+  ]
+}
+"""
+
+SUPERSEDED_CORPUS = """\
+{
+  "sources": [
+    {"source_id": "S1", "title": "A", "url": "https://example.com/a", "access_status": "confirmed",
+     "type": "standard", "authority": "A3", "freshness": "superseded"}
+  ]
+}
+"""
+
+ILLEGAL_AUTHORITY_CORPUS = """\
+{
+  "sources": [
+    {"source_id": "S1", "title": "A", "url": "https://example.com/a", "access_status": "confirmed",
+     "type": "report", "authority": "E5", "freshness": "recent"}
+  ]
+}
+"""
+
 EVIDENCE_MAP = """\
 {
   "evidence_map": [
@@ -218,6 +248,24 @@ class ValidateSourcesTests(unittest.TestCase):
         self.assertEqual(rc, 1)
         self.assertGreaterEqual(json.loads(out)["count"], 1)
 
+    def test_missing_authority_freshness_blocks(self):
+        rc, out, _ = run(VALIDATE, str(write(self.tmp, "meta.json", MISSING_META_CORPUS)), "--json")
+        self.assertEqual(rc, 1)
+        data = json.loads(out)
+        joined = "\n".join(data["problems"])
+        self.assertIn("missing authority", joined)
+        self.assertIn("missing freshness", joined)
+
+    def test_superseded_freshness_blocks(self):
+        rc, out, _ = run(VALIDATE, str(write(self.tmp, "sup.json", SUPERSEDED_CORPUS)), "--json")
+        self.assertEqual(rc, 1)
+        self.assertIn("superseded", "\n".join(json.loads(out)["problems"]))
+
+    def test_illegal_authority_blocks(self):
+        rc, out, _ = run(VALIDATE, str(write(self.tmp, "iauth.json", ILLEGAL_AUTHORITY_CORPUS)), "--json")
+        self.assertEqual(rc, 1)
+        self.assertIn("illegal authority value", "\n".join(json.loads(out)["problems"]))
+
 
 class FinalizeManifestTests(unittest.TestCase):
     def setUp(self):
@@ -274,6 +322,16 @@ class FinalizeManifestTests(unittest.TestCase):
         self.assertEqual(first["evidence"][0]["source_id"], "S1")
         self.assertEqual(first["evidence"][0]["authority"], "C1")
         self.assertEqual(data["claims"][1]["evidence"][0]["freshness"], "current")
+
+    def test_dry_run_previews_without_writing(self):
+        draft = write(self.tmp, "draft.md", CLEAN_DRAFT)
+        out = self.tmp / "clean.md"
+        man = self.tmp / "manifest.json"
+        rc, o, e = run(FINALIZE, str(draft), "--dry-run", "-o", str(out), "--manifest", str(man))
+        self.assertEqual(rc, 0, f"rc={rc}\nstdout={o}\nstderr={e}")
+        self.assertIn("dry-run", o)
+        self.assertFalse(out.exists(), "dry-run must not write the cleaned draft")
+        self.assertFalse(man.exists(), "dry-run must not write the manifest")
 
 
 class ManifestSchemaTests(unittest.TestCase):

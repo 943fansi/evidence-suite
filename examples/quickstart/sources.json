@@ -1,0 +1,24 @@
+{
+  "sources": [
+    {
+      "source_id": "S1",
+      "title_or_name": "设备老化管理综述",
+      "url": "https://doi.org/10.xxxx/example1",
+      "access_status": "confirmed",
+      "type": "journal_paper",
+      "authority": "C1",
+      "freshness": "recent",
+      "registry_id": "journal-core"
+    },
+    {
+      "source_id": "S2",
+      "title_or_name": "IEEE Std 323：设备鉴定流程",
+      "url": "https://standards.ieee.org/example",
+      "access_status": "confirmed",
+      "type": "standard",
+      "authority": "A2",
+      "freshness": "current",
+      "registry_id": "ieee"
+    }
+  ]
+}

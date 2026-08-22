@@ -1,0 +1,23 @@
+{
+  "schema_version": "0.1.0",
+  "review_kind": "ai-internal",
+  "verification_mode": "static",
+  "finalized_at": "2026-08-22",
+  "note": "claim 级字段来自 06_evidence_map.json（--evidence-map 提供时自动合并）",
+  "mapping": [
+    {
+      "citation": "[S1]",
+      "mapped": "[1]",
+      "source_id": "S1",
+      "title": "设备老化管理综述",
+      "url": "https://doi.org/10.xxxx/example1"
+    },
+    {
+      "citation": "[S2]",
+      "mapped": "[2]",
+      "source_id": "S2",
+      "title": "IEEE Std 323：设备鉴定流程",
+      "url": "https://standards.ieee.org/example"
+    }
+  ]
+}

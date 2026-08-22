@@ -60,6 +60,7 @@ Usage:
       #   append a "[Sx]↔[n] 对照表" section for the author's post-check.
       #   --style gbt implies dropping the " URL: " prefix wrapper.
   python scripts/finalize_draft.py 11_定稿.md --check        # validate only, no rewrite
+  python scripts/finalize_draft.py 11_定稿.md --dry-run      # preview what would change, write nothing
 """
 
 from __future__ import annotations
@@ -367,6 +368,24 @@ def validate(text: str) -> list[str]:
     return problems
 
 
+def _change_summary(orig: str, out: str) -> str:
+    """Human-readable preview of what finalize would change (dry-run)."""
+    sx_before = len(re.findall(r"\[S\d+\]", orig))
+    scaffolds = {t: orig.count(t) - out.count(t) for t in PLACEHOLDER_TAGS}
+    gaps_before = len(re.findall(r"\[G\d+\]", orig))
+    gaps_after = len(re.findall(r"\[G\d+\]", out))
+    has_appendix = bool(APP_HEADER_RE.search(orig))
+    removed_total = sum(scaffolds.values())
+    lines = [
+        "dry-run: 预览本次净化将做的修改（不会写入任何文件）",
+        f"  [Sx]→[n] 顺序编码: {sx_before} 处正文标记",
+        f"  脚手架标记清理: {removed_total} 处 ({', '.join(PLACEHOLDER_TAGS)})",
+        f"  [Gx] 研究空白: {gaps_before} → {gaps_after} 处" + ("（可能转写为研究局限）" if gaps_before > gaps_after else ""),
+        f"  附录A 证据缺口清单: {'将删除' if has_appendix else '无'}",
+    ]
+    return "\n".join(lines)
+
+
 def main() -> int:
     _ensure_utf8_streams()
     parser = argparse.ArgumentParser(description=__doc__)
@@ -379,6 +398,9 @@ def main() -> int:
                         help="reference-entry style (default sx)")
     parser.add_argument("--check", action="store_true",
                         help="validate only, do not write output")
+    parser.add_argument("--dry-run", action="store_true",
+                        help="analyze only: print what would change (Sx→[n], scaffold "
+                             "cleanup, appendix removal) without writing any file")
     parser.add_argument("--manifest", type=Path, default=None,
                         help="write a machine-readable evidence manifest ([Sx]↔[n] mapping + source metadata) here")
     parser.add_argument("--verification-mode", choices=["static", "live"], default="static",
@@ -428,6 +450,15 @@ def main() -> int:
                     (re.match(r"^\[(\d+)\]", ln) for ln in out.split("\n")) if m]
         if ref_nums and ref_nums[-1] >= n_sources:
             print(f"citation closure: {ref_nums[-1]}/{n_sources} refs match corpus count")
+
+    if args.dry_run:
+        print(_change_summary(text, out))
+        if problems:
+            for p in problems:
+                print("validation:", p)
+            print("WARNING: output would fail validation (dry-run, no file written)",
+                  file=sys.stderr)
+        return 0
 
     if args.output:
         args.output.write_text(out, encoding="utf-8")

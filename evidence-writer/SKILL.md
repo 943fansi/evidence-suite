@@ -97,6 +97,27 @@ license: MIT
 - Quick Evidence / Evidence Research 产出**不进入对抗循环**（无需审查方判决），但结论仍必须挂 `[Sx]` 并标明 `support_level`；证据不足时降级为 `[假设]`/`[待内部确认]`，或诚实回答"证据不足"。
 - Review Only 由审查方 evidence-reviewer 全权执行，本 skill 不参与改写。
 
+## 模式开关（Mode Switch：full / light）
+
+用户可用 `--evidence-suite-mode <full|light>` 显式指定加载深度：
+
+| 开关 | 行为 | 适用 |
+|------|------|------|
+| `full`（默认） | 完整流水线：w1→w9 + 审查方 r1→r5→终审门，加载全部阶段 prompt | 正式交付物（论文/专利/GF/方案） |
+| `light` | **轻量模式**：只做 Claim 提取 + 证据图谱 + manifest 输出（w4→`--claim-manifest`），跳过 w3 批量下载、w5 起草、w8 专家修订与 humanizer | 已有语料/图谱、只想要可追溯 provenance 的快速校验 |
+
+- light 模式同样必须挂 `[Sx]`、落 `support_level` / `evidence_status`，输出经 `validate_manifest.py` 校验的 `evidence_manifest.json`；只是不跑昂贵的起草-审查对抗。
+- 不指定时按运行模式默认 `full`；`light` 与 `Review Only` 互斥。
+
+## 上下文预算（Context Budget，渐进加载）
+
+**不要把 w1–w9 / r1–r5 的 prompt 全文一次性压入上下文。** 本 SKILL.md 正文只承载摘要与规则指针：
+
+1. 每个阶段开始时才 `Read` 该阶段 prompt（阶段编译器表中"加载 prompt"列），该阶段完成后即从上下文释放，不保留到下一阶段。
+2. 参考指南（`shared/references/*.md`）按需 `Read`，用后即弃；`source_registry.json` 只由脚本读取，**不进入模型上下文**。
+3. 长文档（学位论文/综述）分章节处理：按证据图谱逐章起草与修订，不要一次载入整篇再改。
+4. 上下文紧张时优先删参考指南、保留阶段 prompt；证据规则（`claim_evidence_layer.md`）在 w4/w5 必须读，其余允许按需取舍。
+
 ## 先读题目（Read the Topic First）→ 建立 Topic Card
 
 动手起草前，先建立一张 **Topic Card**（w1 硬门禁产物，后续所有阶段的锚）：
@@ -259,6 +280,16 @@ w6 / w8 修订规则：
 - **内容单薄**：`--min-chars` 不达标 → 回到 w5 按证据图谱逐章扩写论证，不得新增无来源事实。
 - **工作量不足/无实证**：补可复现算例（诚实标注演示算例）+ 数值曲线图。
 - **导出版式缺陷**：用 `build_references.py --body` 重建参考文献节，重跑 `export_pdf.py`。
+
+## 失败降级策略（Degradation Policy）
+
+流水线允许单点失败，**不因一个来源/一次检索失败就终止全流程**：
+
+1. **PDF 下载失败 / 解析乱码 / 来源不可访问**：该来源标记 `evidence_status=unverified`（或 `access_status=unavailable`），正文降级为 `[待内部确认]` 并写入 manifest，**继续后续阶段**。仅当该来源是某个 R3/R4 核心论断的**唯一支撑**时，才阻断并回 w2 补检。URL 失效 ≠ 编造——先复核，不轻断伪造。
+2. **反证检索无结果**：只能如实记录"**本次检索未找到公开反证**"（负结果也是结果），**禁止**输出"不存在反证 / 没有反例"这类绝对断言。
+3. **来源过期（`freshness=superseded`）**：默认**告警标记**（只能作历史沿革引用），R3/R4 现行性主张自动升级为**阻断**；用户可用 `--block-on-superseded` 显式对全部 superseded 来源阻断。
+4. **网络/检索失败**：w2 整体失败时，降级为 w3 只用本地已有语料，输出仍可挂 `[Sx]` 但必须标注 `verification_mode=static`，不冒充 live 回源结果。
+5. **降级必须可见**：任何降级都要在 `evidence_manifest.json` 的 `evidence_status` / `verification_mode` 字段与写作说明中留下痕迹，不得静默抹平。
 
 ## 使用建议（Quick Start）
 

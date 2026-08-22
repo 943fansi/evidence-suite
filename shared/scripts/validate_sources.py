@@ -17,7 +17,10 @@ Checks:
      stm-publishing*, baike sites, qq/zhihu/wikipedia, AI-marketing blogs) plus
      an opt-in --extra-domains list.
   5. access_status empty (stage 3b gate coverage).
-  6. Optional: per-registry_id quota report, e.g. to enforce a "中文期刊 ≥10"
+  6. authority missing (A1–D2 分级缺失，R3/R4 无法判定 ≥A2 约束)。
+  7. freshness missing / =superseded（superseded 不得作 R3/R4 现行性依据；
+     作历史沿革引用应归为 historical）。
+  8. Optional: per-registry_id quota report, e.g. to enforce a "中文期刊 ≥10"
      quota (see --quota-cn-journal).
 
 Exit codes: 0 ok (all checks pass); 1 problems found; 2 usage error.
@@ -98,6 +101,23 @@ def _problems(corpus: dict, extra_domains: list[str], quota_cn_journal: int) -> 
         acc = str(s.get("access_status", "")).strip()
         if not acc:
             problems.append(f"[{sid}] access_status empty (run stage 3a --update-sources)")
+
+        authority = str(s.get("authority", "")).strip()
+        if not authority:
+            problems.append(f"[{sid}] missing authority (A1–D2 分级；R3/R4 须 ≥ A2)")
+        elif authority not in ("A1", "A2", "A3", "B1", "B2", "C1", "C2", "D1", "D2"):
+            problems.append(f"[{sid}] illegal authority value {authority!r} "
+                            "(allowed: A1–A3, B1–B2, C1–C2, D1–D2)")
+
+        freshness = str(s.get("freshness", "")).strip()
+        if not freshness:
+            problems.append(f"[{sid}] missing freshness "
+                            "(current/recent/historical/superseded/unknown)")
+        elif freshness not in ("current", "recent", "historical", "superseded", "unknown"):
+            problems.append(f"[{sid}] illegal freshness value {freshness!r}")
+        elif freshness == "superseded":
+            problems.append(f"[{sid}] freshness=superseded（已被替代/废止）——不得作 "
+                            "R3/R4 现行性依据；作历史沿革引用请改标 historical")
 
         if str(s.get("type", "")).strip() == "journal_paper":
             cn_journals += 1

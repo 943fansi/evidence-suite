@@ -45,6 +45,16 @@
 - 新增 `tests/run_tests.py` 回归套件（25 用例，仅用 Python 标准库）：引用闭合 / 缺 URL / 来源下限 / 深度下限 / 数字引文 / 语料自检 / manifest 生成 / **manifest schema 校验 / SSRF 守卫**
 - 新增 `benchmarks/` 评测基准用例集（18 例，含假 DOI / 废止标准 / prompt injection / 反证搜索 / 停止规则等对抗场景）
 
+### 上下文与体验（P1）
+- **渐进加载显式化（P1）**：SKILL.md 新增「上下文预算（Context Budget）」——阶段 prompt 逐阶段 Read、参考指南按需读用后即弃、长文档分章节处理，禁止一次性载入 w1–w9 / r1–r5 全文
+- **light 轻量模式（P1）**：`--evidence-suite-mode light` 只做 Claim 提取 + 证据图谱 + manifest 输出，跳过 w3 下载 / w5 起草 / w8 专家修订 / humanizer，输出仍经契约校验
+- **失败降级策略（P1）**：SKILL.md 新增 Degradation Policy（写作者侧）与失败处理（审查者侧）——PDF 下载失败/解析乱码 → `evidence_status=unverified` 写入 manifest 不阻断（仅 R3/R4 唯一支撑时阻断）；反证检索无结果只许写「本次检索未找到公开反证」、禁止「不存在反证」；superseded 默认告警、R3/R4 阻断、可 `--block-on-superseded`；降级必须可见
+- `w2_source_search.md` 反证负结果表述收紧：禁止「没有反例/不存在反证」绝对断言
+- `validate_sources.py` 新增负例能力：缺 `authority` / 缺 `freshness` / 非法枚举 / `freshness=superseded` 检查
+- **examples/quickstart 最小 demo（P1）**：2 条论断最小输入 + 一键复现脚本（PowerShell / sh）+ 期望输出样例（evidence_manifest / claim_manifest），无联网无第三方依赖
+- `finalize_draft.py` 新增 `--dry-run`：预览 [Sx]→[n] 转换 / 脚手架清理 / 附录删除，不写入任何文件
+- 回归测试 25→29 用例（缺 authority/freshness、superseded、非法 authority、dry-run 不落盘）
+
 ### 清理
 - 删除 `shared/legacy/`（旧单流水线快照）与 `__pycache__`
 - 文档结构树与索引同步（补 `finalize_checklist.md` 登记、Stage 编号统一为 w/r）

@@ -24,7 +24,7 @@ Use this prompt format to instruct an external agent (e.g., DeepSeek, ChatGPT, C
 1. 支持方检索："{claim}"
 2. 反证方检索："{claim} criticism" / "{claim} limitation" / "{claim} contradictory" / "{claim} failed" / "{claim} 质疑" / "{claim} 局限" / "{claim} 反例" / "{claim} 争议" / "{claim} 失效"
 3. 命中的反证来源同样进入 `sources[]`，并在 `counter_evidence` 字段标注"反对什么主张 + 严重程度 + 摘要"。
-4. 某关键主张**检索不到反证**时，在顶层 `counter_evidence_search` 显式记录"未发现反证"（负结果也是结果，供 w4/r2 诚实性评估用）。
+4. 某关键主张**检索不到反证**时，在顶层 `counter_evidence_search` 显式记录"**本次检索未找到公开反证**"（负结果也是结果，供 w4/r2 诚实性评估用）。**禁止**写成"不存在反证 / 没有反例"——未检索到 ≠ 不存在，不得以绝对断言掩盖检索边界。
 
 证据停止规则（Evidence Stop Rule，防过度检索）：
 满足以下条件即**停止检索**，不得为凑数继续：

@@ -1,0 +1,32 @@
+{
+  "evidence_map": [
+    {
+      "section": "引言",
+      "claim_to_write": "核电厂设备老化管理是长期运行机组的主要监管议题",
+      "claim_class": "M",
+      "risk": "R2",
+      "evidence_status": "supported",
+      "source_support_levels": {"S1": "direct"},
+      "reconciliation": {
+        "support_summary": "S1(direct)",
+        "contradiction_summary": "",
+        "verdict": "supported",
+        "rationale": "本次检索未找到公开反证"
+      }
+    },
+    {
+      "section": "标准依据",
+      "claim_to_write": "IEEE Std 323 规定了设备鉴定流程的最低要求",
+      "claim_class": "N",
+      "risk": "R3",
+      "evidence_status": "supported",
+      "source_support_levels": {"S2": "direct"},
+      "reconciliation": {
+        "support_summary": "S2(direct)",
+        "contradiction_summary": "",
+        "verdict": "supported",
+        "rationale": "现行标准，freshness=current"
+      }
+    }
+  ]
+}
