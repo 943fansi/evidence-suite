@@ -106,6 +106,7 @@ python tests/run_tests.py
 - [x] Source Authority 分级（A1–D2，R3/R4 要求来源 ≥A2）
 - [x] Evidence Freshness 字段（current/recent/historical/superseded/unknown）
 - [x] 反证主动搜索（criticism/limitation/contradictory/failed + 质疑/局限/反例）
+- [x] Evidence Stop Rule（覆盖/反证/多样性达标即停止，边际收益衰减不凑数）
 - [x] 审查独立性标注（Independent AI Review vs External Expert Review）
 - [x] 运行模式（Quick / Research / Document / Review）
 - [x] 反证 reconciliation 正式阶段
