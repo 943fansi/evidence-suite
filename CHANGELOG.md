@@ -69,6 +69,12 @@
 - 消费方接入：`validate_sources.py --profile/--rules`（可疑域名 + 场景追加）、`check_citations.py --doc-type/--profile/--rules`（未显式给 --min-sources/--min-chars 时自动套用配置下限）
 - `claim_evidence_layer.md` / 写作者 SKILL「默认严谨层级」标注规则可配置来源与场景覆盖方式
 
+### 导出能力（PDF / DOCX 对齐）
+- 新增共享 `shared/scripts/mermaid_render.py`：export_pdf（SVG）/ export_docx（PNG）共用同一渲染管线（本地 mmdc 优先 + mermaid.ink `/svg/` `/img/` 回退 + 长标签告警 + 失败显式占位 + SVG CJK 字体补丁）
+- **export_docx.py 补齐 Mermaid**：```mermaid 块渲染为 PNG 后以居中图片嵌入（`--mermaid-engine local/auto/remote`），渲染失败落可见占位说明（原为占位符）
+- **export_pdf.py 补齐首行缩进**：正文段落 `text-indent: 2em`（中文 2 字符，与 DOCX 对齐；blockquote/li/表格单元/参考文献悬挂缩进不受影响），新增 `--no-indent` 关闭
+- README 新增「导出能力」矩阵；回归测试 38→43 用例（DOCX 缩进 XML / Mermaid PNG 嵌入 / 失败占位 / PDF CSS 缩进开关）
+
 ### 冻结（暂不实现，无消费者 / 过早）
 - `engine/` / `policies/` 三层目录重构
 - 评测基准的**实跑打分**（需接真实 agent，当前仅用例集定义）

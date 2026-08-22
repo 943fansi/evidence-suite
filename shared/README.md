@@ -107,8 +107,9 @@ shared/
 │   ├── sample_chart_data.json       # generate_charts.py 示例数据（换题请 --data 提供自己的）
 │   ├── download_reference_files.py  # Stage 3 sub-step 3a PDF download
 │   ├── extract_pdf_text.py          # Stage 3 sub-step 3c text extraction
-│   ├── export_pdf.py                # Stage 10 Mermaid→SVG + MD→PDF（pandoc 缺失时自动降级 python-markdown；学位打印 CSS + URL 断行 + 悬挂缩进）
-│   ├── export_docx.py               # Stage 10 MD→DOCX（A4 中文公文/学位排版：黑体标题/宋体小四/1.5 倍行距/首行缩进 2 字符/表格跨页保护）
+│   ├── export_pdf.py                 # Stage 10 Mermaid→SVG + MD→PDF（pandoc 缺失时自动降级 python-markdown；学位打印 CSS + 首行缩进 + 悬挂缩进 + URL 断行）
+│   ├── export_docx.py                # Stage 10 MD→DOCX（A4 中文公文/学位排版：黑体标题/宋体小四/1.5 倍行距/首行缩进 2 字符/表格跨页保护/Mermaid→PNG 嵌入）
+│   ├── mermaid_render.py             # 共享 Mermaid 渲染（export_pdf 用 SVG / export_docx 用 PNG；本地 mmdc 优先 + mermaid.ink 回退，失败显式占位）
 │   ├── visual_qa.py                 # Stage 10 视觉抽检（Chrome 截图首页/指定章节，交付前目检）
 │   ├── generate_charts.py           # Optional: statistical chart generation
 │   └── inspect_pipeline.py          # Pipeline diagnostics

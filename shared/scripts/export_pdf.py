@@ -35,14 +35,14 @@ Usage:
 from __future__ import annotations
 
 import argparse
-import base64
 import os
 import re
 import shutil
 import subprocess
 import sys
-import urllib.request
 from pathlib import Path
+
+from mermaid_render import render_mermaid_blocks
 
 
 def _ensure_utf8_streams() -> None:
@@ -87,155 +87,6 @@ def check_toolchain() -> str | None:
                   file=sys.stderr)
             return ""
     return pandoc
-
-
-# ---------------------------------------------------------------------------
-# Mermaid rendering via mermaid.ink
-# ---------------------------------------------------------------------------
-
-MERMAID_INK = "https://mermaid.ink/svg/"
-
-# Real-run lesson: over-long node labels (e.g. >12 CJK chars) blow past the
-# mermaid.ink URL/HTTP limits and return HTTP 400/414, silently dropping the
-# diagram from the PDF. Guard the label length BEFORE requesting, and never
-# drop a diagram silently — on failure fall back to a visible fenced-code
-# warning block instead.
-MAX_LABEL_LEN = 14  # CJK chars; ASCII-ish text may use ~30
-_EDGE_PAT = re.compile(r"(\w+)\s*(?:---|-->|==>|-.->|--->|-.->)[\s\[]*[^|\[\]]*[\|\[]{0,2}([^\]\n]*)")
-# Node label = text inside [...] for a node declaration; also catch bare text
-# right before an edge arrow (flowchart TD / graph LR default node syntax).
-_NODE_LABEL_PAT = re.compile(r"\[([^\]\n]*)\]")
-
-
-def _mermaid_label_warnings(code: str) -> list[str]:
-    """Warn about node labels that are likely too long for mermaid.ink."""
-    warnings: list[str] = []
-    seen: set[str] = set()
-    for m in _NODE_LABEL_PAT.finditer(code):
-        label = m.group(1).strip()
-        if not label or label in seen:
-            continue
-        seen.add(label)
-        cjk = sum(1 for ch in label if ord(ch) > 0x2E00)
-        eff_len = cjk * 2 + (len(label) - cjk)
-        if eff_len > MAX_LABEL_LEN * 2:  # CJK counts double
-            warnings.append(f"label too long ({eff_len}): '{label[:20]}…'")
-    return warnings[:5]
-
-
-def _encode_mermaid(text: str) -> str:
-    """Encode Mermaid text for mermaid.ink API (plain base64url, no compression)."""
-    encoded = base64.urlsafe_b64encode(text.encode("utf-8")).decode("ascii").rstrip("=")
-    return MERMAID_INK + encoded
-
-
-def _encode_mermaid_compressed(text: str) -> str:
-    """Encode Mermaid text for mermaid.ink using deflate+base64url (smaller URL).
-
-    mermaid.ink accepts a deflate-compressed payload encoded as base64url when
-    the plain form would exceed URL limits. Falls back gracefully if zlib is
-    unavailable (it is in the stdlib).
-    """
-    import zlib
-    raw = zlib.compress(text.encode("utf-8"), level=9)
-    encoded = base64.urlsafe_b64encode(raw).decode("ascii").rstrip("=")
-    return MERMAID_INK + encoded
-
-
-def _render_mermaid_local(code: str, out_path: Path) -> bytes | None:
-    """Render via local mermaid-cli (mmdc); return SVG bytes or None if unavailable/failed."""
-    mmdc = _which("mmdc")
-    if not mmdc:
-        return None
-    src = out_path.with_suffix(".mmd")
-    src.write_text(code, encoding="utf-8")
-    try:
-        res = subprocess.run(
-            [mmdc, "-i", str(src), "-o", str(out_path), "-b", "transparent"],
-            capture_output=True, timeout=120,
-        )
-        if res.returncode == 0 and out_path.exists():
-            return out_path.read_bytes()
-    except Exception:
-        pass
-    finally:
-        src.unlink(missing_ok=True)
-    return None
-
-
-def render_mermaid_blocks(text: str, out_dir: Path, engine: str = "auto") -> str:
-    """Find ```mermaid blocks, render to SVG, replace with image refs.
-
-    engine: "auto" (local mmdc first, mermaid.ink fallback), "local" (mmdc only,
-    no network), "remote" (mermaid.ink only). Local-first keeps diagram source
-    on-machine — prefer it for sensitive (核/国防/工业) content.
-    """
-    pattern = re.compile(r"```mermaid\n(.*?)```", re.DOTALL)
-    blocks = list(pattern.finditer(text))
-    if not blocks:
-        print("  No Mermaid blocks found — skipping rendering.")
-        return text
-
-    local_ok = engine in ("auto", "local")
-    remote_ok = engine in ("auto", "remote")
-    out_dir.mkdir(parents=True, exist_ok=True)
-    for i, match in enumerate(blocks):
-        mermaid_code = match.group(1).strip()
-        for w in _mermaid_label_warnings(mermaid_code):
-            print(f"  ⚠️  Mermaid block {i + 1}: {w} — shorten labels (≤~12 CJK chars) "
-                  f"or use short IDs + a caption, else mermaid.ink returns HTTP 400.",
-                  file=sys.stderr)
-        urls = [_encode_mermaid(mermaid_code), _encode_mermaid_compressed(mermaid_code)]
-        img_path = out_dir / f"mermaid_diagram_{i + 1}.svg"
-        svg_data: bytes | None = None
-        err: Exception | None = None
-        # 1. Local renderer first (auto/local): mmdc / mermaid-cli
-        if local_ok:
-            svg_data = _render_mermaid_local(mermaid_code, img_path)
-            if svg_data:
-                print(f"  Mermaid block {i + 1}: rendered locally (mmdc)")
-        # 2. Remote fallback (auto/remote): mermaid.ink
-        if svg_data is None and remote_ok:
-            for url in urls:
-                try:
-                    req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
-                    with urllib.request.urlopen(req, timeout=30) as resp:
-                        svg_data = resp.read()
-                    if len(svg_data) > 0:
-                        print(f"  Mermaid block {i + 1}: rendered via mermaid.ink "
-                              f"(远程，图内容已发送第三方；敏感内容请装 mermaid-cli 用 --mermaid-engine local)")
-                        break
-                except Exception as exc:  # HTTP 400/414/network
-                    err = exc
-                    svg_data = None
-        if svg_data is None:
-            print(f"  Mermaid block {i + 1}: FAILED ({err if err else 'renderer unavailable'})",
-                  file=sys.stderr)
-            # Fall back to a VISIBLE warning block so the missing diagram is
-            # never silent in the final PDF.
-            original = match.group(0)
-            replacement = (f"```\n⚠️ 图 {i + 1} 渲染失败。"
-                           f"请精简节点标签、或安装 mermaid-cli（本地渲染）后重跑 export_pdf.py。\n"
-                           f"原始代码：\n{mermaid_code}\n```")
-            text = text.replace(original, replacement, 1)
-            continue
-        img_path.write_bytes(svg_data)
-        # Patch SVG to add CJK fonts (macOS/Linux fallback)
-        try:
-            svg_text = svg_data.decode("utf-8")
-            cjk_font = "STHeiti, 'Noto Sans CJK SC', 'PingFang SC', 'Microsoft YaHei',"
-            svg_text = svg_text.replace(
-                'font-family:"trebuchet ms",verdana,arial,sans-serif',
-                f'font-family:{cjk_font}"trebuchet ms",verdana,arial,sans-serif'
-            )
-            img_path.write_bytes(svg_text.encode("utf-8"))
-        except Exception:
-            pass
-        print(f"  Mermaid block {i + 1}: rendered → {img_path.name} ({len(svg_data):,} bytes)")
-        original = match.group(0)
-        replacement = f"![技术路线图](figures/mermaid_diagram_{i + 1}.svg)"
-        text = text.replace(original, replacement, 1)
-    return text
 
 
 # ---------------------------------------------------------------------------
@@ -288,7 +139,10 @@ PRINT_CSS = """
   h3 { font-size: 12pt; font-weight: bold; margin-top: 1.1em; page-break-after: avoid; }
   h4 { font-size: 11pt; font-weight: bold; page-break-after: avoid; }
   h5 { font-size: 10pt; font-weight: bold; }
-  p { margin: 0.4em 0; text-align: justify; widows: 2; orphans: 2; }
+  p { margin: 0.4em 0; text-align: justify; text-indent: %%FIRST_INDENT%%; widows: 2; orphans: 2; }
+  blockquote p { text-indent: 0; }
+  li p { text-indent: 0; }
+  th p, td p { text-indent: 0; }
   table { border-collapse: collapse; width: 100%; margin: 0.8em 0; font-size: 9pt; table-layout: fixed; word-break: break-all; page-break-inside: avoid; }
   th, td { border: 0.5pt solid #999; padding: 3px 5px; overflow-wrap: break-word; }
   th { background: #e8e8e8; font-weight: bold; }
@@ -310,6 +164,12 @@ PRINT_CSS = """
 
 _URL_RE = re.compile(r"(https?://[^\s<>\"']+)")
 _TAG_RE = re.compile(r"(<[^>]+>)")
+
+
+def _print_css(indent: bool) -> str:
+    """Return the thesis print CSS; %%FIRST_INDENT%% → 2em (Chinese 2-char
+    first-line indent, matching export_docx.py) or 0 when --no-indent."""
+    return PRINT_CSS.replace("%%FIRST_INDENT%%", "2em" if indent else "0")
 
 
 def _linkify_html(html: str) -> str:
@@ -420,6 +280,9 @@ def main(argv: list[str]) -> int:
     parser.add_argument("--mermaid-engine", choices=["auto", "local", "remote"], default="auto",
                         help="Mermaid renderer: auto (local mmdc first, mermaid.ink fallback), "
                              "local (mmdc only, no network), remote (mermaid.ink only)")
+    parser.add_argument("--no-indent", action="store_true",
+                        help="Disable 2-char first-line indent for body paragraphs "
+                             "(Chinese thesis convention; on by default, like export_docx.py)")
     args = parser.parse_args(argv)
 
     if not args.input.exists():
@@ -483,7 +346,7 @@ def _run_pipeline(args, base_dir: Path, figures_dir: Path, text: str,
         html = _markdown_to_html_fallback(processed)
 
     # Inject thesis print CSS (shared by both conversion paths)
-    html = html.replace("</head>", f"{PRINT_CSS}\n</head>")
+    html = html.replace("</head>", f"{_print_css(indent=not args.no_indent)}\n</head>")
 
     # Step 4b: post-process — linkify bare URLs, wrap 参考文献 for hanging indent
     html = _linkify_html(html)

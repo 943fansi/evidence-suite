@@ -14,6 +14,8 @@ Coverage:
   - download_reference_files.py: SSRF guard (pure function, no network).
   - rule_profile.py: rules loader + scenario profiles + YAML fallback parser;
     validate_sources --profile; check_citations --doc-type/--profile.
+  - export_docx.py: 2-char first-line indent, Mermaid PNG embedding + failure
+    placeholder. export_pdf.py: print CSS first-line indent (on/off).
 
 Usage:
   python tests/run_tests.py
@@ -550,6 +552,139 @@ class RuleProfileTests(unittest.TestCase):
         data = json.loads(out)
         self.assertEqual(data["min_sources"], 10)
         self.assertEqual(data["min_chars"], 4000)
+
+
+MERMAID_MD = """\
+# 示例文档
+
+## 引言
+
+正文段落。[S1]
+
+```mermaid
+graph TD
+    A[老化管理] --> B[监测]
+    B --> C[评估]
+```
+
+## 参考文献
+
+[S1] 来源一. https://example.com/a
+"""
+
+# 1x1 transparent PNG built programmatically (valid; python-docx reads its header)
+def _one_px_png() -> bytes:
+    import struct
+    import zlib
+
+    def chunk(typ: bytes, data: bytes) -> bytes:
+        c = typ + data
+        return struct.pack(">I", len(data)) + c + struct.pack(">I", zlib.crc32(c) & 0xFFFFFFFF)
+
+    sig = b"\x89PNG\r\n\x1a\n"
+    ihdr = chunk(b"IHDR", struct.pack(">IIBBBBB", 1, 1, 8, 2, 0, 0, 0))
+    idat = chunk(b"IDAT", zlib.compress(b"\x00" + b"\x00\x00\x00\x00"))
+    iend = chunk(b"IEND", b"")
+    return sig + ihdr + idat + iend
+
+
+class ExportDocxTests(unittest.TestCase):
+    """export_docx.py typography + Mermaid embedding (python-docx available)."""
+
+    @classmethod
+    def setUpClass(cls):
+        import importlib.util
+        sys.path.insert(0, str(SCRIPTS))
+        spec = importlib.util.spec_from_file_location(
+            "export_docx", SCRIPTS / "export_docx.py")
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        cls.dx = mod
+
+    def setUp(self):
+        self._tmp = tempfile.TemporaryDirectory()
+        self.tmp = Path(self._tmp.name)
+
+    def tearDown(self):
+        self._tmp.cleanup()
+
+    def _read_document_xml(self, docx_path):
+        import zipfile
+        with zipfile.ZipFile(str(docx_path)) as zf:
+            return zf.read("word/document.xml").decode("utf-8")
+
+    def test_docx_has_two_char_first_line_indent(self):
+        md = write(self.tmp, "demo.md", MERMAID_MD)
+        out = self.tmp / "demo.docx"
+        rc = self.dx.convert(md, out, body_size=12.0, line_spacing=1.5, indent=True,
+                             heiti="黑体", songti="宋体", kaiti="楷体",
+                             western="Times New Roman", mermaid_engine="local")
+        self.assertEqual(rc, 0)
+        self.assertTrue(out.exists())
+        self.assertIn('w:firstLineChars="200"', self._read_document_xml(out))
+
+    def test_docx_embeds_mermaid_png(self):
+        png = _one_px_png()
+        orig = self.dx.render_mermaid
+        def fake_render(code, out_path, engine="auto", fmt="png"):
+            out_path.write_bytes(png)
+            return png
+        self.dx.render_mermaid = fake_render
+        try:
+            md = write(self.tmp, "mm.md", MERMAID_MD)
+            out = self.tmp / "mm.docx"
+            rc = self.dx.convert(md, out, body_size=12.0, line_spacing=1.5, indent=True,
+                                 heiti="黑体", songti="宋体", kaiti="楷体",
+                                 western="Times New Roman", mermaid_engine="auto")
+            self.assertEqual(rc, 0)
+            import zipfile
+            with zipfile.ZipFile(str(out)) as zf:
+                names = zf.namelist()
+                self.assertTrue(any("word/media/" in n and n.endswith(".png") for n in names),
+                                f"no embedded PNG in {names}")
+                xml = zf.read("word/document.xml").decode("utf-8")
+                self.assertIn("blip", xml)
+        finally:
+            self.dx.render_mermaid = orig
+
+    def test_docx_mermaid_failure_placeholder(self):
+        md = write(self.tmp, "fail.md", MERMAID_MD)
+        out = self.tmp / "fail.docx"
+        rc = self.dx.convert(md, out, body_size=12.0, line_spacing=1.5, indent=True,
+                             heiti="黑体", songti="宋体", kaiti="楷体",
+                             western="Times New Roman", mermaid_engine="local")
+        self.assertEqual(rc, 0)
+        self.assertIn("mermaid", self._read_document_xml(out))
+        import zipfile
+        with zipfile.ZipFile(str(out)) as zf:
+            self.assertFalse(any("word/media/" in n for n in zf.namelist()),
+                             "failed render must not embed an image")
+
+
+class ExportPdfCssTests(unittest.TestCase):
+    """export_pdf.py print CSS: 2-char first-line indent (on by default)."""
+
+    @classmethod
+    def setUpClass(cls):
+        import importlib.util
+        sys.path.insert(0, str(SCRIPTS))
+        spec = importlib.util.spec_from_file_location(
+            "export_pdf", SCRIPTS / "export_pdf.py")
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        cls.pdf = mod
+
+    def test_css_indent_on_by_default(self):
+        css = self.pdf._print_css(indent=True)
+        self.assertIn("text-indent: 2em", css)
+        self.assertIn("blockquote p { text-indent: 0; }", css)
+        self.assertIn("li p { text-indent: 0; }", css)
+        self.assertIn("section.refs p {", css)
+
+    def test_css_no_indent_flag(self):
+        css = self.pdf._print_css(indent=False)
+        self.assertIn("text-indent: 0", css)
+        self.assertNotIn("text-indent: 2em", css)
 
 
 if __name__ == "__main__":

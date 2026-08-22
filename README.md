@@ -111,6 +111,22 @@ evidence-suite/
 └── LICENSE
 ```
 
+## 导出能力（PDF / DOCX）
+
+两个导出器共享同一套 Mermaid 渲染管线（`shared/scripts/mermaid_render.py`，本地 mermaid-cli 优先、mermaid.ink 回退、失败显式占位），正文排版能力对等：
+
+| 能力 | PDF（`export_pdf.py`） | DOCX（`export_docx.py`） |
+|------|----------------------|--------------------------|
+| 段落首行缩进 2 字符 | ✅ 有（`--no-indent` 关闭） | ✅ 有（`--no-indent` 关闭） |
+| Mermaid 路线图显示 | ✅ 有（SVG） | ✅ 有（PNG 嵌入） |
+| A4 中文排版（宋体/黑体/楷体、1.5 倍行距） | ✅ | ✅ |
+| Markdown 表格 | ✅ | ✅（Word 原生表格，跨页防断） |
+| 参考文献悬挂缩进 | ✅ | ✅（普通段落） |
+
+- PDF：pandoc/python-markdown → HTML → weasyprint / Chrome headless；Mermaid 渲染为 SVG 后内嵌。
+- DOCX：python-docx 直接排版；Mermaid 渲染为 PNG 后以图片嵌入正文，渲染失败时落可见占位说明。
+- 两者均支持 `--mermaid-engine local`（禁止联网渲染，敏感内容断网使用）。
+
 ## 规则配置（Rules）
 
 证据严谨度、文档下限、可疑域名、停止规则等参数集中在 `shared/config/rules.yaml`（单一事实来源），支持按业务场景覆盖：

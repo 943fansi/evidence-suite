@@ -15,8 +15,9 @@ Typography defaults (Chinese legal/thesis convention, overridable by flags):
     char units, survives font-size changes), justified
   - Numbered patent claims ("1. ..." etc.) and （注：…）lines: same body style
   - Blockquote (推理链 etc.): 楷体 五号(10.5pt), left indent, no first-line indent
-  - Code blocks (mermaid etc.): skipped with a placeholder note (use
-    export_pdf.py for rendered figures)
+  - Mermaid code blocks: rendered to PNG (local mmdc first, mermaid.ink /img/ fallback)
+    and embedded as centered figures (same local-first policy as export_pdf.py);
+    on render failure a visible placeholder note is emitted instead
   - Markdown tables → Word tables: 宋体 五号(10.5pt), grid borders,
     header bold, rows kept intact across pages (cantSplit)
 
@@ -24,6 +25,7 @@ Usage:
   python scripts/export_docx.py 11_定稿.md                     # → 11_定稿.docx
   python scripts/export_docx.py 11_定稿.md -o 草案.docx --line-spacing 1.5
   python scripts/export_docx.py thesis.md --body-size 12 --no-indent
+  python scripts/export_docx.py 11_定稿.md --mermaid-engine local   # forbid remote render
 
 Dependencies: python-docx (pip install python-docx) — optional, lazy import.
 Exit codes: 0 ok; 1 missing python-docx / conversion failure; 2 usage error.
@@ -35,6 +37,8 @@ import argparse
 import re
 import sys
 from pathlib import Path
+
+from mermaid_render import render_mermaid
 
 MD_TABLE_SEP = re.compile(r"^\s*\|?[\s:|-]+\|?\s*$")
 
@@ -101,7 +105,8 @@ def _pt(v: float):
 
 
 def convert(md_path: Path, out_path: Path, *, body_size: float, line_spacing: float,
-            indent: bool, heiti: str, songti: str, kaiti: str, western: str) -> int:
+            indent: bool, heiti: str, songti: str, kaiti: str, western: str,
+            mermaid_engine: str = "auto") -> int:
     try:
         from docx import Document
         from docx.enum.text import WD_ALIGN_PARAGRAPH
@@ -170,6 +175,8 @@ def convert(md_path: Path, out_path: Path, *, body_size: float, line_spacing: fl
 
     i, n = 0, len(lines)
     title_done = False
+    mermaid_counter = [0]
+    figures_dir = md_path.parent / "figures"
     while i < n:
         raw = lines[i]
         line = raw.rstrip()
@@ -178,15 +185,35 @@ def convert(md_path: Path, out_path: Path, *, body_size: float, line_spacing: fl
             i += 1
             continue
 
-        # fenced code blocks → placeholder note (figures belong to export_pdf)
+        # fenced code blocks → mermaid PNG embedding, else placeholder note
         if line.strip().startswith("```"):
-            block = [line.strip()[3:].strip() or "code"]
+            fence = line.strip()[3:].strip()
+            block: list[str] = []
             i += 1
             while i < n and not lines[i].strip().startswith("```"):
                 block.append(lines[i])
                 i += 1
             i += 1
-            add_para(f"〔{block[0]} 块未嵌入——图表请由 export_pdf.py 渲染或另附〕",
+            if fence.lower() == "mermaid":
+                code = "\n".join(block).strip()
+                if code:
+                    fig_seq = mermaid_counter[0] + 1
+                    img_path = figures_dir / f"mermaid_docx_{fig_seq}.png"
+                    figures_dir.mkdir(parents=True, exist_ok=True)
+                    data = render_mermaid(code, img_path, engine=mermaid_engine, fmt="png")
+                    if data:
+                        mermaid_counter[0] = fig_seq
+                        p = doc.add_paragraph()
+                        p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+                        p.paragraph_format.line_spacing = line_spacing
+                        p.add_run().add_picture(str(img_path), width=Cm(14.5))
+                        continue
+                    add_para(f"〔mermaid 图 {fig_seq} 渲染失败——请精简节点标签（≤~12 个中文字符）、"
+                             f"或安装 mermaid-cli 后重跑；原始代码见 export_pdf.py 渲染路径〕",
+                             eastasia=kaiti, size=body_size - 1.5,
+                             align=WD_ALIGN_PARAGRAPH.LEFT, left_indent_cm=0.74)
+                    continue
+            add_para(f"〔{fence or 'code'} 块未嵌入——图表请由 export_pdf.py 渲染或另附〕",
                      eastasia=kaiti, size=body_size - 1.5,
                      align=WD_ALIGN_PARAGRAPH.LEFT, left_indent_cm=0.74)
             continue
@@ -273,6 +300,9 @@ def main() -> int:
     parser.add_argument("--songti", default="宋体", help="Body CJK font (default 宋体)")
     parser.add_argument("--kaiti", default="楷体", help="Annotation CJK font (default 楷体)")
     parser.add_argument("--western", default="Times New Roman", help="Western font")
+    parser.add_argument("--mermaid-engine", choices=["auto", "local", "remote"], default="auto",
+                        help="Mermaid renderer: auto (local mmdc first, mermaid.ink /img/ "
+                             "fallback), local (mmdc only, no network), remote (mermaid.ink only)")
     args = parser.parse_args()
 
     if not args.input.exists():
@@ -284,7 +314,7 @@ def main() -> int:
     return convert(args.input, out, body_size=args.body_size,
                    line_spacing=args.line_spacing, indent=not args.no_indent,
                    heiti=args.heiti, songti=args.songti, kaiti=args.kaiti,
-                   western=args.western)
+                   western=args.western, mermaid_engine=args.mermaid_engine)
 
 
 if __name__ == "__main__":
