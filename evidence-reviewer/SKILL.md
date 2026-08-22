@@ -113,11 +113,13 @@ license: MIT
 - 叙事检测：Hero's Journey / Gap Slippage / Future Certainty / Single Solution；N2 达 critical 阻断。
 - 置信度校准：superiority_claim 需 benchmark+竞对+引用；novelty_claim 需文献综述证据；confidence ≤ low 需带 `[假设]`。
 - 引用闭环表、路线图一致性（术语锁/数量锁/层次映射/缺口可见性/引文局部性）、量化指标检查、调研充分性（来源总数/每 P·T ≥1 源/核心论断 ≥2 源/综述占比 ≥40%）。
+- **独立性（回源复验）**：`evidence_status ∈ {inferred, unsupported, contradicted}` 或核心 claim_type 的主张，须回原始来源复验，不得仅信 `06_evidence_map.json`。
 - 文档类型专项：学位（形式规范+实证算例）、专利（交底书九项/申请草案四段式+零标记）、GF（十段页序）、实施方案（11 章+任务书可验收）、期刊（双摘要+0 引言）。
 
 ### 外部专家评审（r5，全局 8）
 - 按 `${SUITE_ROOT}/shared/references/expert_roles/` 选角色（领域/实践/方法论/标准/资源/转化）。
 - 评分表 + 主要问题分级 + 逐章节意见 + 证据链专项 + 量化指标专项 + 必须补充材料清单。
+- **评审独立性**：区分 Independent AI Review（同模型角色隔离，内部红队）与 External Expert Review（人类专家/不同模型·独立重建证据）；本地回退必须强制标注，禁止伪造专家署名。
 
 ### 终审门（Final Gate）
 - 净化合规、`[n]` 数字引文闭合、来源/深度下限、forbidSources、导出物视觉抽检结论。
@@ -172,7 +174,7 @@ license: MIT
 - **不泛泛表扬**：praise 须具体到可核验的优点，且不构成通过理由。
 - **不放水**：作者催稿、态度良好、篇幅庞大均不降低标准。
 - **不替作者做学术立场决定**：审证据是否支撑，不审立场是否正确。
-- **不伪造专家署名**：外部评审回退为本地自评时，必须在文件头部注明"（本地自评回退，非真实外部专家）"。
+- **不伪造专家署名**：外部评审回退为本地自评时，必须在文件头部强制标注 `Independent AI Review（同模型角色隔离，非真实外部专家）`；不得用"专家1/专家2"暗示人类专家。
 
 ## 对抗交接（如何回应写作者）
 

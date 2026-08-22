@@ -43,6 +43,7 @@
 17. **GF 报告类专项检查**（report_gf.md 类型）：十段页序完整；引言不编号、正文 GB 数字编号连续（≤三级）；图表全文顺次编号且清单↔正文一一对应；辑要页含叙词+报道性摘要+关键词+完成日期；英文摘要含翻译/审校行；致谢位于参考文献之前；参考文献国军标风格；试验数据均已标 [待内部确认]。
 18. **项目实施方案类专项检查**（plan_implementation.md 类型）：11 章结构完整；依据章三分类且标准清单带现行性声明；任务书技术要求逐条可验收；图表公式按章编号；进度表（D0+X 月）成果形式与第 9 章交付物对应；验收条件与 3.2 技术要求呼应；组织机构含角色职责与接口管理；机组参数/任务书数值/试验数据均已标 [待内部确认]。
 19. **期刊论文类专项检查**（paper_journal.md 类型）：双摘要（中英严格对应）/关键词/中图分类号与文献标志码占位；引言编号 0 且现状评述每类挂 [Sx]；正文章节编号 1/1.1 连续、图表全文顺次编号；结论逐条对应方法与验证；首字母缩写首现给全称；[Sx] 版先过门禁、投稿版另出（--style gbt）。
+20. **高可信度主张回源复验（独立性）**：对 `evidence_status ∈ {inferred, unsupported, contradicted}` 或 claim_type 为核心（superiority_claim / novelty_claim / causal_claim）的主张，**不得仅信任 `06_evidence_map.json`**，须回到 `04_validated_sources.json`（必要时 `02_raw_sources.json`）逐条核对原文/URL 是否真实支撑；map 与原始来源不一致时，以原始来源为准。
 ```
 
 ## 反营销修辞检查
@@ -78,6 +79,7 @@
 1. superiority_claim 是否具备 benchmark + competitor_comparison + citation？若缺失 → 降级为 assumption 或删除。
 2. novelty_claim 是否具备文献综述证据？若缺失 → 降级为 Gx。
 3. 所有 confidence ≤ low 的主张是否带有 [假设] 或 [待验证] 标记？若未标记 → 标记。
+4. 逐条核对 `source_support_levels` 与 `evidence_status`（见 claim_evidence_layer.md）：凡 claim 的 `evidence_status ∈ {inferred, unsupported, contradicted}`，即使正文挂了 `[Sx]`，也判定为"证据不足以支撑该结论"（不能仅凭"有 [Sx]"放行）。
 
 输出格式：
 | 主张 | claim_type | required_evidence | 具备的证据 | 缺失的证据 | 校准建议 |
