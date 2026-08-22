@@ -67,13 +67,15 @@ evidence-suite —— Claim 提取 → 分类 → 证据映射 → static/live �
 
 ## 互操作契约（Evidence Manifest）
 
-`finalize_draft.py --manifest` 产出 `evidence_manifest.json`，是 evidence-suite 与研究 Agent 之间的接口——研究产物进，验证后的 provenance 出。
+`finalize_draft.py --manifest` 产出 `evidence_manifest.json`，是 evidence-suite 与研究 Agent 之间的接口——研究产物进，验证后的 provenance 出。manifest 携带 `schema_version`（`shared/schemas/*.schema.json`，经 `validate_manifest.py` 强制校验）与 `review_kind`。
 
 - **source-centric**（当前 `--manifest` 输出）：`[Sx] → [n] → source_id / title / url + claims[]`。
 - **claim-centric**（接口契约，可由 `06_evidence_map.json` 聚合导出）：
 
 ```json
 {
+  "schema_version": "0.1.0",
+  "review_kind": "ai-internal",
   "claim_id": "C-017",
   "claim_class": "N",
   "risk": "R3",
@@ -87,6 +89,8 @@ evidence-suite —— Claim 提取 → 分类 → 证据映射 → static/live �
 }
 ```
 
+`review_kind` 取值：`ai-internal`（同模型角色隔离，内部红队）/ `ai-cross-model`（不同模型独立审查）/ `human-expert`（人类专家）。**默认 `ai-internal`，不等同独立评审。**
+
 研究 Agent 只需产出 `claim → evidence → verdict` 结构即可被 Reviewer / 终审门消费；反之本套件产出的 verified manifest 也可回喂给研究 Agent 的 writer。
 
 ## 目录结构
@@ -97,6 +101,7 @@ evidence-suite/
 ├── evidence-reviewer/   # 审查方 SKILL.md + prompts/r1–r5 + final_gate
 ├── shared/
 │   ├── scripts/         # 14 个确定性工具（Bash 执行）
+│   ├── schemas/         # manifest 互操作契约 JSON Schema（evidence_manifest / claim_manifest）
 │   ├── references/      # 按需加载的参考指南
 │   └── templates/       # 13 类文档模板
 ├── README.md
@@ -132,12 +137,14 @@ evidence-suite/
 python tests/run_tests.py
 ```
 
-覆盖 `check_citations.py`（引用闭合 / 缺失 URL / 来源数下限 / 正文深度下限 / 数字引文闭合）与 `validate_sources.py`（重复 URL / 可疑域名），仅用 Python 标准库。
+覆盖 `check_citations.py`（引用闭合 / 缺失 URL / 来源数下限 / 正文深度下限 / 数字引文闭合）、`validate_sources.py`（重复 URL / 可疑域名）、`validate_manifest.py`（manifest 契约校验：缺失字段 / 非法枚举）与 `download_reference_files.py` 的 SSRF 守卫，仅用 Python 标准库。
 
 ## 限制
 
-- 单一 Agent 内「写作者 / 审查者」是同模型角色隔离，属**内部红队**；真正的独立审查需不同模型或人类专家（审查方会自动标注评审类型，不伪造专家）。
+> ⚠️ **同模型自审 ≠ 独立评审（先读）**：单一 Agent 内「写作者 / 审查者」是同模型角色隔离，属**内部红队**。**模型幻觉会自我包庇**，同模型内红队只能作为第一道过滤——高可信度产出（R4 / 终审门通过 / 投稿或安全关键结论）**必须切换不同模型做 review 或接入人类专家**。所有审查结论在 `evidence_manifest.json` 的 `review_kind` 字段明确标记（`ai-internal` / `ai-cross-model` / `human-expert`），**禁止把 `ai-internal` 包装成独立专家评审**。
+
 - 来源数量下限是「地板」不是目标；防 citation padding 靠审查方的闭合检查与「直接度」判定。
+- 安全边界与脚本权限见 `SECURITY.md`；网络类脚本内置 SSRF 拦截（拒绝回环/私网/保留地址）与下载大小上限。
 
 ## 路线图
 

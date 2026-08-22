@@ -10,24 +10,105 @@ from __future__ import annotations
 
 import argparse
 import csv
+import ipaddress
 import json
 import re
 import shutil
+import socket
 import subprocess
 import sys
 import time
 from pathlib import Path
 from tempfile import NamedTemporaryFile
 from typing import Any
-from urllib.error import HTTPError, URLError
-from urllib.request import Request, urlopen
-
+from urllib.parse import urlparse
+from urllib.request import Request
+import urllib.request
 
 PDF_MAGIC = b"%PDF"
 DEFAULT_ROLES = {"core", "supporting"}
 ID_KEYS = ("id", "source_id")
 TITLE_KEYS = ("title", "title_or_name", "name")
 ROLE_KEYS = ("validated_role", "evidence_role", "source_role", "role")
+DEFAULT_MAX_BYTES = 200 * 1024 * 1024
+BLOCKED_HOST_SUFFIXES = (".local", "localhost", "intranet", "internal")
+
+
+class BlockedURLError(Exception):
+    """Raised when a URL fails the SSRF guard (blocked host / private IP / scheme)."""
+
+
+class SizeLimitError(Exception):
+    """Raised when a download exceeds --max-bytes."""
+
+
+def _is_blocked_host(host: str) -> bool:
+    host = host.strip().lower()
+    if not host:
+        return True
+    if host in ("localhost", "localhost.localdomain"):
+        return True
+    for suffix in BLOCKED_HOST_SUFFIXES:
+        if host == suffix.lstrip(".") or host.endswith(suffix):
+            return True
+    return False
+
+
+def _is_private_ip(ip_text: str) -> bool:
+    try:
+        addr = ipaddress.ip_address(ip_text)
+    except ValueError:
+        return False
+    return (
+        addr.is_private
+        or addr.is_loopback
+        or addr.is_link_local
+        or addr.is_reserved
+        or addr.is_multicast
+        or addr.is_unspecified
+    )
+
+
+def check_url_blocked(url: str) -> str | None:
+    """Return a reason string if the URL must be blocked (SSRF guard), else None.
+
+    Blocks non-http(s) schemes, loopback / private / link-local / reserved
+    addresses (after DNS resolution), and internal hostname suffixes. Resolves
+    every A/AAAA record — a single private answer is enough to block.
+    """
+    parts = urlparse(url)
+    if parts.scheme not in ("http", "https"):
+        return f"scheme not allowed: {parts.scheme or 'none'}"
+    host = parts.hostname or ""
+    if not host:
+        return "missing host"
+    if _is_blocked_host(host):
+        return f"blocked hostname: {host}"
+    try:
+        infos = socket.getaddrinfo(host, None, type=socket.SOCK_STREAM)
+    except socket.gaierror:
+        return f"unresolvable host: {host}"
+    if not infos:
+        return f"unresolvable host: {host}"
+    for info in infos:
+        ip = info[4][0]
+        if _is_private_ip(ip):
+            return f"private/reserved address: {ip}"
+    return None
+
+
+class BlockingRedirectHandler(urllib.request.HTTPRedirectHandler):
+    """Re-check every redirect hop against the SSRF guard before following."""
+
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        reason = check_url_blocked(newurl)
+        if reason:
+            raise BlockedURLError(f"redirect blocked: {newurl} ({reason})")
+        return super().redirect_request(req, fp, code, msg, headers, newurl)
+
+
+def _blocked_opener():
+    return urllib.request.build_opener(BlockingRedirectHandler)
 
 
 def load_json(path: Path) -> Any:
@@ -137,7 +218,7 @@ def fix_pdf_url(url: str) -> str | None:
     return None
 
 
-def download(url: str, timeout: int) -> tuple[bytes, str]:
+def download(url: str, timeout: int, max_bytes: int) -> tuple[bytes, str]:
     # Try original URL, then fixed URL if available
     urls_to_try = [url]
     fixed = fix_pdf_url(url)
@@ -145,7 +226,12 @@ def download(url: str, timeout: int) -> tuple[bytes, str]:
         urls_to_try.append(fixed)
 
     last_error = None
+    opener = urllib.request.build_opener(BlockingRedirectHandler)
     for attempt_url in urls_to_try:
+        reason = check_url_blocked(attempt_url)
+        if reason:
+            last_error = BlockedURLError(f"blocked: {attempt_url} ({reason})")
+            continue
         request = Request(
             attempt_url,
             headers={
@@ -154,16 +240,31 @@ def download(url: str, timeout: int) -> tuple[bytes, str]:
             },
         )
         try:
-            with urlopen(request, timeout=timeout) as response:
+            with opener.open(request, timeout=timeout) as response:
                 content_type = response.headers.get("Content-Type", "")
-                data = response.read()
+                data = _read_capped(response, max_bytes)
             return data, content_type
         except Exception as exc:
             last_error = exc
     raise last_error  # type: ignore[misc]
 
 
-def download_with_curl(url: str, timeout: int) -> tuple[bytes, str]:
+def _read_capped(response, max_bytes: int) -> bytes:
+    """Read the whole response body, aborting once it exceeds max_bytes."""
+    chunks: list[bytes] = []
+    total = 0
+    while True:
+        chunk = response.read(256 * 1024)
+        if not chunk:
+            break
+        total += len(chunk)
+        if total > max_bytes:
+            raise SizeLimitError(f"download exceeds {max_bytes} bytes")
+        chunks.append(chunk)
+    return b"".join(chunks)
+
+
+def download_with_curl(url: str, timeout: int, max_bytes: int) -> tuple[bytes, str]:
     curl = shutil.which("curl") or shutil.which("curl.exe")
     if not curl:
         raise RuntimeError("curl is not available")
@@ -180,10 +281,16 @@ def download_with_curl(url: str, timeout: int) -> tuple[bytes, str]:
     last_error = None
     for attempt in range(2):  # retry once on network errors
         for attempt_url in urls_to_try:
+            reason = check_url_blocked(attempt_url)
+            if reason:
+                last_error = BlockedURLError(f"blocked: {attempt_url} ({reason})")
+                continue
             try:
                 command = [
                     curl,
                     "--location",
+                    "--max-redirs",
+                    "3",
                     "--fail",
                     "--silent",
                     "--show-error",
@@ -197,6 +304,8 @@ def download_with_curl(url: str, timeout: int) -> tuple[bytes, str]:
                 ]
                 subprocess.run(command, check=True, capture_output=True, text=True, errors="replace")
                 data = tmp_path.read_bytes()
+                if len(data) > max_bytes:
+                    raise SizeLimitError(f"download exceeds {max_bytes} bytes")
                 try:
                     tmp_path.unlink()
                 except FileNotFoundError:
@@ -364,6 +473,13 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
         help="Disable curl fallback when Python's downloader fails.",
     )
     parser.add_argument("--timeout", type=int, default=30, help="Network timeout in seconds.")
+    parser.add_argument(
+        "--max-bytes",
+        type=int,
+        default=DEFAULT_MAX_BYTES,
+        help=f"Maximum download size in bytes (default {DEFAULT_MAX_BYTES}); "
+        "downloads above this limit are aborted (blocked_oversized).",
+    )
     parser.add_argument("--sleep", type=float, default=0.2, help="Delay between downloads in seconds.")
     parser.add_argument(
         "--update-sources",
@@ -430,14 +546,22 @@ def main(argv: list[str]) -> int:
             except OSError:
                 pass
 
+        # SSRF guard: block loopback / private / reserved targets before any network I/O.
+        blocked_reason = check_url_blocked(url)
+        if blocked_reason:
+            row["status"] = "blocked_ssrf"
+            row["reason"] = blocked_reason
+            rows.append(row)
+            continue
+
         try:
             try:
-                data, content_type = download(url, timeout=args.timeout)
+                data, content_type = download(url, timeout=args.timeout, max_bytes=args.max_bytes)
             except Exception as primary_exc:
                 if args.no_curl_fallback:
                     raise
                 try:
-                    data, content_type = download_with_curl(url, timeout=args.timeout)
+                    data, content_type = download_with_curl(url, timeout=args.timeout, max_bytes=args.max_bytes)
                 except Exception as fallback_exc:
                     raise RuntimeError(
                         f"python downloader failed: {primary_exc}; "
@@ -456,7 +580,11 @@ def main(argv: list[str]) -> int:
                 row["bytes"] = len(data)
         except Exception as exc:
             row["status"] = "failed"
-            row["reason"] = str(exc)
+            if isinstance(exc, (BlockedURLError, SizeLimitError)):
+                row["status"] = "blocked_ssrf" if isinstance(exc, BlockedURLError) else "blocked_oversized"
+                row["reason"] = str(exc)
+            else:
+                row["reason"] = str(exc)
 
         rows.append(row)
         if args.sleep:
@@ -469,13 +597,14 @@ def main(argv: list[str]) -> int:
     existing = sum(1 for row in rows if row["status"] == "exists")
     not_pdf = sum(1 for row in rows if row["status"] == "not_pdf")
     role_excluded = sum(1 for row in rows if row["status"] == "role_excluded")
+    blocked = sum(1 for row in rows if row["status"] in ("blocked_ssrf", "blocked_oversized"))
     failed = sum(1 for row in rows if row["status"] == "failed")
     print(
         f"references={len(rows)} downloaded={downloaded} "
         f"existing={existing} not_pdf={not_pdf} role_excluded={role_excluded} "
-        f"failed={failed} out={out_dir}"
+        f"blocked={blocked} failed={failed} out={out_dir}"
     )
-    return 1 if failed else 0
+    return 1 if (failed or blocked) else 0
 
 
 if __name__ == "__main__":

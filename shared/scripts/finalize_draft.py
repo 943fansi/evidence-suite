@@ -51,6 +51,9 @@ Usage:
   python scripts/finalize_draft.py 11_定稿.md -o 11_定稿_clean.md
   python scripts/finalize_draft.py 11_定稿.md -o 11_定稿_clean.md --sources 04_validated_sources.json
   python scripts/finalize_draft.py 11_定稿.md -o 11_定稿_clean.md --manifest evidence_manifest.json --sources 04_validated_sources.json
+  python scripts/finalize_draft.py 11_定稿.md -o 11_定稿_clean.md --claim-manifest claim_manifest.json --evidence-map 06_evidence_map.json --sources 04_validated_sources.json --review-kind ai-cross-model
+      # Both manifest outputs carry schema_version + review_kind and are validated
+      # against shared/schemas/*.schema.json before being written (see validate_manifest.py).
   python scripts/finalize_draft.py 11_定稿.md -o 11_定稿_gbt.md --style gbt
       # --style gbt: also emit reference entries in GB/T 7714-ish skeleton
       #   (<title>. <publisher>, <year>. URL.) with [1]..[n] numbering, and
@@ -67,6 +70,8 @@ import re
 import sys
 from datetime import date
 from pathlib import Path
+
+from validate_manifest import SCHEMA_VERSION, validate_manifest
 
 # matches "## 参考文献", "## 参考文献 References", "## References", "## 文献"
 REF_HEADER_RE = re.compile(r"^##\s*(?:\d+[.、]\s*)?(参考文献|References|Bibliography|文献)\b")
@@ -378,10 +383,18 @@ def main() -> int:
                         help="write a machine-readable evidence manifest ([Sx]↔[n] mapping + source metadata) here")
     parser.add_argument("--verification-mode", choices=["static", "live"], default="static",
                         help="evidence verification mode recorded in the manifest (default static)")
+    parser.add_argument("--review-kind", choices=["ai-internal", "ai-cross-model", "human-expert"],
+                        default="ai-internal",
+                        help="review type recorded in the manifest (default ai-internal). "
+                             "ai-internal = same-model role isolation (internal red team, NOT "
+                             "independent review); switch to ai-cross-model or human-expert for "
+                             "independent review of R4 / publication-critical output.")
     parser.add_argument("--evidence-map", type=Path, default=None,
                         help="06_evidence_map.json → merge claim-level provenance (claim_text/claim_class/support_level/evidence_status) into the manifest")
     parser.add_argument("--claim-manifest", type=Path, default=None,
                         help="export a claim-centric manifest from --evidence-map (interop contract; requires --evidence-map)")
+    parser.add_argument("--no-validate-manifest", action="store_true",
+                        help="skip manifest schema validation (not recommended: may emit an invalid contract downstream)")
     args = parser.parse_args()
 
     if not args.draft.exists():
@@ -442,11 +455,21 @@ def main() -> int:
                 entry["claims"] = cs
             mapping.append(entry)
         manifest = {
+            "schema_version": SCHEMA_VERSION,
+            "review_kind": args.review_kind,
             "verification_mode": args.verification_mode,
             "finalized_at": date.today().isoformat(),
             "note": "claim 级字段来自 06_evidence_map.json（--evidence-map 提供时自动合并）",
             "mapping": mapping,
         }
+        if not args.no_validate_manifest:
+            problems = validate_manifest(manifest)
+            if problems:
+                for p in problems:
+                    print("manifest validation:", p)
+                print("error: manifest failed schema validation; not written",
+                      file=sys.stderr)
+                return 2
         args.manifest.write_text(json.dumps(manifest, ensure_ascii=False, indent=2),
                                  encoding="utf-8")
         print(f"manifest -> {args.manifest}")
@@ -457,8 +480,18 @@ def main() -> int:
                   file=sys.stderr)
             return 2
         cm = build_claim_manifest(args.evidence_map, source_metadata(args.sources))
+        cm["schema_version"] = SCHEMA_VERSION
+        cm["review_kind"] = args.review_kind
         cm["verification_mode"] = args.verification_mode
         cm["finalized_at"] = date.today().isoformat()
+        if not args.no_validate_manifest:
+            problems = validate_manifest(cm)
+            if problems:
+                for p in problems:
+                    print("claim-manifest validation:", p)
+                print("error: claim-manifest failed schema validation; not written",
+                      file=sys.stderr)
+                return 2
         args.claim_manifest.write_text(json.dumps(cm, ensure_ascii=False, indent=2),
                                        encoding="utf-8")
         print(f"claim-manifest -> {args.claim_manifest}")

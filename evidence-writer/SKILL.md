@@ -1,6 +1,11 @@
 ---
 name: evidence-writer
-description: 证据驱动写作方 — 与 evidence-reviewer 形成对抗循环，负责提案/论文/专利/GF报告等文档的完整生产流水线（w1 文档适配 → w2 来源检索 → w3 验证语料 → w4 证据图谱 → w5 起草 → w6 修订 → w7 humanizer → w8 专家修订 → w9 导出）。高置信触发：evidence-driven、source-grounded、证据驱动写作、学术写作流水线、需逐条核验引用的技术/学术文档。低置信触发（需用户明确要求可追溯来源）：开题报告、论文写作、期刊投稿、专利交底书、GF报告、实施方案、调研报告、可行性报告、白皮书。NOT_TRIGGER：纯润色、拼写检查、普通摘要、简单改写、非事实性创作、PPT文案。
+version: "0.1.0"
+description: |
+  证据驱动写作方 — 与 evidence-reviewer 形成对抗循环，负责提案/论文/专利/GF报告等文档的完整生产流水线（w1 文档适配 → w2 来源检索 → w3 验证语料 → w4 证据图谱 → w5 起草 → w6 修订 → w7 humanizer → w8 专家修订 → w9 导出）。高置信触发：evidence-driven、source-grounded、证据驱动写作、学术写作流水线、需逐条核验引用的技术/学术文档。低置信触发（需用户明确要求可追溯来源）：开题报告、论文写作、期刊投稿、专利交底书、GF报告、实施方案、调研报告、可行性报告、白皮书。NOT_TRIGGER：纯润色、拼写检查、普通摘要、简单改写、非事实性创作、PPT文案。
+compatibility: "Python 3.10+；Agent 需支持 SKILL.md 加载、Bash 脚本执行、联网 WebSearch/WebFetch；加载本 skill 会同时获得本地脚本执行与联网能力，请按 SECURITY.md 授权"
+allowed_tools: ["Read", "Write", "Bash", "WebSearch", "WebFetch", "Skill"]
+disallowed_tools: []
 license: MIT
 ---
 
@@ -21,6 +26,18 @@ license: MIT
 核心不变：**证据类论断**（外部事实 E / 实证 M / 规范 N / 文献 L）**挂载 `[Sx]` 来源标记**；**非证据类论断**（作者定义 D / 计算 C / 用户提供 U / 判断 J）不走外部来源真实性审查，按自身方式检查（一致性 / 可复现 / 标注来源）。证据不足的 E/M/N/L 论断显式降级为 `[假设]` / `[待内部确认]`。分类与审查路径见 `claim_evidence_layer.md` 的 Claim Class。
 
 > **路径常量（SUITE_ROOT）**：本套件所有共享资产（scripts/、references/、templates/）与跨 skill 引用统一以 `${SUITE_ROOT}` 开头。`${SUITE_ROOT}` 即**套件根目录**（本 SKILL.md 所在 `evidence-writer/` 的上一级），由 agent 在加载本 skill 时解析，**不要写死为绝对路径**；`shared/scripts/` 内的脚本也以 `Path(__file__).resolve().parents[2]` 自行定位套件根，无需手工替换。
+
+## 何时使用 / 何时不使用（When to Use / When NOT to Use）
+
+**When to Use（激活本 skill 的明确信号）**
+- 需要逐条溯源、证据绑定论断的技术/学术文档：开题 / 论文 / 专利交底书 / GF 报告 / 实施方案 / 调研报告 / 白皮书。
+- 用户显式要求"证据驱动""来源可追溯""逐条核验引用"，或给出带事实性论断的调研任务。
+- 已有语料（`04_validated_sources.json`）/ 证据图谱（`06_evidence_map.json`）/ 初稿，需要走对抗循环对接审查方。
+
+**When NOT to Use（命中任意一条即跳过整套流水线，不执行检索与脚本）**
+- 纯润色、拼写检查、普通摘要、简单改写、非事实性创作、PPT 文案——这些不涉及事实性论断的来源真实性核验，跑流水线是昂贵误用。
+- 无事实性论断的纯观点 / 散文 / 小说类写作。
+- 用户显式禁用：请求附带 `--evidence-suite-disable` 标记时，本 skill **不得激活**，任何阶段产物不得落盘。
 
 ## 签名原则（Signature）
 

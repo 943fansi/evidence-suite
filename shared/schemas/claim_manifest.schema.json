@@ -1,0 +1,63 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/943fansi/evidence-suite/blob/main/shared/schemas/claim_manifest.schema.json",
+  "title": "Evidence Manifest (claim-centric)",
+  "description": "claim-centric 互操作契约：由 finalize_draft.py --claim-manifest 产出，研究 Agent 只需产出 claim→evidence→verdict 结构即可被 Reviewer / 终审门消费。",
+  "type": "object",
+  "required": ["schema_version", "review_kind", "verification_mode", "finalized_at", "claims"],
+  "additionalProperties": true,
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "0.1.0",
+      "description": "manifest 契约版本；字段变更时必须递增，旧版解析器据此拒绝而非静默误读。"
+    },
+    "review_kind": {
+      "type": "string",
+      "enum": ["ai-internal", "ai-cross-model", "human-expert"],
+      "description": "审查类型：ai-internal=同模型角色隔离（内部红队，不等同独立评审）；ai-cross-model=不同模型独立审查；human-expert=人类专家评审。"
+    },
+    "verification_mode": {
+      "type": "string",
+      "enum": ["static", "live"]
+    },
+    "finalized_at": {
+      "type": "string",
+      "format": "date"
+    },
+    "claims": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["claim_id", "claim_class", "claim_text", "evidence"],
+        "properties": {
+          "claim_id": { "type": "string", "pattern": "^C-\\d+$" },
+          "claim_class": { "type": "string", "enum": ["E", "M", "N", "L", "D", "C", "U", "J"] },
+          "risk": { "type": "string", "enum": ["R0", "R1", "R2", "R3", "R4"] },
+          "claim_text": { "type": "string" },
+          "evidence": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["source_id", "support_level"],
+              "properties": {
+                "source_id": { "type": "string", "pattern": "^S\\d+$" },
+                "authority": { "type": "string", "enum": ["A1", "A2", "A3", "B1", "B2", "C1", "C2", "D1", "D2"] },
+                "freshness": { "type": "string", "enum": ["current", "recent", "historical", "superseded", "unknown"] },
+                "support_level": {
+                  "type": "string",
+                  "enum": ["direct", "strong_inference", "weak_inference", "context_only", "contradictory", "unsupported"]
+                }
+              }
+            }
+          },
+          "evidence_status": {
+            "type": "string",
+            "enum": ["verified", "supported", "partially_supported", "inferred", "contradicted", "unsupported", "unverified", "internal_confirm"]
+          },
+          "verdict": { "type": "string" }
+        }
+      }
+    }
+  }
+}

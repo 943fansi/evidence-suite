@@ -27,12 +27,13 @@ SCRIPTS = ROOT / "shared" / "scripts"
 CHECK = SCRIPTS / "check_citations.py"
 VALIDATE = SCRIPTS / "validate_sources.py"
 FINALIZE = SCRIPTS / "finalize_draft.py"
+VALIDATE_MANIFEST = SCRIPTS / "validate_manifest.py"
 
 
 def run(script: Path, *args: str) -> tuple[int, str, str]:
     proc = subprocess.run(
         [sys.executable, str(script), *args],
-        capture_output=True, text=True, encoding="utf-8",
+        capture_output=True, text=True, encoding="utf-8", errors="replace",
     )
     return proc.returncode, proc.stdout, proc.stderr
 
@@ -264,6 +265,8 @@ class FinalizeManifestTests(unittest.TestCase):
         self.assertEqual(rc, 0, f"rc={rc}\nstdout={o}\nstderr={e}")
         data = json.loads(cm.read_text(encoding="utf-8"))
         self.assertEqual(data["verification_mode"], "static")
+        self.assertEqual(data["schema_version"], "0.1.0")
+        self.assertEqual(data["review_kind"], "ai-internal")
         self.assertEqual(len(data["claims"]), 2)
         first = data["claims"][0]
         self.assertEqual(first["claim_id"], "C-001")
@@ -271,6 +274,126 @@ class FinalizeManifestTests(unittest.TestCase):
         self.assertEqual(first["evidence"][0]["source_id"], "S1")
         self.assertEqual(first["evidence"][0]["authority"], "C1")
         self.assertEqual(data["claims"][1]["evidence"][0]["freshness"], "current")
+
+
+class ManifestSchemaTests(unittest.TestCase):
+    """validate_manifest.py enforces the interop contract (shared/schemas/*.json)."""
+
+    def setUp(self):
+        self._tmp = tempfile.TemporaryDirectory()
+        self.tmp = Path(self._tmp.name)
+
+    def tearDown(self):
+        self._tmp.cleanup()
+
+    def test_generated_source_manifest_validates(self):
+        draft = write(self.tmp, "draft.md", CLEAN_DRAFT)
+        sources = write(self.tmp, "sources.json", CLEAN_CORPUS)
+        out = self.tmp / "clean.md"
+        man = self.tmp / "manifest.json"
+        rc, o, e = run(FINALIZE, str(draft), "-o", str(out), "--manifest", str(man),
+                       "--sources", str(sources), "--review-kind", "ai-cross-model")
+        self.assertEqual(rc, 0, f"rc={rc}\nstdout={o}\nstderr={e}")
+        rc, out, err = run(VALIDATE_MANIFEST, str(man))
+        self.assertEqual(rc, 0, f"rc={rc}\nstdout={out}\nstderr={err}")
+        data = json.loads(man.read_text(encoding="utf-8"))
+        self.assertEqual(data["review_kind"], "ai-cross-model")
+        self.assertEqual(data["schema_version"], "0.1.0")
+
+    def test_generated_claim_manifest_validates(self):
+        draft = write(self.tmp, "draft.md", CLEAN_DRAFT)
+        emap = write(self.tmp, "emap.json", EVIDENCE_MAP)
+        sources = write(self.tmp, "sources.json", CLEAN_CORPUS)
+        cm = self.tmp / "claim.json"
+        rc, o, e = run(FINALIZE, str(draft), "--claim-manifest", str(cm),
+                       "--evidence-map", str(emap), "--sources", str(sources))
+        self.assertEqual(rc, 0, f"rc={rc}\nstdout={o}\nstderr={e}")
+        rc, out, err = run(VALIDATE_MANIFEST, str(cm))
+        self.assertEqual(rc, 0, f"rc={rc}\nstdout={out}\nstderr={err}")
+
+    def test_illegal_enum_blocks(self):
+        bad = write(self.tmp, "bad.json", """\
+{
+  "schema_version": "0.1.0",
+  "review_kind": "ai-internal",
+  "verification_mode": "static",
+  "finalized_at": "2026-08-22",
+  "claims": [
+    {"claim_id": "C-001", "claim_class": "X", "claim_text": "t",
+     "evidence": [{"source_id": "S1", "support_level": "bogus"}]}
+  ]
+}
+""")
+        rc, out, err = run(VALIDATE_MANIFEST, str(bad))
+        self.assertEqual(rc, 1)
+        self.assertIn("claim_class has illegal value 'X'", out)
+        self.assertIn("support_level has illegal value 'bogus'", out)
+
+    def test_missing_review_kind_blocks(self):
+        bad = write(self.tmp, "nork.json", """\
+{
+  "schema_version": "0.1.0",
+  "verification_mode": "static",
+  "finalized_at": "2026-08-22",
+  "claims": []
+}
+""")
+        rc, out, err = run(VALIDATE_MANIFEST, str(bad))
+        self.assertEqual(rc, 1)
+        self.assertIn("review_kind", out)
+
+    def test_missing_mapping_claim_blocks(self):
+        bad = write(self.tmp, "empty.json", """\
+{
+  "schema_version": "0.1.0",
+  "review_kind": "ai-internal",
+  "verification_mode": "static",
+  "finalized_at": "2026-08-22"
+}
+""")
+        rc, out, err = run(VALIDATE_MANIFEST, str(bad))
+        self.assertEqual(rc, 1)
+        self.assertIn("either a 'mapping' array", out)
+
+
+class SsrfGuardTests(unittest.TestCase):
+    """download_reference_files.py SSRF guard (pure function, no network)."""
+
+    @classmethod
+    def setUpClass(cls):
+        import importlib.util
+        spec = importlib.util.spec_from_file_location(
+            "download_reference_files", SCRIPTS / "download_reference_files.py")
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        cls.check = staticmethod(mod.check_url_blocked)
+        cls.BlockedURLError = mod.BlockedURLError
+
+    def test_public_literal_ip_allowed(self):
+        self.assertIsNone(self.check("http://93.184.216.34/a.pdf"))
+
+    def test_loopback_blocked(self):
+        self.assertIsNotNone(self.check("http://127.0.0.1/x"))
+        self.assertIsNotNone(self.check("http://[::1]/x"))
+
+    def test_private_blocks_blocked(self):
+        self.assertIsNotNone(self.check("http://10.0.0.5/x"))
+        self.assertIsNotNone(self.check("http://192.168.1.5/x"))
+        self.assertIsNotNone(self.check("http://172.16.0.1/x"))
+        self.assertIsNotNone(self.check("http://169.254.169.254/latest/meta-data/"))
+
+    def test_bad_scheme_blocked(self):
+        self.assertIsNotNone(self.check("ftp://example.com/a"))
+        self.assertIsNotNone(self.check("file:///etc/passwd"))
+
+    def test_localhost_hostname_blocked_without_dns(self):
+        self.assertIsNotNone(self.check("http://localhost/x"))
+        self.assertIsNotNone(self.check("http://foo.local/x"))
+
+    def test_help_exposes_max_bytes(self):
+        rc, out, err = run(SCRIPTS / "download_reference_files.py", "--help")
+        self.assertEqual(rc, 0)
+        self.assertIn("--max-bytes", out)
 
 
 if __name__ == "__main__":

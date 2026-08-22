@@ -1,0 +1,63 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/943fansi/evidence-suite/blob/main/shared/schemas/evidence_manifest.schema.json",
+  "title": "Evidence Manifest (source-centric)",
+  "description": "source-centric 互操作契约：由 finalize_draft.py --manifest 产出，映射 [Sx]→[n]→source_id/title/url + claims[]，保留证据 provenance。",
+  "type": "object",
+  "required": ["schema_version", "review_kind", "verification_mode", "finalized_at", "mapping"],
+  "additionalProperties": true,
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "0.1.0",
+      "description": "manifest 契约版本；字段变更时必须递增，旧版解析器据此拒绝而非静默误读。"
+    },
+    "review_kind": {
+      "type": "string",
+      "enum": ["ai-internal", "ai-cross-model", "human-expert"],
+      "description": "审查类型：ai-internal=同模型角色隔离（内部红队，不等同独立评审）；ai-cross-model=不同模型独立审查；human-expert=人类专家评审。"
+    },
+    "verification_mode": {
+      "type": "string",
+      "enum": ["static", "live"]
+    },
+    "finalized_at": {
+      "type": "string",
+      "format": "date"
+    },
+    "note": { "type": "string" },
+    "mapping": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["citation", "mapped", "source_id"],
+        "properties": {
+          "citation": { "type": "string", "pattern": "^\\[[S]\\d+\\]$" },
+          "mapped": { "type": "string", "pattern": "^\\[\\d+\\]$" },
+          "source_id": { "type": "string", "pattern": "^S\\d+$" },
+          "title": { "type": "string" },
+          "url": { "type": "string" },
+          "claims": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "claim_text": { "type": "string" },
+                "claim_class": { "type": "string", "enum": ["E", "M", "N", "L", "D", "C", "U", "J"] },
+                "support_level": {
+                  "type": "string",
+                  "enum": ["direct", "strong_inference", "weak_inference", "context_only", "contradictory", "unsupported"]
+                },
+                "evidence_status": {
+                  "type": "string",
+                  "enum": ["verified", "supported", "partially_supported", "inferred", "contradicted", "unsupported", "unverified", "internal_confirm"]
+                }
+              },
+              "required": ["claim_text", "support_level"]
+            }
+          }
+        }
+      }
+    }
+  }
+}

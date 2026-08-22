@@ -47,6 +47,10 @@ shared/
 ├── README.md                        # This file
 ├── requirements.txt                 # Python 依赖（按需安装）
 │
+├── schemas/                          # Manifest 互操作契约 JSON Schema（finalize_draft.py 产出物校验基准）
+│   ├── evidence_manifest.schema.json # source-centric（--manifest）契约：schema_version / review_kind / mapping[]
+│   └── claim_manifest.schema.json    # claim-centric（--claim-manifest）契约：schema_version / review_kind / claims[]
+│
 ├── templates/                       # 12 document-type templates + index selector
 │   ├── index.md                     # Template selector
 │   ├── proposal.md

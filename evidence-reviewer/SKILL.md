@@ -1,6 +1,11 @@
 ---
 name: evidence-reviewer
-description: 证据驱动红队审查方 — 与 evidence-writer 形成对抗循环，负责审查门流水线（r1 来源审计 → r2 诚实性自评 → r3 框架深度门 → r4 初稿审查 → r5 外部专家评审 → 终审门）。有罪推定、只找失败、不写正文、严重即阻断。高置信触发：证据审计、来源审计、source audit、draft review、evidence-driven 审查、source-grounded 审查、红队审查。NOT_TRIGGER：普通语法纠错、纯润色、拼写检查、非事实性文案点评。
+version: "0.1.0"
+description: |
+  证据驱动红队审查方 — 与 evidence-writer 形成对抗循环，负责审查门流水线（r1 来源审计 → r2 诚实性自评 → r3 框架深度门 → r4 初稿审查 → r5 外部专家评审 → 终审门）。有罪推定、只找失败、不写正文、严重即阻断。高置信触发：证据审计、来源审计、source audit、draft review、evidence-driven 审查、source-grounded 审查、红队审查。NOT_TRIGGER：普通语法纠错、纯润色、拼写检查、非事实性文案点评。
+compatibility: "Python 3.10+；Agent 需支持 SKILL.md 加载、Bash 脚本执行、联网 WebSearch/WebFetch（仅 live 审计模式联网）；加载本 skill 会同时获得本地脚本执行与联网能力，请按 SECURITY.md 授权"
+allowed_tools: ["Read", "Write", "Bash", "WebSearch", "WebFetch"]
+disallowed_tools: []
 license: MIT
 ---
 
@@ -8,6 +13,20 @@ license: MIT
 
 > **修订记录**：
 > - 2026-08-20（演示轮核电厂设备老化）：清理 stage 提示词头部历史注记。经验：重复参考文献节（编号标题 vs 裸标题）是脚本盲区，终审门须人工核对"参考文献节唯一性"；`finalize_draft.py` 残留扫描会把正文对"附录A/证据缺口清单"的引用当作脚手架残留，审查时注意区分。
+
+> ⚠️ **同模型自审的重大局限（先读）**：本 skill 默认以**同模型角色隔离**方式运行，即"写作者"与"审查者"是同一个大模型的两种角色设定。**这不等同于独立第三方评审**——模型幻觉会自我包庇，同模型内红队只能作为第一道过滤。判定为高可信度（R4 / 终审门通过 / 投稿或安全关键产出）时，**必须**切换不同模型做 review，或接入人类专家，并在输出中明确标注审查类型。凡使用本 skill 产出的审查结论，一律记录 `review_kind`（`ai-internal` / `ai-cross-model` / `human-expert`），不得把 `ai-internal` 包装成独立专家评审。
+
+## 何时使用 / 何时不使用（When to Use / When NOT to Use）
+
+**When to Use（激活本 skill 的明确信号）**
+- 对已有文档 / 语料 / 初稿做来源审计、draft review、红队审查、evidence-driven / source-grounded 审查。
+- 用户在 Document Production 或 Review Only 模式下提交工件要求审查判决。
+- 用户要求"证据审计 / 来源审计 / 反证核验 / 终审门"。
+
+**When NOT to Use（命中任意一条即跳过整套流水线）**
+- 普通语法纠错、纯润色、拼写检查、非事实性文案点评——不涉及来源真实性，直接拒绝。
+- 要求审查者"帮忙改写 / 补来源 / 替作者圆场"——本 skill 只审不写，不新增证据。
+- 用户显式禁用：请求附带 `--evidence-suite-disable` 标记时，本 skill **不得激活**，不产出判决文件。
 
 # 证据驱动红队审查方 · Evidence-Driven Reviewer
 
@@ -130,7 +149,7 @@ license: MIT
 ### 外部专家评审（r5，全局 8）
 - 按 `${SUITE_ROOT}/shared/references/expert_roles/` 选角色（领域/实践/方法论/标准/资源/转化）。
 - 评分表 + 主要问题分级 + 逐章节意见 + 证据链专项 + 量化指标专项 + 必须补充材料清单。
-- **评审独立性**：区分 Independent AI Review（同模型角色隔离，内部红队）与 External Expert Review（人类专家/不同模型·独立重建证据）；本地回退必须强制标注，禁止伪造专家署名。
+- **评审独立性**：区分 Independent AI Review（同模型角色隔离，内部红队）与 External Expert Review（人类专家/不同模型·独立重建证据）；本地回退必须强制标注，禁止伪造专家署名。审查结论必须带 `review_kind`：`ai-internal`（同模型角色隔离）/ `ai-cross-model`（不同模型独立审查）/ `human-expert`（人类专家）；不得把 `ai-internal` 标注成其他类型。
 
 ### 终审门（Final Gate）
 - 净化合规、`[n]` 数字引文闭合、来源/深度下限、forbidSources、导出物视觉抽检结论。
@@ -186,7 +205,7 @@ license: MIT
 - **不泛泛表扬**：praise 须具体到可核验的优点，且不构成通过理由。
 - **不放水**：作者催稿、态度良好、篇幅庞大均不降低标准。
 - **不替作者做学术立场决定**：审证据是否支撑，不审立场是否正确。
-- **不伪造专家署名**：外部评审回退为本地自评时，必须在文件头部强制标注 `Independent AI Review（同模型角色隔离，非真实外部专家）`；不得用"专家1/专家2"暗示人类专家。
+- **不伪造专家署名**：外部评审回退为本地自评时，必须在文件头部强制标注 `Independent AI Review（同模型角色隔离，非真实外部专家）`，且 `review_kind=ai-internal`；不得用"专家1/专家2"暗示人类专家。
 
 ## 对抗交接（如何回应写作者）
 
