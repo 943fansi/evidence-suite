@@ -103,6 +103,31 @@ Every claim must expose:
 
 D1/D2（厂商/二手）作 R3/R4 依据即标记 high。
 
+## Evidence Freshness（证据新鲜度）
+
+对**来源/证据**标注 `freshness`（存于 `04_validated_sources.json` 的 `freshness` 字段），按"内容是否仍有效/不过时"判定：
+
+| freshness | 含义 | 判定 |
+|-----------|------|------|
+| current | 当前有效（最新版本/近期） | 政策当前版本、标准现行版、近 2–3 年数据 |
+| recent | 近期（可用但非最新） | 3–10 年内的文献/数据 |
+| historical | 历史（仅作史实/背景） | 历史事实、技术原理、奠基文献 |
+| superseded | 已被替代/废止 | 标准被新版本替代、结论被推翻 |
+| unknown | 无法判定 | 无日期/无法确认时效 |
+
+### Freshness → Claim 要求
+
+| claim 类型 | freshness 要求 |
+|-----------|---------------|
+| 历史事实（E） | 不要求新（historical 即可） |
+| 技术原理（E/M） | 可以旧（historical/recent 均可） |
+| AI/性能数据（E/M） | 优先 current/recent（2–3 年内） |
+| 政策/法规（N） | **current**（当前有效版本） |
+| 标准（N） | **current**（现行版本 + 变更历史） |
+| 市场数据（E） | 强制标注日期，优先 recent/current |
+
+**原则**：`freshness=superseded` 的来源不得支撑 R3/R4 现行性主张（仅可作"历史沿革"）；政策/标准类 R3/R4 必须 `current`。
+
 ## Claim Type Taxonomy
 
 ### Claim Types

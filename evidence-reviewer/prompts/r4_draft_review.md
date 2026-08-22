@@ -83,6 +83,7 @@
 5. 核对 `reconciliation.verdict` 在正文中的落实：`contradicted` 的 claim 不得以事实口吻出现；`partially_supported` 的 claim 必须降级表达（"提示 / 在一定程度上支持"）；`unsupported` 的 claim 不得进入正文（转为 `[Gx]` 或 `[假设]`）。
 6. 核对 `evidence_verification_mode`（取自 r1 报告）：涉及监管/安全/财务的 N/E 类高险 claim，若仅 static 验证（未回源），须标记"来源现行性/可达性未回源核验"风险，不得当作已核验结论。
 7. 核对 `risk`：R3/R4 类 claim（监管/安全/财务/结论）若缺 primary source、现行性、live 回源任一，标记为 high 风险，不得以"有来源"放行；R1/R2 不强制上述约束。**来源 `authority` 须 ≥ A2（标准/监管）**，D1/D2（厂商/二手）作 R3/R4 依据即标记 high。
+8. 核对 `freshness`：政策/法规/标准类（N）R3/R4 主张的来源须 `current`；`superseded` 来源不得作现行依据（仅可作历史沿革）；市场数据须标注日期。
 
 输出格式：
 | 主张 | claim_type | required_evidence | 具备的证据 | 缺失的证据 | 校准建议 |
