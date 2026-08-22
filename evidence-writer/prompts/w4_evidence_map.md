@@ -30,7 +30,7 @@
 
 10. **对每个 evidence_map 条目执行 Claim-Evidence 分离**（参考 `${SUITE_ROOT}/shared/references/claim_evidence_layer.md`）：
    - 将每个 `claim_to_write` 分解为 5 层：Observation → Interpretation → Assumption → Claim → Confidence
-   - 对每个 claim 输出反方证据（evidence_for / evidence_against / unknown）
+   - 对每个 claim 输出反方证据（evidence_for / evidence_against / unknown）；`evidence_against` 须合并 w2 主动反证检索结果（`02_raw_sources.json` 的 `counter_evidence` / `counter_evidence_search`），不得只从支持性来源里被动挑反例
    - 标注 claim_type 并检查 required_evidence 是否满足
    - 若 required_evidence 不满足：降级 claim_type（如 superiority_claim → assumption）或标记为 `narrative`
 

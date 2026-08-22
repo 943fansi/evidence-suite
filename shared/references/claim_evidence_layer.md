@@ -196,6 +196,8 @@ actual_evidence: [citation_only]  ← insufficient
 
 对每条**核心 claim**（P1–P3、T1–T3，以及 `claim_type ∈ {superiority_claim, novelty_claim, causal_claim, generalization_claim}`），必须显式走「支持 → 反证 → 调和 → 判决」四步，**禁止"有 N 条来源 → PASS"**：
 
+> 反证来源由 **w2 主动检索**（`criticism/limitation/contradictory/failed` / `质疑/局限/反例/争议/失效`）与 **w4 被动识别**（来源 `claim_limits`/`counter_evidence`）共同构成；只从支持性来源里被动挑反例不够。
+
 1. **支持侧**：列出 `source_support_levels ∈ {direct, strong_inference}` 的来源。
 2. **反证侧**：列出 `source_support_levels = contradictory` 的来源 + `counter_evidence.evidence_against`。
 3. **调和**：判断反证是"可回应"（弱来源 / 仅背景，可在正文回应）还是"关键"（direct 反证且无法否定，压制支持）。

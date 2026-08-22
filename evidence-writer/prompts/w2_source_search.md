@@ -19,6 +19,13 @@ Use this prompt format to instruct an external agent (e.g., DeepSeek, ChatGPT, C
 5. 禁止使用 registry 中 `forbidden_and_rules` 列出的 forbidSources（自媒体、非官方转载、百科、AI厂商营销、教育软文等）作为正式引用依据。
 6. 预印本（arXiv 等）仅作最新进展参考，须标注提交/版本日期，正式结论引同行评审版本。
 
+反证主动搜索（Counter-Evidence Search，强制）：
+对每个关键主张（P1–P3、T1–T3 或 topic 核心论断），除检索支持性证据外，**主动检索反证**——高质量证据检索不只问"有什么支持我"，还要问"有什么可能证明我错"：
+1. 支持方检索："{claim}"
+2. 反证方检索："{claim} criticism" / "{claim} limitation" / "{claim} contradictory" / "{claim} failed" / "{claim} 质疑" / "{claim} 局限" / "{claim} 反例" / "{claim} 争议" / "{claim} 失效"
+3. 命中的反证来源同样进入 `sources[]`，并在 `counter_evidence` 字段标注"反对什么主张 + 严重程度 + 摘要"。
+4. 某关键主张**检索不到反证**时，在顶层 `counter_evidence_search` 显式记录"未发现反证"（负结果也是结果，供 w4/r2 诚实性评估用）。
+
 检索目标：
 1. 近 5 年高质量综述论文、代表性研究论文、实验研究、应用研究论文。
 2. 政府政策、行业规划、监管文件、标准规范、技术指南。
@@ -76,6 +83,14 @@ JSON 顶层结构：
   "data_collection_date": "YYYY-MM-DD",
   "search_scope": [],
   "sources": [],
+  "counter_evidence_search": [
+    {
+      "claim": "",
+      "supporting_sources": ["Sx"],
+      "contradictory_sources": ["Sy"],
+      "none_found": false
+    }
+  ],
   "evidence_gaps": [],
   "recommended_next_searches": []
 }
@@ -107,7 +122,14 @@ JSON 顶层结构：
   "claim_limits": [],
   "use_for": [],
   "credibility_reason": "",
-  "risk_notes": []
+  "risk_notes": [],
+  "counter_evidence": [
+    {
+      "against_claim": "",
+      "severity": "critical/high/medium",
+      "summary": ""
+    }
+  ]
 }
 
 如果是工程/设备/产品类资料（教育/社科/政策类可跳过此节），额外包含：

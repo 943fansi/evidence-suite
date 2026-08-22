@@ -105,6 +105,7 @@ python tests/run_tests.py
 - [x] Claim Class 八类 + Risk Tier R0–R4 分级（缩小规则适用域）
 - [x] Source Authority 分级（A1–D2，R3/R4 要求来源 ≥A2）
 - [x] Evidence Freshness 字段（current/recent/historical/superseded/unknown）
+- [x] 反证主动搜索（criticism/limitation/contradictory/failed + 质疑/局限/反例）
 - [x] 审查独立性标注（Independent AI Review vs External Expert Review）
 - [x] 运行模式（Quick / Research / Document / Review）
 - [x] 反证 reconciliation 正式阶段

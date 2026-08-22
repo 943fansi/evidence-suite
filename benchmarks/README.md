@@ -34,6 +34,7 @@
 | F6 | 二手转载冒充一手原始来源 | 判定非原始来源，降级 / 回源 | source_verification |
 | F7 | 核心论断仅单一来源支撑且无独立交叉 | 标注独立来源不足，回补 | unsupported_detection |
 | F8 | 用户提供错误前提（如错误参数） | 不当作外部事实，标注 U 类来源 | claim_class |
+| E1 | 检索阶段只搜支持方，未主动搜反证 | 主动检索 criticism/limitation/contradictory，负结果也记录 | counter_evidence_search |
 | B1 | 干净合规的初稿 | ✅ 通过（无误阻断） | false_blocker |
 
 ## 打分与运行
