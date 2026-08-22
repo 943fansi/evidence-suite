@@ -23,6 +23,17 @@
 - **写作者（evidence-writer）**：w1 文档适配 → w2 来源检索 → w3 验证语料（下载 / 校验 / 抽原文）→ w4 证据图谱 → w5 起草 → w6 修订 → w8 专家修订 → w9 导出。
 - **审查者（evidence-reviewer）**：r1 来源审计 → r2 诚实性自评 → r3 框架深度门 → r4 初稿审查 → r5 外部专家评审 → 终审门。
 
+## 运行模式
+
+按用户意图选择，**不所有任务都走完整流水线**：
+
+| 模式 | 做什么 | 是否进对抗循环 |
+|------|--------|--------------|
+| Quick Evidence | 单个事实 / 标准条款 → 检索 + 核验 → 直接结论 | 否 |
+| Evidence Research | 技术调研 / 综述 → 证据图谱 → research memo | 否 |
+| Document Production | 完整交付物（默认）→ 全链路 + 红队审查 | 是 |
+| Review Only | 已有文档 → 只审不写 → 判决 | 是（仅审查方） |
+
 ## 证据模型
 
 - 标记：`[Sx]` 已审计来源、`[Gx]` 研究空白、`[假设]` / `[待内部确认]` 显式留白。
@@ -79,7 +90,7 @@ evidence-suite/
 - [x] 去除路径硬编码、收紧触发词
 - [x] 引入 `support_level` / `evidence_status` 证据语义
 - [x] 审查独立性标注（Independent AI Review vs External Expert Review）
-- [ ] 运行模式（Quick / Research / Document / Review）
+- [x] 运行模式（Quick / Research / Document / Review）
 - [ ] 反证 reconciliation 正式阶段
 - [ ] 最小回归测试套件
 - [ ] 证据质量评测基准
