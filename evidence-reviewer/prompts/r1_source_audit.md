@@ -34,6 +34,7 @@ Use this prompt to instruct an external agent to audit the raw sources JSON.
 16. allowFullText=false 的来源（EPRI/IEC/ISO/ASTM/ICRP 等付费报告）是否被写了"全文结论"：命中即列入 overclaimed_points，要求降级为"仅引编号/摘要"。
 17. [live] 标准类来源：标准号、版本年份是否核对现行有效性（须回 std.samr.gov.cn 或发布机构官网）；废止标准必须剔除或替换。
 18. 统计类数据（能源/教育/材料性能）：是否回原始统计机构；智库/媒体图表二次引用是否注明"转引自"。
+19. 为每条来源标注 `authority`（A1–D2，见 `${SUITE_ROOT}/shared/references/claim_evidence_layer.md` 的 Source Authority）：法规/监管 A1、国际组织/标准组织 A2、国家/行业标准 A3、官方技术报告 B1、原始实验/工程报告 B2、期刊论文 C1、学位论文 C2、厂商资料 D1、二手资料 D2。缺标注视为缺失字段。
 
 输出 JSON，结构如下：
 
@@ -110,5 +111,5 @@ Use this prompt to instruct an external agent to audit the raw sources JSON.
 2. **落盘 `03_audit_report.md`（硬门禁产物，勿跳过）**：内容为外部审计 JSON 全文 + 一段"总体评估"（evidence_points 成熟度级别、需补验证项）+ 结论（可进入 w3 / 需退回 w2 补检索）。
 3. 把审计结论结构化交接给写作者 w3：
 - 每条来源的处置（`suspicious_sources[].suggested_action`：delete / downgrade / verify / replace）、role 建议、需补字段（`missing_fields`）全部保留在 `03_audit_report.md` 的 JSON 结构内。
-- w3 依据 `03_audit_report.md` + `02_raw_sources.json` 生成 `04_validated_sources.json`（见 `evidence-writer/prompts/w3_corpus.md`）：删除 `suggested_action="delete"` 来源、按审计建议降级 role、保留 URL、补 `role`/`access_status`/`url_verified`/`registry_id`/`allow_full_text` 字段、证据缺口保留为一级条目。
+- w3 依据 `03_audit_report.md` + `02_raw_sources.json` 生成 `04_validated_sources.json`（见 `evidence-writer/prompts/w3_corpus.md`）：删除 `suggested_action="delete"` 来源、按审计建议降级 role、保留 URL、补 `role`/`access_status`/`url_verified`/`registry_id`/`allow_full_text`/`authority` 字段、证据缺口保留为一级条目。
 - 若审计结论为"退回补搜"，不进入 w3，写作者回 w2 补检索后重走本门。

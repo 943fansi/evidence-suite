@@ -76,6 +76,33 @@ Every claim must expose:
 
 **原则**：Risk Tier 把"一律有罪推定"**缩小适用域**——默认普通事实为 R1/R2，仅安全/监管/财务/结论类上 R3/R4。
 
+## Source Authority（来源权威分级）
+
+对**来源本身**标注 `authority`（A1–D2），区分"标准 + 技术报告 + 工程案例 + 论文 + 法规"混合证据的**证据地位**——这是来源的属性（存于 `04_validated_sources.json` 的 `authority` 字段），与 `source_level`（A/B/C 质量档，用于 C 级过度使用告警）是**两个不同轴**：
+
+| authority | 类型 | 例 |
+|-----------|------|-----|
+| A1 | 法规/监管机构 | NRC Regulatory Guide、国家核安全局法规、IAEA Safety Standards |
+| A2 | 国际组织/标准组织 | IEEE Std、IEC、ISO、IAEA TECDOC |
+| A3 | 国家/行业标准 | GB、国军标、行业标准 |
+| B1 | 官方技术报告 | EPRI 报告、NUREG、国家实验室报告 |
+| B2 | 原始实验/工程报告 | 结题报告、实测数据报告 |
+| C1 | 同行评审论文 | 期刊论文 |
+| C2 | 学位论文 | 硕博论文 |
+| D1 | 厂商资料 | 设备手册、供应商技术资料 |
+| D2 | 二手资料 | 转载/聚合/百科/新闻 |
+
+### Risk → Authority 要求
+
+| claim risk | 来源 authority 要求 |
+|-----------|---------------------|
+| R1 | 任意（不强制高权威） |
+| R2 | 建议 ≥ B1 |
+| R3（监管/安全/财务） | **≥ A2**（标准/监管来源，且现行 + live） |
+| R4 | ≥ A1/A2 + 独立复现 / 人工签核 |
+
+D1/D2（厂商/二手）作 R3/R4 依据即标记 high。
+
 ## Claim Type Taxonomy
 
 ### Claim Types

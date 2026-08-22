@@ -41,6 +41,7 @@
 - `evidence_status`（verified / supported / partially_supported / inferred / contradicted / unsupported / unverified / internal_confirm）：**该结论最终处于什么状态**。
 - `claim_class`（E/M/N/L 需 `[Sx]`；D 定义 / C 计算 / U 用户提供 / J 判断 不走来源真实性审查）——见 `claim_evidence_layer.md`。
 - `risk`（R0–R4）：R1 单源 / R2 独立交叉 / R3 primary+现行性+live / R4 独立复现/人工签核——把"一律有罪推定"缩小到真正高险的论断。
+- `authority`（来源权威 A1–D2）：法规 A1 / 标准 A2 / 国标行标 A3 / 官方报告 B1 / 原始实验 B2 / 期刊 C1 / 学位 C2 / 厂商 D1 / 二手 D2；R3/R4 要求来源 ≥ A2。
 - 判定按「直接度」而非「来源数量」：两条 `weak_inference` ≠ 一条 `direct`。
 - 交付时 `finalize_draft.py --manifest` 产出 `evidence_manifest.json`（`[n]→来源` 可回溯），保留证据 provenance。
 
@@ -101,6 +102,7 @@ python tests/run_tests.py
 - [x] 去除路径硬编码、收紧触发词
 - [x] 引入 `support_level` / `evidence_status` 证据语义
 - [x] Claim Class 八类 + Risk Tier R0–R4 分级（缩小规则适用域）
+- [x] Source Authority 分级（A1–D2，R3/R4 要求来源 ≥A2）
 - [x] 审查独立性标注（Independent AI Review vs External Expert Review）
 - [x] 运行模式（Quick / Research / Document / Review）
 - [x] 反证 reconciliation 正式阶段
