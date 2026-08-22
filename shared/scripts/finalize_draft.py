@@ -145,6 +145,8 @@ def source_metadata(sources_path: Path | None) -> dict[str, dict[str, str]]:
         meta[sid] = {
             "title": (s.get("title_or_name") or s.get("title") or "").strip(),
             "url": (s.get("url") or "").strip(),
+            "authority": (s.get("authority") or "").strip(),
+            "freshness": (s.get("freshness") or "").strip(),
         }
     return meta
 
@@ -170,6 +172,43 @@ def evidence_map_claims(em_path: Path | None) -> dict[str, list[dict[str, str]]]
                    "support_level": str(lvl), "evidence_status": status}
             out.setdefault(str(sid), []).append(rec)
     return out
+
+
+def build_claim_manifest(em_path: Path, meta: dict) -> dict:
+    """Aggregate 06_evidence_map.json into a claim-centric manifest (interop contract)."""
+    claims: list[dict] = []
+    try:
+        em = json.loads(em_path.read_text(encoding="utf-8"))
+    except Exception:
+        return {"claims": []}
+    for i, entry in enumerate(em.get("evidence_map", []), 1):
+        claim_text = str(entry.get("claim_to_write", "")).strip()
+        levels = entry.get("source_support_levels") or {}
+        if not isinstance(levels, dict):
+            levels = {}
+        evidence: list[dict] = []
+        for sid, lvl in levels.items():
+            rec: dict = {"source_id": str(sid), "support_level": str(lvl)}
+            m = meta.get(str(sid))
+            if m:
+                if m.get("authority"):
+                    rec["authority"] = m["authority"]
+                if m.get("freshness"):
+                    rec["freshness"] = m["freshness"]
+            evidence.append(rec)
+        status = str(entry.get("evidence_status", "")).strip()
+        recon = entry.get("reconciliation") or {}
+        verdict = status or str(recon.get("verdict", "")).strip()
+        claims.append({
+            "claim_id": f"C-{i:03d}",
+            "claim_class": str(entry.get("claim_class", "")).strip(),
+            "risk": str(entry.get("risk", "")).strip(),
+            "claim_text": claim_text,
+            "evidence": evidence,
+            "evidence_status": status,
+            "verdict": verdict,
+        })
+    return {"claims": claims}
 
 
 def finalize(text: str, style: str = "sx") -> str:
@@ -341,6 +380,8 @@ def main() -> int:
                         help="evidence verification mode recorded in the manifest (default static)")
     parser.add_argument("--evidence-map", type=Path, default=None,
                         help="06_evidence_map.json → merge claim-level provenance (claim_text/claim_class/support_level/evidence_status) into the manifest")
+    parser.add_argument("--claim-manifest", type=Path, default=None,
+                        help="export a claim-centric manifest from --evidence-map (interop contract; requires --evidence-map)")
     args = parser.parse_args()
 
     if not args.draft.exists():
@@ -409,6 +450,18 @@ def main() -> int:
         args.manifest.write_text(json.dumps(manifest, ensure_ascii=False, indent=2),
                                  encoding="utf-8")
         print(f"manifest -> {args.manifest}")
+
+    if args.claim_manifest:
+        if not args.evidence_map or not args.evidence_map.exists():
+            print("error: --claim-manifest requires --evidence-map 06_evidence_map.json",
+                  file=sys.stderr)
+            return 2
+        cm = build_claim_manifest(args.evidence_map, source_metadata(args.sources))
+        cm["verification_mode"] = args.verification_mode
+        cm["finalized_at"] = date.today().isoformat()
+        args.claim_manifest.write_text(json.dumps(cm, ensure_ascii=False, indent=2),
+                                       encoding="utf-8")
+        print(f"claim-manifest -> {args.claim_manifest}")
 
     return 3 if problems else 0
 

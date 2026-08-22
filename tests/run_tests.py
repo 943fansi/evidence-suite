@@ -110,8 +110,8 @@ ACADEMIC_ORPHANED = """\
 CLEAN_CORPUS = """\
 {
   "sources": [
-    {"source_id": "S1", "title": "A", "url": "https://example.com/a", "access_status": "confirmed", "type": "journal_paper"},
-    {"source_id": "S2", "title": "B", "url": "https://example.com/b", "access_status": "web_accessible", "type": "report"}
+    {"source_id": "S1", "title": "A", "url": "https://example.com/a", "access_status": "confirmed", "type": "journal_paper", "authority": "C1", "freshness": "recent"},
+    {"source_id": "S2", "title": "B", "url": "https://example.com/b", "access_status": "web_accessible", "type": "report", "authority": "B1", "freshness": "current"}
   ]
 }
 """
@@ -136,9 +136,9 @@ SUSPECT_DOMAIN_CORPUS = """\
 EVIDENCE_MAP = """\
 {
   "evidence_map": [
-    {"claim_to_write": "某论断A", "claim_class": "M", "evidence_status": "supported",
+    {"claim_to_write": "某论断A", "claim_class": "M", "risk": "R2", "evidence_status": "supported",
      "source_support_levels": {"S1": "direct"}},
-    {"claim_to_write": "某论断B", "claim_class": "N", "evidence_status": "partially_supported",
+    {"claim_to_write": "某论断B", "claim_class": "N", "risk": "R3", "evidence_status": "partially_supported",
      "source_support_levels": {"S2": "weak_inference"}}
   ]
 }
@@ -253,6 +253,24 @@ class FinalizeManifestTests(unittest.TestCase):
         self.assertIn("claims", by_id["S1"])
         self.assertEqual(by_id["S1"]["claims"][0]["support_level"], "direct")
         self.assertEqual(by_id["S2"]["claims"][0]["support_level"], "weak_inference")
+
+    def test_claim_manifest(self):
+        draft = write(self.tmp, "draft.md", CLEAN_DRAFT)
+        emap = write(self.tmp, "emap.json", EVIDENCE_MAP)
+        sources = write(self.tmp, "sources.json", CLEAN_CORPUS)
+        cm = self.tmp / "claim_manifest.json"
+        rc, o, e = run(FINALIZE, str(draft), "--claim-manifest", str(cm),
+                       "--evidence-map", str(emap), "--sources", str(sources))
+        self.assertEqual(rc, 0, f"rc={rc}\nstdout={o}\nstderr={e}")
+        data = json.loads(cm.read_text(encoding="utf-8"))
+        self.assertEqual(data["verification_mode"], "static")
+        self.assertEqual(len(data["claims"]), 2)
+        first = data["claims"][0]
+        self.assertEqual(first["claim_id"], "C-001")
+        self.assertEqual(first["risk"], "R2")
+        self.assertEqual(first["evidence"][0]["source_id"], "S1")
+        self.assertEqual(first["evidence"][0]["authority"], "C1")
+        self.assertEqual(data["claims"][1]["evidence"][0]["freshness"], "current")
 
 
 if __name__ == "__main__":
