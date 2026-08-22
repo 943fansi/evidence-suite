@@ -55,6 +55,8 @@ Every claim must expose:
 
 ## Risk Tier（风险分级：决定证据严谨度）
 
+> **规则配置**：Risk Tier 的权威取值以 `${SUITE_ROOT}/shared/config/rules.yaml` 的 `risk_tiers` 为准，本表为默认档的文档化快照。业务场景可覆盖：`medical` 提高权威要求（R2≥A2、R3≥A1）、`general_tech` 放宽（R3≥B1 且可不 live），通过 `--profile <scenario>` 或 `config/rules.user.yaml` 应用。
+
 对**证据类 claim**（E/M/N/L）按"出错后果"标注 `risk`，风险越高约束越重——**R0/R1 不要求回源、不要求人工签核，只有 R3/R4 才触发最重约束**：
 
 | risk | 含义 | 示例 | 证据要求 |

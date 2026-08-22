@@ -102,6 +102,7 @@ evidence-suite/
 ├── shared/
 │   ├── scripts/         # 14 个确定性工具（Bash 执行）
 │   ├── schemas/         # manifest 互操作契约 JSON Schema（evidence_manifest / claim_manifest）
+│   ├── config/          # 规则配置（rules.yaml：risk_tiers / doc_minimums / 可疑域名 / 停止规则）
 │   ├── references/      # 按需加载的参考指南
 │   └── templates/       # 13 类文档模板
 ├── examples/            # 最小示例（quickstart：一键复现净化→manifest→校验）
@@ -109,6 +110,15 @@ evidence-suite/
 ├── SECURITY.md
 └── LICENSE
 ```
+
+## 规则配置（Rules）
+
+证据严谨度、文档下限、可疑域名、停止规则等参数集中在 `shared/config/rules.yaml`（单一事实来源），支持按业务场景覆盖：
+
+- **场景档**：`--profile medical`（提高权威要求：R2≥A2、R3≥A1，收紧来源下限）/ `--profile general_tech`（放宽 R3 至 B1、下调下限）等，deep-merge 生效。
+- **覆盖层**（优先级递增）：默认档 → `config/rules.user.yaml`（仓库级，自动加载）→ `--rules <path>` → `--profile <scenario>`。
+- **消费方**：`validate_sources.py --profile`（可疑域名 + 场景追加）、`check_citations.py --doc-type/--profile`（自动套用文档来源/深度下限）、Agent 规则引用（SKILL.md / `claim_evidence_layer.md`）。
+- 解析器 `shared/scripts/rule_profile.py` 优先用 PyYAML，缺失时用内置最小 YAML 子集解析器（core 脚本保持纯标准库）。
 
 ## 安装与使用
 
@@ -138,7 +148,7 @@ evidence-suite/
 python tests/run_tests.py
 ```
 
-覆盖 `check_citations.py`（引用闭合 / 缺失 URL / 来源数下限 / 正文深度下限 / 数字引文闭合）、`validate_sources.py`（重复 URL / 可疑域名 / 缺 authority / superseded 来源 / 非法枚举）、`validate_manifest.py`（manifest 契约校验：缺失字段 / 非法枚举）、`finalize_draft.py`（manifest 生成 / dry-run 预览）与 `download_reference_files.py` 的 SSRF 守卫，仅用 Python 标准库。
+覆盖 `check_citations.py`（引用闭合 / 缺失 URL / 来源数下限 / 正文深度下限 / 数字引文闭合）、`validate_sources.py`（重复 URL / 可疑域名 / 缺 authority / superseded 来源 / 非法枚举）、`validate_manifest.py`（manifest 契约校验：缺失字段 / 非法枚举）、`finalize_draft.py`（manifest 生成 / dry-run 预览）、`download_reference_files.py` 的 SSRF 守卫与 `rule_profile.py`（规则配置加载 / 场景档 / 最小 YAML 解析器等价性），脚本运行路径仅用 Python 标准库。
 
 ## 最小演示（Quickstart）
 

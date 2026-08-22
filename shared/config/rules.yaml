@@ -1,0 +1,199 @@
+# evidence-suite 规则配置（默认档）
+#
+# 单一事实来源：本文件集中定义 claim_class / risk tier / authority / 文档下限 /
+# 可疑域名 / 停止规则等可调参数。SKILL.md 与 claim_evidence_layer.md 引用本文件，
+# 脚本（validate_sources.py / check_citations.py）通过 --profile / --rules 读取。
+#
+# 覆盖方式（优先级从低到高）：
+#   1. shared/config/rules.yaml          ← 本默认档（仓库自带）
+#   2. <SUITE_ROOT>/config/rules.user.yaml  ← 仓库级用户覆盖（自动加载，可 gitignore）
+#   3. --rules <path>                    ← 显式指定覆盖文件
+#   4. --profile <scenario>              ← 场景档（deep-merge 覆盖上述结果）
+#
+# 注意：本文件使用块式 YAML（无 flow mapping {…}），保证无 pyyaml 环境下
+#       内置最小解析器也能正确加载；请勿引入行内 {…} 结构。
+
+schema_version: "0.1.0"
+
+# 场景档：对同一规则的整体微调（deep-merge）。
+#   medical       高险场景：提高权威要求与来源下限
+#   general_tech  普通技术调研：放宽部分来源权威要求与下限
+scenario_profiles:
+  medical:
+    risk_tiers:
+      R2:
+        authority_min: "A2"
+        live: true
+      R3:
+        authority_min: "A1"
+        live: true
+    doc_minimums:
+      paper_journal:
+        min_sources: 20
+        min_chars: 5000
+      report_survey:
+        min_sources: 30
+        min_chars: 12000
+    suspect_domains_extra:
+      - jianshu.com
+      - toutiao.com
+      - zhihu.com
+  general_tech:
+    risk_tiers:
+      R3:
+        authority_min: "B1"
+        live: false
+    doc_minimums:
+      proposal:
+        min_sources: 10
+        min_chars: 4000
+      report_survey:
+        min_sources: 15
+        min_chars: 6000
+      whitepaper:
+        min_sources: 8
+        min_chars: 3000
+    stop_rule:
+      max_extra_before_diminishing: 6
+
+# Risk Tier → 证据要求（默认档）。claim_evidence_layer.md 的 Risk Tier 表以此为源。
+#   evidence        该风险级要求的证据形态
+#   authority_min   来源权威最低要求（R3/R4 的 authority 约束依据）
+#   live            是否要求 live 回源
+risk_tiers:
+  R0:
+    evidence: "none"
+    authority_min: ""
+    live: false
+  R1:
+    evidence: "static_single"
+    authority_min: ""
+    live: false
+  R2:
+    evidence: "cross_2"
+    authority_min: "B1"
+    live: false
+  R3:
+    evidence: "primary_live"
+    authority_min: "A2"
+    live: true
+  R4:
+    evidence: "independent_review"
+    authority_min: "A1"
+    live: true
+
+# claim_class 是否需要外部来源（默认档；非证据类 D/C/U/J 走一致性/可复现/标注/推理链检查）
+claim_classes:
+  E:
+    needs_source: true
+    check: "source"
+  M:
+    needs_source: true
+    check: "source"
+  N:
+    needs_source: true
+    check: "source_current"
+  L:
+    needs_source: true
+    check: "source"
+  D:
+    needs_source: false
+    check: "consistency"
+  C:
+    needs_source: false
+    check: "reproducible"
+  U:
+    needs_source: false
+    check: "annotated"
+  J:
+    needs_source: false
+    check: "reasoning_chain"
+
+# 文档类型 → 来源数 / 正文深度下限（SKILL.md「参考文献数量下限」表以此为源）
+doc_minimums:
+  proposal:
+    min_sources: 15
+    min_chars: 6000
+  thesis_ug:
+    min_sources: 20
+    min_chars: 10000
+  report_survey:
+    min_sources: 25
+    min_chars: 10000
+  report_feasibility:
+    min_sources: 15
+    min_chars: 6000
+  whitepaper:
+    min_sources: 12
+    min_chars: 5000
+  report_gf:
+    min_sources: 12
+    min_chars: 10000
+  plan_implementation:
+    min_sources: 12
+    min_chars: 8000
+  paper_journal:
+    min_sources: 15
+    min_chars: 4000
+  patent_disclosure:
+    min_sources: 8
+    min_chars: 5000
+  patent_application:
+    min_sources: 8
+    min_chars: 5000
+  thesis_ms:
+    min_sources: 40
+    min_chars: 20000
+  thesis_phd:
+    min_sources: 60
+    min_chars: 35000
+
+# 可疑域名（validate_sources.py 语料自检用；场景档可用 suspect_domains_extra 追加）
+suspect_domains:
+  - bjjcyjy
+  - antpedia
+  - stm-publishing
+  - baike.baidu
+  - baike.com
+  - zhihu.com
+  - q.wenku
+  - wenku.baidu
+  - docin.com
+  - doc88.com
+  - wikipedia
+  - futunn
+  - openai.com/blog
+  - anthropic.com/research
+  - samaltman
+  - 36kr
+  - jiqizhixin
+  - sohu.com
+  - 163.com
+  - toutiao
+
+# Evidence Stop Rule（证据停止规则参数）
+stop_rule:
+  max_extra_before_diminishing: 5
+  diversity_min_independent_countries: 2
+  counter_search_terms:
+    - criticism
+    - limitation
+    - contradictory
+    - failed
+    - 质疑
+    - 局限
+    - 反例
+    - 争议
+    - 失效
+
+# 权威来源分级说明（A1–D2，供文档引用；脚本不消费）
+authority_definitions:
+  A1: "法规/监管机构"
+  A2: "国际组织/标准组织"
+  A3: "国家/行业标准"
+  B1: "官方技术报告"
+  B2: "原始实验/工程报告"
+  C1: "同行评审论文"
+  C2: "学位论文"
+  D1: "厂商资料"
+  D2: "二手资料"

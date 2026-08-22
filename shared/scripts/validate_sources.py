@@ -29,6 +29,8 @@ Usage:
   python scripts/validate_sources.py 04_validated_sources.json
   python scripts/validate_sources.py 04.json --json            # machine-readable
   python scripts/validate_sources.py 04.json --extra-domains bjjyjy.com,example.cn
+  python scripts/validate_sources.py 04.json --profile medical # apply scenario rules
+  python scripts/validate_sources.py 04.json --rules my.yaml   # explicit rules override
   python scripts/validate_sources.py 04.json --quota-cn-journal 10 --json
 """
 
@@ -40,9 +42,11 @@ import re
 import sys
 from pathlib import Path
 
-# Domains that have burned real runs with systematically-wrong standards links.
-# baike/zhihu/q.wenku are not authoritative for citation; AI-marketing blogs are
-# forbidSources-adjacent. Expand via --extra-domains for topic-specific hits.
+from rule_profile import effective_suspect_domains, load_rules
+
+# Legacy hardcoded blocklist — used only when shared/config/rules.yaml is missing.
+# The config file (shared/config/rules.yaml) is the single source of truth; use
+# --rules / --profile / rules.user.yaml to adjust without editing this script.
 SUSPECT_DOMAIN_SUBSTR = (
     "bjjcyjy", "antpedia", "stm-publishing", "baike.baidu", "baike.com",
     "zhihu.com", "q.wenku", "wenku.baidu", "docin.com", "doc88.com",
@@ -67,10 +71,9 @@ def _get_title(s: dict) -> str:
     return str(t or "").strip()
 
 
-def _problems(corpus: dict, extra_domains: list[str], quota_cn_journal: int) -> list[str]:
+def _problems(corpus: dict, suspect_domains: tuple[str, ...], quota_cn_journal: int) -> list[str]:
     sources = corpus.get("sources", [])
     problems: list[str] = []
-    suspect_domains = tuple(SUSPECT_DOMAIN_SUBSTR) + tuple(extra_domains)
 
     seen_ids: set[str] = set()
     url_owner: dict[str, list[str]] = {}
@@ -141,6 +144,11 @@ def main() -> int:
     parser.add_argument("--json", action="store_true", help="JSON output")
     parser.add_argument("--extra-domains", type=str, default="",
                         help="comma-separated additional suspect-domain substrings")
+    parser.add_argument("--rules", type=Path, default=None,
+                        help="rules override file (merged over shared/config/rules.yaml)")
+    parser.add_argument("--profile", type=str, default=None,
+                        help="scenario profile from rules.yaml (e.g. medical / general_tech); "
+                             "adjusts suspect_domains_extra and other rules")
     parser.add_argument("--quota-cn-journal", type=int, default=0,
                         help="enforce a minimum count of type=journal_paper entries "
                              "(thesis: recommend ≥10 for 国内学术对话)")
@@ -158,8 +166,18 @@ def main() -> int:
         print("ERROR: corpus must be an object with a non-empty sources[]", file=sys.stderr)
         return 2
 
-    extra = [d.strip() for d in args.extra_domains.split(",") if d.strip()]
-    problems = _problems(corpus, extra, args.quota_cn_journal)
+    try:
+        rules = load_rules(rules_path=args.rules, profile=args.profile)
+    except (FileNotFoundError, KeyError, ValueError) as exc:
+        print(f"ERROR: cannot load rules: {exc}", file=sys.stderr)
+        return 2
+    cli_extra = [d.strip() for d in args.extra_domains.split(",") if d.strip()]
+    suspect_domains = effective_suspect_domains(rules, cli_extra) or tuple(SUSPECT_DOMAIN_SUBSTR)
+    if args.profile:
+        print(f"profile: {args.profile} (suspect domains: {len(suspect_domains)})",
+              file=sys.stderr)
+
+    problems = _problems(corpus, suspect_domains, args.quota_cn_journal)
 
     if args.json:
         print(json.dumps({"problems": problems, "count": len(problems)},

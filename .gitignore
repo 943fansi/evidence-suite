@@ -16,6 +16,9 @@ examples/quickstart/output/
 *.pem
 *.pfx
 
+# Repository-level rule overrides (auto-loaded by rule_profile.py)
+/config/
+
 # Python
 __pycache__/
 *.pyc

@@ -12,6 +12,8 @@ Coverage:
   - finalize_draft.py: manifest generation (source/claim-centric), dry-run preview.
   - validate_manifest.py: contract validation (missing fields / illegal enums).
   - download_reference_files.py: SSRF guard (pure function, no network).
+  - rule_profile.py: rules loader + scenario profiles + YAML fallback parser;
+    validate_sources --profile; check_citations --doc-type/--profile.
 
 Usage:
   python tests/run_tests.py
@@ -452,6 +454,102 @@ class SsrfGuardTests(unittest.TestCase):
         rc, out, err = run(SCRIPTS / "download_reference_files.py", "--help")
         self.assertEqual(rc, 0)
         self.assertIn("--max-bytes", out)
+
+
+class RuleProfileTests(unittest.TestCase):
+    """rule_profile.py loads/merges shared/config/rules.yaml (no network)."""
+
+    @classmethod
+    def setUpClass(cls):
+        import importlib.util
+        spec = importlib.util.spec_from_file_location(
+            "rule_profile", SCRIPTS / "rule_profile.py")
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        cls.rp = mod
+
+    def setUp(self):
+        self._tmp = tempfile.TemporaryDirectory()
+        self.tmp = Path(self._tmp.name)
+
+    def tearDown(self):
+        self._tmp.cleanup()
+
+    def test_default_rules(self):
+        rules = self.rp.load_rules()
+        self.assertEqual(rules["risk_tiers"]["R3"]["authority_min"], "A2")
+        self.assertEqual(rules["doc_minimums"]["proposal"],
+                         {"min_sources": 15, "min_chars": 6000})
+        self.assertEqual(rules["doc_minimums"]["thesis_phd"]["min_sources"], 60)
+        self.assertGreaterEqual(len(rules["suspect_domains"]), 10)
+
+    def test_medical_profile_overrides(self):
+        rules = self.rp.load_rules(profile="medical")
+        self.assertEqual(rules["risk_tiers"]["R2"]["authority_min"], "A2")
+        self.assertEqual(rules["risk_tiers"]["R3"]["authority_min"], "A1")
+        self.assertEqual(rules["doc_minimums"]["paper_journal"]["min_sources"], 20)
+        self.assertEqual(rules["active_profile"], "medical")
+
+    def test_general_tech_profile_relaxes(self):
+        rules = self.rp.load_rules(profile="general_tech")
+        self.assertEqual(rules["risk_tiers"]["R3"]["authority_min"], "B1")
+        self.assertEqual(rules["doc_minimums"]["proposal"]["min_sources"], 10)
+
+    def test_unknown_profile_raises(self):
+        with self.assertRaises(KeyError):
+            self.rp.load_rules(profile="no_such_profile")
+
+    def test_explicit_rules_override(self):
+        with tempfile.TemporaryDirectory() as td:
+            over = Path(td) / "rules.user.yaml"
+            over.write_text("doc_minimums:\n  proposal:\n    min_sources: 99\n",
+                            encoding="utf-8")
+            rules = self.rp.load_rules(rules_path=over)
+            self.assertEqual(rules["doc_minimums"]["proposal"]["min_sources"], 99)
+            self.assertEqual(rules["doc_minimums"]["thesis_phd"]["min_sources"], 60)
+
+    def test_minimal_parser_matches_pyyaml(self):
+        try:
+            import yaml
+        except ImportError:
+            self.skipTest("pyyaml not installed")
+        text = (ROOT / "shared" / "config" / "rules.yaml").read_text(encoding="utf-8")
+        self.assertEqual(self.rp._minimal_yaml(text), yaml.safe_load(text))
+
+    def test_validate_sources_profile_suspect_domains(self):
+        corpus = """\
+{
+  "sources": [
+    {"source_id": "S1", "title": "A", "url": "https://jianshu.com/p/xx",
+     "access_status": "confirmed", "type": "journal_paper", "authority": "C1",
+     "freshness": "recent"}
+  ]
+}
+"""
+        p = write(self.tmp, "jianshu.json", corpus)
+        rc, out, _ = run(VALIDATE, str(p), "--profile", "medical", "--json")
+        self.assertEqual(rc, 1)
+        self.assertIn("jianshu.com", "\n".join(json.loads(out)["problems"]))
+        rc, out, _ = run(VALIDATE, str(p), "--json")
+        self.assertEqual(rc, 0, "default profile must not block jianshu.com")
+
+    def test_check_citations_doc_type_applies_minimums(self):
+        draft = write(self.tmp, "dt.md", CLEAN_DRAFT)
+        rc, out, err = run(CHECK, str(draft), "--doc-type", "thesis_phd", "--json")
+        self.assertEqual(rc, 1)
+        data = json.loads(out)
+        self.assertEqual(data["min_sources"], 60)
+        self.assertEqual(data["min_chars"], 35000)
+        self.assertTrue(data["min_sources_violated"])
+        self.assertIn("min_sources=60", err)
+
+    def test_check_citations_profile_relaxes_minimums(self):
+        draft = write(self.tmp, "dt2.md", CLEAN_DRAFT)
+        rc, out, err = run(CHECK, str(draft), "--doc-type", "proposal",
+                           "--profile", "general_tech", "--json")
+        data = json.loads(out)
+        self.assertEqual(data["min_sources"], 10)
+        self.assertEqual(data["min_chars"], 4000)
 
 
 if __name__ == "__main__":

@@ -31,6 +31,8 @@ import re
 import sys
 from pathlib import Path
 
+from rule_profile import doc_minimum, load_rules
+
 
 def _ensure_utf8_streams() -> None:
     for stream in (sys.stdout, sys.stderr):
@@ -180,6 +182,14 @@ def main() -> int:
     parser.add_argument("--min-chars", type=int, default=None,
                         help="Fail if body character count (excluding references/appendix and "
                              "whitespace) is below this floor — enforces content depth per doc type")
+    parser.add_argument("--doc-type", type=str, default=None,
+                        help="document type (proposal / thesis_ms / paper_journal / …) — when "
+                             "neither --min-sources nor --min-chars is given, auto-apply the "
+                             "doc_minimums from shared/config/rules.yaml (scenario-adjusted)")
+    parser.add_argument("--rules", type=Path, default=None,
+                        help="rules override file (merged over shared/config/rules.yaml)")
+    parser.add_argument("--profile", type=str, default=None,
+                        help="scenario profile from rules.yaml (e.g. medical / general_tech)")
     parser.add_argument("--academic", action="store_true",
                         help="Draft uses sequential [1..n] citation numbers (finalized thesis/journals): "
                              "check numeric citation closure instead of [Sx]; requires every body [n] to "
@@ -189,6 +199,22 @@ def main() -> int:
     if not args.draft.exists():
         print(f"File not found: {args.draft}", file=sys.stderr)
         return 2
+
+    if args.doc_type:
+        try:
+            rules = load_rules(rules_path=args.rules, profile=args.profile)
+        except (FileNotFoundError, KeyError, ValueError) as exc:
+            print(f"error: cannot load rules: {exc}", file=sys.stderr)
+            return 2
+        minimums = doc_minimum(rules, args.doc_type)
+        if args.min_sources is None and "min_sources" in minimums:
+            args.min_sources = minimums["min_sources"]
+            print(f"rules [{args.profile or 'default'}] {args.doc_type}: min_sources={args.min_sources}",
+                  file=sys.stderr)
+        if args.min_chars is None and "min_chars" in minimums:
+            args.min_chars = minimums["min_chars"]
+            print(f"rules [{args.profile or 'default'}] {args.doc_type}: min_chars={args.min_chars}",
+                  file=sys.stderr)
 
     text = args.draft.read_text(encoding="utf-8")
 

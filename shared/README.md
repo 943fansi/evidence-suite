@@ -47,6 +47,11 @@ shared/
 ├── README.md                        # This file
 ├── requirements.txt                 # Python 依赖（按需安装）
 │
+├── config/                            # 规则配置（单一事实来源）
+│   └── rules.yaml                     # risk_tiers / claim_classes / doc_minimums /
+│                                      #   suspect_domains / stop_rule / scenario_profiles
+│                                      #   （medical / general_tech 场景档）
+│
 ├── schemas/                          # Manifest 互操作契约 JSON Schema（finalize_draft.py 产出物校验基准）
 │   ├── evidence_manifest.schema.json # source-centric（--manifest）契约：schema_version / review_kind / mapping[]
 │   └── claim_manifest.schema.json    # claim-centric（--claim-manifest）契约：schema_version / review_kind / claims[]
@@ -93,7 +98,8 @@ shared/
 ├── scripts/                         # 14 Python utilities (bash-executed, never loaded)
 │   ├── build_references.py          # 机械生成参考文献节（year 空值省略、URL 逐字、--body 原位回填、--style gbt 类型感知 GB/T 条目、title/title_or_name 双字段兼容）
 │   ├── finalize_draft.py            # 定稿净化（[Sx]→[1]..[n] 顺序编码、[Gx]→研究局限、删脚手架/附录A/封面占位/内部路径、--check 校验、--style gbt 骨架+映射表）
-│   ├── validate_sources.py          # 语料自检（重复 URL/缺字段/可疑域名 bjjcyjy-antpedia-stm-publishing/access_status 空/中文期刊配额）
+│   ├── validate_sources.py          # 语料自检（重复 URL/缺字段/可疑域名 bjjcyjy-antpedia-stm-publishing/access_status 空/中文期刊配额/authority-freshness 校验；--profile/--rules 读规则配置）
+│   ├── rule_profile.py              # 规则配置加载器（default + rules.user.yaml + --rules + --profile deep-merge；PyYAML 优先，内置最小解析器回退）
 │   ├── check_framework_depth.py     # 框架深度门（每实质章目标/方法/输入输出/标准依据四要素+篇幅达标）
 │   ├── check_citations.py           # Citation closure + URL/title check + --min-sources/--min-chars gates + --academic 数字引文模式
 │   ├── select_sources.py            # Stage 1 source routing selector (registry → search directives)

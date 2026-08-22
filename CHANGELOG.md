@@ -54,13 +54,21 @@
 - **examples/quickstart 最小 demo（P1）**：2 条论断最小输入 + 一键复现脚本（PowerShell / sh）+ 期望输出样例（evidence_manifest / claim_manifest），无联网无第三方依赖
 - `finalize_draft.py` 新增 `--dry-run`：预览 [Sx]→[n] 转换 / 脚手架清理 / 附录删除，不写入任何文件
 - 回归测试 25→29 用例（缺 authority/freshness、superseded、非法 authority、dry-run 不落盘）
+- 回归测试 29→38 用例（规则配置：default/medical/general_tech 档、最小解析器等价性、显式覆盖、validate_sources --profile、check_citations --doc-type/--profile）
 
 ### 清理
 - 删除 `shared/legacy/`（旧单流水线快照）与 `__pycache__`
 - 文档结构树与索引同步（补 `finalize_checklist.md` 登记、Stage 编号统一为 w/r）
 - 顶层补齐 `README.md`、`LICENSE`、`.gitignore`、`SECURITY.md`
 
+### 规则配置（P1，自冻结转实现）
+- 新增 `shared/config/rules.yaml` 作为规则单一事实来源：`risk_tiers`（R0–R4 证据要求/权威下限/live）、`claim_classes`、`doc_minimums`（12 类文档来源数/深度下限）、`suspect_domains`、`stop_rule`、`scenario_profiles`
+- 场景档：`medical`（R2≥A2、R3≥A1、收紧下限）、`general_tech`（R3≥B1 且可不 live、下调下限），deep-merge 生效
+- 覆盖层（优先级递增）：默认档 → `config/rules.user.yaml`（仓库级自动加载）→ `--rules <path>` → `--profile <scenario>`
+- 新增 `shared/scripts/rule_profile.py` 加载器：PyYAML 优先，无依赖环境用内置最小 YAML 子集解析器（与 pyyaml 输出逐字节等价，已测）；`effective_suspect_domains` / `doc_minimum` 辅助函数
+- 消费方接入：`validate_sources.py --profile/--rules`（可疑域名 + 场景追加）、`check_citations.py --doc-type/--profile/--rules`（未显式给 --min-sources/--min-chars 时自动套用配置下限）
+- `claim_evidence_layer.md` / 写作者 SKILL「默认严谨层级」标注规则可配置来源与场景覆盖方式
+
 ### 冻结（暂不实现，无消费者 / 过早）
-- `config.yaml` / `risk_profile.yaml` 动态策略引擎（risk 分级已作为 claim 级字段落地，足以覆盖）
 - `engine/` / `policies/` 三层目录重构
 - 评测基准的**实跑打分**（需接真实 agent，当前仅用例集定义）
