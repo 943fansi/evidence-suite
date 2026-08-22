@@ -81,6 +81,7 @@
 3. 所有 confidence ≤ low 的主张是否带有 [假设] 或 [待验证] 标记？若未标记 → 标记。
 4. 逐条核对 `source_support_levels` 与 `evidence_status`（见 claim_evidence_layer.md）：凡 claim 的 `evidence_status ∈ {inferred, unsupported, contradicted}`，即使正文挂了 `[Sx]`，也判定为"证据不足以支撑该结论"（不能仅凭"有 [Sx]"放行）。
 5. 核对 `reconciliation.verdict` 在正文中的落实：`contradicted` 的 claim 不得以事实口吻出现；`partially_supported` 的 claim 必须降级表达（"提示 / 在一定程度上支持"）；`unsupported` 的 claim 不得进入正文（转为 `[Gx]` 或 `[假设]`）。
+6. 核对 `evidence_verification_mode`（取自 r1 报告）：涉及监管/安全/财务的 N/E 类高险 claim，若仅 static 验证（未回源），须标记"来源现行性/可达性未回源核验"风险，不得当作已核验结论。
 
 输出格式：
 | 主张 | claim_type | required_evidence | 具备的证据 | 缺失的证据 | 校准建议 |

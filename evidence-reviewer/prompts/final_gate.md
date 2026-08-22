@@ -40,6 +40,7 @@
 - 专利类：申请草案全文零引用标记（证据闭合在配套 12_背景技术证据对照.md）。
 - 缩写首现给全称；无重复段落；forbidSources 零命中；allowFullText: false 来源未出现全文级结论；标准类已核现行有效性。
 - 若要求 PDF/DOCX：作者已运行导出 + `visual_qa.py` 抽检，长 URL 断行/悬挂缩进/表格溢出均通过。
+- **证据 provenance**：正式交付须随附 `{FINAL_DRAFT}_manifest.json`（`finalize_draft.py --manifest --sources … [--evidence-map 06_evidence_map.json]` 产出），确认其中 `verification_mode` 已记录、`[Sx]↔[n]→来源` 映射完整；涉及监管/安全/财务（R3/R4）的文档若 `verification_mode=static`，要求作者说明为何未做 live 回源验证。
 
 ## 判决规则
 

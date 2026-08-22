@@ -133,6 +133,17 @@ SUSPECT_DOMAIN_CORPUS = """\
 }
 """
 
+EVIDENCE_MAP = """\
+{
+  "evidence_map": [
+    {"claim_to_write": "某论断A", "claim_class": "M", "evidence_status": "supported",
+     "source_support_levels": {"S1": "direct"}},
+    {"claim_to_write": "某论断B", "claim_class": "N", "evidence_status": "partially_supported",
+     "source_support_levels": {"S2": "weak_inference"}}
+  ]
+}
+"""
+
 
 class CitationClosureTests(unittest.TestCase):
     def setUp(self):
@@ -227,6 +238,21 @@ class FinalizeManifestTests(unittest.TestCase):
         ids = [m["source_id"] for m in data["mapping"]]
         self.assertIn("S1", ids)
         self.assertIn("S2", ids)
+
+    def test_manifest_with_evidence_map(self):
+        draft = write(self.tmp, "draft.md", CLEAN_DRAFT)
+        sources = write(self.tmp, "sources.json", CLEAN_CORPUS)
+        emap = write(self.tmp, "emap.json", EVIDENCE_MAP)
+        out = self.tmp / "clean.md"
+        man = self.tmp / "manifest.json"
+        rc, o, e = run(FINALIZE, str(draft), "-o", str(out), "--manifest", str(man),
+                       "--sources", str(sources), "--evidence-map", str(emap))
+        self.assertEqual(rc, 0, f"rc={rc}\nstdout={o}\nstderr={e}")
+        data = json.loads(man.read_text(encoding="utf-8"))
+        by_id = {m["source_id"]: m for m in data["mapping"]}
+        self.assertIn("claims", by_id["S1"])
+        self.assertEqual(by_id["S1"]["claims"][0]["support_level"], "direct")
+        self.assertEqual(by_id["S2"]["claims"][0]["support_level"], "weak_inference")
 
 
 if __name__ == "__main__":

@@ -93,6 +93,7 @@
 > Research Mode 终点输出。此报告是 Proposal Mode 的入场条件。
 > 评估时间: YYYY-MM-DD
 > 评估基于: 04_validated_sources.json ({N} sources), 06_evidence_map.json
+> evidence_verification_mode: static | live（来源经何种模式核验，取自 r1 报告 `03_audit_report.md`）
 
 ## 一、整体证据态势
 

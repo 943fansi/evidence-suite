@@ -149,6 +149,29 @@ def source_metadata(sources_path: Path | None) -> dict[str, dict[str, str]]:
     return meta
 
 
+def evidence_map_claims(em_path: Path | None) -> dict[str, list[dict[str, str]]]:
+    """Load per-source claim provenance from 06_evidence_map.json."""
+    if not em_path or not em_path.exists():
+        return {}
+    try:
+        em = json.loads(em_path.read_text(encoding="utf-8"))
+    except Exception:
+        return {}
+    out: dict[str, list[dict[str, str]]] = {}
+    for entry in em.get("evidence_map", []):
+        claim_text = str(entry.get("claim_to_write", "")).strip()
+        claim_class = str(entry.get("claim_class", "")).strip()
+        status = str(entry.get("evidence_status", "")).strip()
+        levels = entry.get("source_support_levels") or {}
+        if not isinstance(levels, dict):
+            levels = {}
+        for sid, lvl in levels.items():
+            rec = {"claim_text": claim_text, "claim_class": claim_class,
+                   "support_level": str(lvl), "evidence_status": status}
+            out.setdefault(str(sid), []).append(rec)
+    return out
+
+
 def finalize(text: str, style: str = "sx") -> str:
     """Run the full cleanup pipeline; returns cleaned markdown."""
     ref_start = None
@@ -316,6 +339,8 @@ def main() -> int:
                         help="write a machine-readable evidence manifest ([Sx]↔[n] mapping + source metadata) here")
     parser.add_argument("--verification-mode", choices=["static", "live"], default="static",
                         help="evidence verification mode recorded in the manifest (default static)")
+    parser.add_argument("--evidence-map", type=Path, default=None,
+                        help="06_evidence_map.json → merge claim-level provenance (claim_text/claim_class/support_level/evidence_status) into the manifest")
     args = parser.parse_args()
 
     if not args.draft.exists():
@@ -359,9 +384,10 @@ def main() -> int:
     if args.manifest:
         id_map = id_map_from_draft(text)
         meta = source_metadata(args.sources)
+        claims = evidence_map_claims(args.evidence_map)
         mapping = []
         for key in sorted(id_map, key=lambda k: int(id_map[k])):
-            entry: dict[str, str] = {
+            entry: dict = {
                 "citation": f"[{key}]", "mapped": f"[{id_map[key]}]", "source_id": key,
             }
             m = meta.get(key)
@@ -370,11 +396,14 @@ def main() -> int:
                     entry["title"] = m["title"]
                 if m.get("url"):
                     entry["url"] = m["url"]
+            cs = claims.get(key)
+            if cs:
+                entry["claims"] = cs
             mapping.append(entry)
         manifest = {
             "verification_mode": args.verification_mode,
             "finalized_at": date.today().isoformat(),
-            "note": "claim 级字段（claim_text / page / quote / support_level / confidence）见 06_evidence_map.json",
+            "note": "claim 级字段来自 06_evidence_map.json（--evidence-map 提供时自动合并）",
             "mapping": mapping,
         }
         args.manifest.write_text(json.dumps(manifest, ensure_ascii=False, indent=2),
