@@ -34,6 +34,11 @@
    - 标注 claim_type 并检查 required_evidence 是否满足
    - 若 required_evidence 不满足：降级 claim_type（如 superiority_claim → assumption）或标记为 `narrative`
 
+11. **标注证据直接度与状态**（`source_support_levels` + `evidence_status`，定义见 `${SUITE_ROOT}/shared/references/claim_evidence_layer.md` 的 Support Level & Evidence Status）：
+   - 对 `supporting_sources` 中每条来源标注 `support_level`：direct / strong_inference / weak_inference / context_only / contradictory / unsupported
+   - 依据 support_level 分布 + 反证权重，给整条 claim 落一个 `evidence_status`：verified / supported / partially_supported / inferred / contradicted / unsupported / unverified / internal_confirm
+   - **按"直接度"而非"来源数量"判定**：两条 weak_inference 不等于一条 direct；一条 contradictory 需在 counter_evidence 中显式回应
+
 请输出 JSON：
 {
   "topic": "{topic}",
@@ -61,6 +66,8 @@
       "section": "",
       "claim_to_write": "",
       "supporting_sources": ["S1", "S2"],
+      "source_support_levels": {"S1": "direct", "S2": "weak_inference"},
+      "evidence_status": "partially_supported",
       "source_access_status": {"S1": "confirmed", "S2": "web_accessible"},
       "source_strength": "strong/medium/weak",
       "allowed_expression": "",

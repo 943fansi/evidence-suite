@@ -39,15 +39,17 @@
 
 ### 1. 核心主张根据是否充分
 
-对 evidence_map 中的每个 key_problem (P1-P3)，逐条评估：
+对 evidence_map 中的每个 key_problem (P1-P3)，逐条评估。
 
-| 关键问题 | 证据支持度 | 核心弱点 | 是否可通过邻接领域补强 |
-|----------|-----------|---------|---------------------|
-| P1: ... | strong/medium/weak | ... | yes/no（如何补强） |
+> **判定依据是 `source_support_levels`（证据直接度）与 `evidence_status`（证据状态），不是"正文里有没有 [Sx]"**。一条仅由 `weak_inference`/`context_only` 支撑、`evidence_status=inferred/unsupported` 的 claim，即使挂了 `[Sx]`，也算"证据弱"。
+
+| 关键问题 | 证据支持度 | 直接度（direct / weak_inference / …） | evidence_status | 核心弱点 | 是否可通过邻接领域补强 |
+|----------|-----------|------------------------------|-----------------|---------|---------------------|
+| P1: ... | strong/medium/weak | direct/weak_inference/… | supported/partially_supported/… | ... | yes/no（如何补强） |
 
 ### 2. 反方证据权重（counter-evidence）
 
-汇总 counter_evidence 字段中的 evidence_against 和 unknown：
+汇总 counter_evidence 字段中的 evidence_against 和 unknown。**凡 `source_support_levels` 中出现 `contradictory` 的来源，必须进入 evidence_against 汇总，不得遗漏或淡化。**
 
 | 反方证据来源 | 反对什么主张 | 严重程度 | 能否在提案中回应 |
 |-------------|-------------|---------|----------------|

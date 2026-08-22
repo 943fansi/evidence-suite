@@ -53,6 +53,38 @@ actual_evidence: [citation_only]  ← insufficient
 → 自动触发: 降级或禁止输出
 ```
 
+## Support Level & Evidence Status
+
+### support_level（证据直接度，逐来源判定）
+
+每条 `supporting_sources` 中的来源必须标注它**能否直接证明**这条 claim，而不只是"是否被引用"：
+
+| support_level | 含义 | 判定问题 |
+|---------------|------|---------|
+| `direct` | 原文直接陈述/支持该 claim | 原文是否直接说了这句话？ |
+| `strong_inference` | 由原文经极简推理即可推出 | 一步推理能否推出？ |
+| `weak_inference` | 需显著推理/桥接才能推出 | 是否需要多步假设才成立？ |
+| `context_only` | 仅提供背景/语境，不直接支撑 | 是否只是相关背景？ |
+| `contradictory` | 原文与该 claim 相反 | 原文是否反驳该 claim？ |
+| `unsupported` | 无来源可支撑 | 该 claim 是否无任何来源？ |
+
+### evidence_status（证据状态，逐 claim 判定）
+
+每个 claim 必须落一个整体状态：
+
+| evidence_status | 含义 |
+|-----------------|------|
+| `verified` | 已对照原文核验（pdf_text_extracted + verified_quote） |
+| `supported` | 至少一条 `direct` 支撑且无反证 |
+| `partially_supported` | 仅 `weak_inference` 支撑，或存在需回应的反证 |
+| `inferred` | 全靠推断/假设链，无直接来源 |
+| `contradicted` | 反证权重大于支持 |
+| `unsupported` | 无充分证据 |
+| `unverified` | 来源为摘要，尚未对照原文 |
+| `internal_confirm` | 依赖内部信息（参数/数据），需作者确认 |
+
+**判定原则**：`evidence_status` 由 `support_level` 的分布 + 反证权重决定，**不是由来源数量决定**。两条 `weak_inference` 不等于一条 `direct`；一条 `contradictory` 会压制多条支持。
+
 ## JSON Schema Extensions
 
 ### For evidence_map.json (Stage 4)
@@ -64,6 +96,8 @@ Each entry in `evidence_map[]` extends with:
   "section": "...",
   "claim_to_write": "...",
   "supporting_sources": ["S1"],
+  "source_support_levels": {"S1": "direct"},
+  "evidence_status": "supported",
   "claim_decomposition": {
     "observation": "factual data point with source",
     "interpretation": "what the data means",
