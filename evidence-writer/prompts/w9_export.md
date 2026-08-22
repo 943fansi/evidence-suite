@@ -16,6 +16,7 @@
    `python ${SUITE_ROOT}/shared/scripts/finalize_draft.py {FINAL_DRAFT}.md -o {FINAL_DRAFT}_clean.md --sources 04_validated_sources.json`
    - 把 `[Sx]→[1]..[n]` 顺序编码、删脚手架标签与图例、删附录A证据缺口清单、清封面占位与 HTML 注释。
    - 净化后运行 `finalize_draft.py --check` 复核（无残留标记、编号连续、无重复 URL）。
+   - **证据 provenance**：同步生成 `python ${SUITE_ROOT}/shared/scripts/finalize_draft.py {FINAL_DRAFT}.md -o {FINAL_DRAFT}_clean.md --manifest {FINAL_DRAFT}_manifest.json --sources 04_validated_sources.json`，产出 `[Sx]↔[n]→来源` 可回溯清单（claim 级字段见 `06_evidence_map.json`），与正文交付物并排保留。
    - 净化清单见 `${SUITE_ROOT}/shared/references/finalize_checklist.md`（含脚本无法覆盖的人工检查项，如 GB/T 7714 条目作者卷期页回填）。
    - 只对最终交付文件运行；工作稿保留脚手架。
 

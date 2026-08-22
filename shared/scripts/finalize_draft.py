@@ -50,6 +50,7 @@ Lessons encoded from real runs:
 Usage:
   python scripts/finalize_draft.py 11_定稿.md -o 11_定稿_clean.md
   python scripts/finalize_draft.py 11_定稿.md -o 11_定稿_clean.md --sources 04_validated_sources.json
+  python scripts/finalize_draft.py 11_定稿.md -o 11_定稿_clean.md --manifest evidence_manifest.json --sources 04_validated_sources.json
   python scripts/finalize_draft.py 11_定稿.md -o 11_定稿_gbt.md --style gbt
       # --style gbt: also emit reference entries in GB/T 7714-ish skeleton
       #   (<title>. <publisher>, <year>. URL.) with [1]..[n] numbering, and
@@ -64,6 +65,7 @@ import argparse
 import json
 import re
 import sys
+from datetime import date
 from pathlib import Path
 
 # matches "## 参考文献", "## 参考文献 References", "## References", "## 文献"
@@ -116,6 +118,35 @@ def build_number_map(ref_section: str) -> dict[str, str]:
         if key not in mapping:
             mapping[key] = str(len(mapping) + 1)
     return mapping
+
+
+def id_map_from_draft(text: str) -> dict[str, str]:
+    """Extract the [Sx]→[n] mapping from a draft's reference section."""
+    lines = text.split("\n")
+    for i, line in enumerate(lines):
+        if REF_HEADER_RE.match(line.strip()):
+            return build_number_map("\n".join(lines[i:]))
+    return {}
+
+
+def source_metadata(sources_path: Path | None) -> dict[str, dict[str, str]]:
+    """Load {source_id: {title, url}} from 04_validated_sources.json."""
+    if not sources_path or not sources_path.exists():
+        return {}
+    try:
+        corpus = json.loads(sources_path.read_text(encoding="utf-8"))
+    except Exception:
+        return {}
+    meta: dict[str, dict[str, str]] = {}
+    for s in corpus.get("sources", []):
+        sid = str(s.get("source_id", "")).strip()
+        if not sid:
+            continue
+        meta[sid] = {
+            "title": (s.get("title_or_name") or s.get("title") or "").strip(),
+            "url": (s.get("url") or "").strip(),
+        }
+    return meta
 
 
 def finalize(text: str, style: str = "sx") -> str:
@@ -281,6 +312,10 @@ def main() -> int:
                         help="reference-entry style (default sx)")
     parser.add_argument("--check", action="store_true",
                         help="validate only, do not write output")
+    parser.add_argument("--manifest", type=Path, default=None,
+                        help="write a machine-readable evidence manifest ([Sx]↔[n] mapping + source metadata) here")
+    parser.add_argument("--verification-mode", choices=["static", "live"], default="static",
+                        help="evidence verification mode recorded in the manifest (default static)")
     args = parser.parse_args()
 
     if not args.draft.exists():
@@ -320,6 +355,32 @@ def main() -> int:
         print(f"finalized -> {args.output}")
     else:
         sys.stdout.write(out)
+
+    if args.manifest:
+        id_map = id_map_from_draft(text)
+        meta = source_metadata(args.sources)
+        mapping = []
+        for key in sorted(id_map, key=lambda k: int(id_map[k])):
+            entry: dict[str, str] = {
+                "citation": f"[{key}]", "mapped": f"[{id_map[key]}]", "source_id": key,
+            }
+            m = meta.get(key)
+            if m:
+                if m.get("title"):
+                    entry["title"] = m["title"]
+                if m.get("url"):
+                    entry["url"] = m["url"]
+            mapping.append(entry)
+        manifest = {
+            "verification_mode": args.verification_mode,
+            "finalized_at": date.today().isoformat(),
+            "note": "claim 级字段（claim_text / page / quote / support_level / confidence）见 06_evidence_map.json",
+            "mapping": mapping,
+        }
+        args.manifest.write_text(json.dumps(manifest, ensure_ascii=False, indent=2),
+                                 encoding="utf-8")
+        print(f"manifest -> {args.manifest}")
+
     return 3 if problems else 0
 
 

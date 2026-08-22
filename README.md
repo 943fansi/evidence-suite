@@ -39,7 +39,9 @@
 - 标记：`[Sx]` 已审计来源、`[Gx]` 研究空白、`[假设]` / `[待内部确认]` 显式留白。
 - `support_level`（direct / strong_inference / weak_inference / context_only / contradictory / unsupported）：**证据能多大程度直接证明该结论**。
 - `evidence_status`（verified / supported / partially_supported / inferred / contradicted / unsupported / unverified / internal_confirm）：**该结论最终处于什么状态**。
+- `claim_class`（E/M/N/L 需 `[Sx]`；D 定义 / C 计算 / U 用户提供 / J 判断 不走来源真实性审查）——见 `claim_evidence_layer.md`。
 - 判定按「直接度」而非「来源数量」：两条 `weak_inference` ≠ 一条 `direct`。
+- 交付时 `finalize_draft.py --manifest` 产出 `evidence_manifest.json`（`[n]→来源` 可回溯），保留证据 provenance。
 
 详见 `shared/references/claim_evidence_layer.md`。
 

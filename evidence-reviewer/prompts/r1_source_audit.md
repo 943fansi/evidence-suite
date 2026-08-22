@@ -13,8 +13,10 @@ Use this prompt to instruct an external agent to audit the raw sources JSON.
 3. 只审查 JSON 质量。
 4. 找出不可靠来源、过度推断、字段缺失、引用风险和需要补充验证的地方。
 
-请逐条检查：
-1. URL 是否真实、具体、可访问？
+审查模式（evidence_verification_mode）：默认 **static**（不联网，只审工件）；涉及监管/安全/财务等 R3/R4 级风险或用户要求时，启用 **live**（联网回源）。static 下第 1、17 条只做"格式/字段"层面的静态检查（URL 格式、标准号写法），不真正访问网络；live 下才真正回源核验可达性/现行性。
+
+请逐条检查（标注 [live] 的仅在 live 模式执行回源，其余 static 模式即可）：
+1. [live] URL 是否真实、具体、可访问？
 2. 该 URL 是否为原始来源，而不是转载、聚合页或二级加工？
 3. source_level 是否合理？
 4. is_primary_source 是否判断正确？
@@ -30,7 +32,7 @@ Use this prompt to instruct an external agent to audit the raw sources JSON.
 14. registry_id 是否完整且正确：命中来源路由清单（${SUITE_ROOT}/shared/scripts/select_sources.py --domain 输出）的来源必须填对应清单 id；清单外补充来源必须填 "supplementary" 并在 credibility_reason 说明理由。缺填视为缺失字段。
 15. 是否误用 forbidSources（自媒体/知乎/非官方转载/百科/AI厂商营销博客/教育软文）作为核心依据：命中即列入 suspicious_sources，suggested_action="delete"。
 16. allowFullText=false 的来源（EPRI/IEC/ISO/ASTM/ICRP 等付费报告）是否被写了"全文结论"：命中即列入 overclaimed_points，要求降级为"仅引编号/摘要"。
-17. 标准类来源：标准号、版本年份是否核对现行有效性（须回 std.samr.gov.cn 或发布机构官网）；废止标准必须剔除或替换。
+17. [live] 标准类来源：标准号、版本年份是否核对现行有效性（须回 std.samr.gov.cn 或发布机构官网）；废止标准必须剔除或替换。
 18. 统计类数据（能源/教育/材料性能）：是否回原始统计机构；智库/媒体图表二次引用是否注明"转引自"。
 
 输出 JSON，结构如下：
@@ -38,6 +40,7 @@ Use this prompt to instruct an external agent to audit the raw sources JSON.
 {
   "topic": "{topic}",
   "review_date": "YYYY-MM-DD",
+  "evidence_verification_mode": "static|live",
   "overall_assessment": "",
   "source_quality_summary": {
     "A_count": 0,
@@ -96,7 +99,7 @@ Use this prompt to instruct an external agent to audit the raw sources JSON.
 发送给外部 agent 的**就是上面的 prompt 模板本身**。若当前环境**外部生成 API 不可用**，当前 assistant 本地执行本阶段时回退为：
 
 1. 本地读取 `02_raw_sources.json`，按上述 18 条检查项逐条审查（只审不增补）。
-2. 以同一 JSON schema 输出审计结果，落盘 `03_audit_report.md`（外部审计 JSON 全文 + 总体评估 + 结论）。
+2. 以同一 JSON schema 输出审计结果（含 `evidence_verification_mode`，本地回退默认 static），落盘 `03_audit_report.md`（外部审计 JSON 全文 + 总体评估 + 结论）。
 3. 若连本地审查也受限（无可读语料），明确告知用户本阶段受阻，**不要**跳过审计直接放行进入 w3 语料构造。
 
 ## Post-Audit: 只落盘审计产物，不创建语料

@@ -40,6 +40,7 @@
    - **按"直接度"而非"来源数量"判定**：两条 weak_inference 不等于一条 direct；一条 contradictory 需在 counter_evidence 中显式回应
 
 12. **反证调和（Reconciliation）**：对每条核心 claim（P1–P3、T1–T3，及 superiority/novelty/causal/generalization 类），输出 `reconciliation` 字段（support_summary / contradiction_summary / verdict / rationale），走「支持 → 反证 → 调和 → 判决」四步，判决落 `evidence_status`；禁止"有 N 条来源 → PASS"。
+13. **Claim 分类（claim_class）**：对每个 `claim_to_write` 标注 `claim_class`（E external / M empirical / N normative / L literature / D definition / C calculation / U user_provided / J judgment，见 `claim_evidence_layer.md` 的 Claim Class）。**仅 E/M/N/L 类要求 `[Sx]`**；D/C/U/J 类不填 `supporting_sources`，只写 `claim_class` 与相应检查（D 一致性 / C 可复现 / U 标注来源 / J 推理链）。
 
 请输出 JSON：
 {
@@ -67,6 +68,7 @@
     {
       "section": "",
       "claim_to_write": "",
+      "claim_class": "M",
       "supporting_sources": ["S1", "S2"],
       "source_support_levels": {"S1": "direct", "S2": "weak_inference"},
       "evidence_status": "partially_supported",

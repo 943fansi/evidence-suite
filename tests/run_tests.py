@@ -26,6 +26,7 @@ ROOT = Path(__file__).resolve().parents[1]
 SCRIPTS = ROOT / "shared" / "scripts"
 CHECK = SCRIPTS / "check_citations.py"
 VALIDATE = SCRIPTS / "validate_sources.py"
+FINALIZE = SCRIPTS / "finalize_draft.py"
 
 
 def run(script: Path, *args: str) -> tuple[int, str, str]:
@@ -204,6 +205,28 @@ class ValidateSourcesTests(unittest.TestCase):
         rc, out, _ = run(VALIDATE, str(write(self.tmp, "sus.json", SUSPECT_DOMAIN_CORPUS)), "--json")
         self.assertEqual(rc, 1)
         self.assertGreaterEqual(json.loads(out)["count"], 1)
+
+
+class FinalizeManifestTests(unittest.TestCase):
+    def setUp(self):
+        self._tmp = tempfile.TemporaryDirectory()
+        self.tmp = Path(self._tmp.name)
+
+    def tearDown(self):
+        self._tmp.cleanup()
+
+    def test_manifest_generated(self):
+        draft = write(self.tmp, "draft.md", CLEAN_DRAFT)
+        sources = write(self.tmp, "sources.json", CLEAN_CORPUS)
+        out = self.tmp / "clean.md"
+        man = self.tmp / "manifest.json"
+        rc, o, e = run(FINALIZE, str(draft), "-o", str(out), "--manifest", str(man), "--sources", str(sources))
+        self.assertEqual(rc, 0, f"rc={rc}\nstdout={o}\nstderr={e}")
+        data = json.loads(man.read_text(encoding="utf-8"))
+        self.assertEqual(data["verification_mode"], "static")
+        ids = [m["source_id"] for m in data["mapping"]]
+        self.assertIn("S1", ids)
+        self.assertIn("S2", ids)
 
 
 if __name__ == "__main__":

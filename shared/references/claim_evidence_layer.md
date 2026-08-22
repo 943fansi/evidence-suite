@@ -21,6 +21,38 @@ Every claim must expose:
 | 4 | Claim | 主张 | 最终想让人接受的结论 | 项目具备产业化潜力 |
 | 5 | Confidence | 可信度 | 整个推理链的可靠性评估 | medium（因 Assumption 未经直接验证） |
 
+## Claim Class（证据分类：决定是否需外部来源）
+
+先按"是否需要外部证据"把每个 claim 分成 8 类——**只有前 4 类走来源真实性审查**：
+
+| 代码 | claim_class | 含义 | 需 `[Sx]` | 检查方式 |
+|------|-------------|------|:--------:|---------|
+| E | external | 外部事实（市场/统计/历史/现实状态） | 必须 | 来源真实性 |
+| M | empirical | 实证主张（实验/测量/观测结论） | 必须 | 来源真实性 |
+| N | normative | 规范/标准/政策要求 | 必须 | 来源真实性 + 现行性 |
+| L | literature | 文献主张（他人研究/观点/结论） | 必须 | 来源真实性 |
+| D | definition | 作者定义（对象/符号/术语） | 否 | 前后一致性 |
+| C | calculation | 计算/推导（本文计算所得） | 否 | 公式正确 / 可复现 / 输入有据 |
+| U | user_provided | 用户提供（前提/参数/数据） | 否 | 仅标注来源 |
+| J | judgment | 作者判断（分析/评价/取舍） | 否 | 推理链是否成立 |
+
+**关键**：D/C/U/J **不是不检查**，而是**不走外部来源真实性审查**。绝不给"本文将研究对象定义为……"这类句子强行挂 `[Sx]`。
+
+### 默认审查路径（routing matrix）
+
+| claim_class | `[Sx]` | 静态审查 | 回源（live） | 反证 |
+|-------------|:------:|:--------:|:-----------:|:----:|
+| E external | ✓ | ✓ | 按风险 | 高风险 |
+| M empirical | ✓ | ✓ | 按风险 | 高风险 |
+| N normative | ✓ | ✓ | 建议 | 高风险 |
+| L literature | ✓ | ✓ | 按风险 | 中/高 |
+| D definition | — | — | — | — |
+| C calculation | — | 可选 | — | — |
+| U user_provided | — | — | — | — |
+| J judgment | — | — | — | 必要时 |
+
+现有 `claim_type`（superiority / causal / novelty …）仍保留，但**只在 E/M/N/L 类内**作为"该外部证据需要什么"的细分：`claim_class` 决定"要不要外部证据"，`claim_type` 决定"要哪种外部证据"。
+
 ## Claim Type Taxonomy
 
 ### Claim Types
@@ -122,6 +154,7 @@ Each entry in `evidence_map[]` extends with:
 {
   "section": "...",
   "claim_to_write": "...",
+  "claim_class": "M",
   "supporting_sources": ["S1"],
   "source_support_levels": {"S1": "direct"},
   "evidence_status": "supported",
