@@ -1,0 +1,643 @@
+{
+  "writingSourceList": {
+    "description": "严谨写作权威来源清单（已二次扩展），覆盖核电、材料、能源、教育、人工智能、综合工程与基金科研领域，用于写作Skill约束检索范围。优先从以下来源获取事实、报告、标准、法规、统计与学术文献；禁止使用forbidSources列表内站点。所有来源均须以官方域名原始文档为准，禁止二次转述。",
+    "authoritativeSources": [
+      {
+        "id": "iaea",
+        "name": "IAEA 国际原子能机构",
+        "url": "https://www.iaea.org/",
+        "category": "international_regulator",
+        "description": "国际核安全监管机构，Safety Standards、Safety Reports、Nuclear Energy Series、TECDOC、INIS文献库、PRIS反应堆统计",
+        "usageHint": "检索安全标准、安全报告、TECDOC技术文档、LTO延寿、老化管理、TLAA、运行经验；优先使用INIS子库 https://inis.iaea.org/",
+        "allowFullText": true,
+        "notes": "TECDOC、Safety Reports部分可直接下载PDF；INIS收录大量灰色技术报告"
+      },
+      {
+        "id": "nrc",
+        "name": "NRC 美国核管理委员会",
+        "url": "https://www.nrc.gov/",
+        "category": "international_regulator",
+        "description": "美国核监管机构，ADAMS文档库、Regulatory Guide导则、NUREG系列报告、10CFR法规",
+        "usageHint": "EQ设备鉴定、设备老化、数字设备、电缆老化、监管要求；优先使用ADAMS数据库检索NUREG‑CR/TR、RG导则",
+        "allowFullText": true,
+        "notes": "ADAMS可获取公开NUREG报告全文；注意区分NUREG‑CR（承包商报告）、NUREG‑TR（技术报告）"
+      },
+      {
+        "id": "epri",
+        "name": "EPRI 美国电力科学研究院",
+        "url": "https://www.epri.com/",
+        "category": "industry_technical",
+        "description": "电力行业技术组织，核电设备老化、电缆、板卡、LTO延寿、TLAA、EQ鉴定专题报告",
+        "usageHint": "设备寿命评估、老化管理、运行经验反馈；部分报告需要注册访问",
+        "allowFullText": false,
+        "notes": "公开报告可下载；大部分专题报告需要机构账号，只可引用报告编号与摘要信息"
+      },
+      {
+        "id": "oecd_nea",
+        "name": "OECD‑NEA 经合组织核能署",
+        "url": "https://www.oecd-nea.org/",
+        "category": "international_industry",
+        "description": "反应堆安全、PSA、共因失效ICDE数据库、老化延寿、多国运行经验",
+        "usageHint": "PSA分析、共因失效、多国核电经验反馈、概率安全评价",
+        "allowFullText": true,
+        "notes": "部分报告免费公开，部分需要会员"
+      },
+      {
+        "id": "icrp",
+        "name": "ICRP 国际放射防护委员会",
+        "url": "https://www.icrp.org/",
+        "category": "international_standard",
+        "description": "辐射防护出版物，剂量限值、辐射防护准则",
+        "usageHint": "辐射剂量评估、防护相关写作",
+        "allowFullText": false,
+        "notes": "出版物全文付费，可引用公开摘要与报告编号"
+      },
+      {
+        "id": "osti",
+        "name": "OSTI.GOV 美国能源部科技库",
+        "url": "https://www.osti.gov/",
+        "category": "technical_report_library",
+        "description": "DOE公开科研报告，NUREG、EPRI、国家实验室技术报告全文库",
+        "usageHint": "检索灰色技术报告、辐照老化、材料试验报告；大量NUREG报告全文在此",
+        "allowFullText": true,
+        "notes": "优先从OSTI获取NUREG系列全文"
+      },
+      {
+        "id": "inis",
+        "name": "INIS IAEA国际核信息系统",
+        "url": "https://inis.iaea.org/",
+        "category": "technical_report_library",
+        "description": "全球核科技灰色文献库，技术报告、会议文集、学位论文、专利",
+        "usageHint": "文献综述、调研，检索各国核电技术报告，注意区分全文/题录",
+        "allowFullText": true,
+        "notes": "部分文献仅题录，全文需要联系发布机构"
+      },
+      {
+        "id": "std_samr",
+        "name": "全国标准信息公共服务平台",
+        "url": "https://std.samr.gov.cn/",
+        "category": "china_standard",
+        "description": "GB国标、EJ核工业行标、DL电力行标、NB/T能源行标、团标、地标的题录查询",
+        "usageHint": "核查标准现行/废止、替代关系，核对标准编号有效性",
+        "allowFullText": false,
+        "notes": "仅题录；GB全文请访问国家标准全文公开系统"
+      },
+      {
+        "id": "openstd_samr",
+        "name": "国家标准全文公开系统",
+        "url": "https://openstd.samr.gov.cn/",
+        "category": "china_standard",
+        "description": "GB强制性、推荐性国标免费全文下载",
+        "usageHint": "获取GB、GB/T标准全文；采标标准仅在线阅读不可下载",
+        "allowFullText": true,
+        "notes": "工程建设GB5xxx系列不在本系统"
+      },
+      {
+        "id": "nnsa",
+        "name": "国家核安全局 NNSA",
+        "url": "https://nnsa.mee.gov.cn/",
+        "category": "china_regulator",
+        "description": "国内核安全法规、核安全导则、监管公开文件、审评报告、运行经验反馈",
+        "usageHint": "国内核电监管要求、法规导则引用；不属于GB/EJ标准体系",
+        "allowFullText": true,
+        "notes": "全部公开监管文件可下载"
+      },
+      {
+        "id": "chinansc",
+        "name": "生态环境部核与辐射安全中心",
+        "url": "https://www.chinansc.cn/",
+        "category": "china_technical",
+        "description": "国内核安全技术支撑单位，技术课题报告、《核安全》期刊",
+        "usageHint": "国内设备鉴定、老化管理相关技术参考",
+        "allowFullText": false,
+        "notes": "部分成果仅内部发布，公开网页只提供摘要"
+      },
+      {
+        "id": "iaea_nds",
+        "name": "IAEA Nuclear Data Section",
+        "url": "https://www-nds.iaea.org/",
+        "category": "nuclear_data",
+        "description": "IAEA核数据库，FENDL等评价核数据",
+        "usageHint": "核截面、核数据计算、辐照相关数据",
+        "allowFullText": true,
+        "notes": "数据库文件可下载"
+      },
+      {
+        "id": "bNL_nndc",
+        "name": "BNL‑NNDC 布鲁克海文国家实验室核数据库",
+        "url": "https://www.nndc.bnl.gov/",
+        "category": "nuclear_data",
+        "description": "ENDF/B评价核数据库，中子截面数据",
+        "usageHint": "核反应截面、材料辐照计算数据",
+        "allowFullText": true,
+        "notes": "数据库文件可下载"
+      },
+      {
+        "id": "iec",
+        "name": "IEC 国际电工委员会",
+        "url": "https://www.iec.ch/",
+        "category": "international_standard",
+        "description": "IEC核电电气、设备鉴定标准 IEC‑60780等",
+        "usageHint": "电气设备鉴定、仪表控制系统国际标准",
+        "allowFullText": false,
+        "notes": "标准全文付费，可查询题录、版本信息"
+      },
+      {
+        "id": "ieee_standards",
+        "name": "IEEE Standards",
+        "url": "https://standards.ieee.org/",
+        "category": "international_standard",
+        "description": "IEEE‑323、IEEE‑603设备鉴定标准",
+        "usageHint": "EQ设备鉴定、安全系统标准引用",
+        "allowFullText": false,
+        "notes": "全文付费，可获取标准题录信息"
+      },
+      {
+        "id": "nist",
+        "name": "NIST 美国国家标准与技术研究院",
+        "url": "https://www.nist.gov/",
+        "category": "materials_data",
+        "description": "材料测量标准、SRD标准参考数据（材料性能、热力学、腐蚀）、材料基因组计划、材料表征方法",
+        "usageHint": "材料性能数据、测量不确定度、材料表征、腐蚀与老化；SRD数据库 https://www.nist.gov/srd",
+        "allowFullText": true,
+        "notes": "大量SRD数据库与公开技术报告免费；部分专题需订阅"
+      },
+      {
+        "id": "nims",
+        "name": "NIMS 日本物质材料研究机构",
+        "url": "https://www.nims.go.jp/english/",
+        "category": "materials_data",
+        "description": "材料数据库 MatNavi（金属、陶瓷、聚合物物性）、材料试验与失效数据",
+        "usageHint": "材料物性数据、疲劳、蠕变、腐蚀；MatNavi https://mits.nims.go.jp/",
+        "allowFullText": true,
+        "notes": "MatNavi数据库公开可检索"
+      },
+      {
+        "id": "astm",
+        "name": "ASTM International 美国材料与试验协会",
+        "url": "https://www.astm.org/",
+        "category": "international_standard",
+        "description": "材料试验、腐蚀、老化、力学性能标准（ASTM E/G系列，如E8拉伸、G1腐蚀、E23冲击）",
+        "usageHint": "材料试验方法标准、腐蚀与老化试验方法引用",
+        "allowFullText": false,
+        "notes": "标准全文付费，可查题录与版本年号"
+      },
+      {
+        "id": "materials_project",
+        "name": "Materials Project 计算材料数据库",
+        "url": "https://materialsproject.org/",
+        "category": "materials_data",
+        "description": "开源计算材料数据库，晶体结构、能带、形成能、相图",
+        "usageHint": "材料计算、第一性原理数据、相稳定性、候选材料筛选",
+        "allowFullText": true,
+        "notes": "数据API与结构公开，可复现计算"
+      },
+      {
+        "id": "nomad",
+        "name": "NOMAD 欧洲材料计算数据仓储",
+        "url": "https://nomad-lab.eu/",
+        "category": "materials_data",
+        "description": "FAIR原则材料计算数据仓储，第一性原理计算原始结果与元数据",
+        "usageHint": "计算材料数据、DFT结果复现、计算流程归档",
+        "allowFullText": true,
+        "notes": "遵循FAIR，可下载原始计算数据"
+      },
+      {
+        "id": "imr_cas",
+        "name": "中国科学院金属研究所 (IMR CAS)",
+        "url": "http://www.imr.cas.cn/",
+        "category": "china_technical",
+        "description": "国内材料科学权威研究机构，腐蚀与防护、高温合金、材料失效公开成果与期刊《金属学报》",
+        "usageHint": "国内材料腐蚀、失效、合金研究参考；注意区分公开论文与内部报告",
+        "allowFullText": false,
+        "notes": "论文题录公开，全文多经期刊平台"
+      },
+      {
+        "id": "iso",
+        "name": "ISO 国际标准化组织",
+        "url": "https://www.iso.org/",
+        "category": "international_standard",
+        "description": "通用产品与体系标准（材料力学ISO 6892、能源管理ISO 50001、AI术语与治理ISO/IEC 22989/23894等）",
+        "usageHint": "跨领域标准编号、版本、采标关系核查",
+        "allowFullText": false,
+        "notes": "全文付费，可查题录与现行版本"
+      },
+      {
+        "id": "iea",
+        "name": "IEA 国际能源署",
+        "url": "https://www.iea.org/",
+        "category": "energy_international",
+        "description": "全球能源统计、Energy Balances、World Energy Outlook、净零路线图、电力与可再生能源报告",
+        "usageHint": "能源数据、政策、转型、电力、可再生能源趋势",
+        "allowFullText": true,
+        "notes": "多数报告与数据集公开，数据可下载"
+      },
+      {
+        "id": "eia",
+        "name": "EIA 美国能源信息署",
+        "url": "https://www.eia.gov/",
+        "category": "energy_data",
+        "description": "美国及全球能源生产消费统计、Electric Power Annual、Annual Energy Outlook",
+        "usageHint": "能源统计、电力数据、价格、供需平衡",
+        "allowFullText": true,
+        "notes": "数据API与历史年鉴公开"
+      },
+      {
+        "id": "irena",
+        "name": "IRENA 国际可再生能源署",
+        "url": "https://www.irena.org/",
+        "category": "energy_international",
+        "description": "可再生能源统计、装机容量、成本、路线图、政策",
+        "usageHint": "可再生能源数据、成本（LCOE）、装机与部署",
+        "allowFullText": true,
+        "notes": "统计与报告公开"
+      },
+      {
+        "id": "doe",
+        "name": "DOE 美国能源部",
+        "url": "https://www.energy.gov/",
+        "category": "government_agency",
+        "description": "能源研发、政策、国家实验室成果（储能、电网、氢能、碳捕集）",
+        "usageHint": "能源技术、储能、电网、氢能政策与技术报告",
+        "allowFullText": true,
+        "notes": "大量公开报告，OSTI.GOV可检索全文"
+      },
+      {
+        "id": "nrel",
+        "name": "NREL 美国国家可再生能源实验室",
+        "url": "https://www.nrel.gov/",
+        "category": "national_lab",
+        "description": "可再生能源、储能、电网、风光成本（ATB）数据",
+        "usageHint": "可再生能源技术、LCOE/ATB、储能与并网",
+        "allowFullText": true,
+        "notes": "技术报告与数据公开"
+      },
+      {
+        "id": "ei_review",
+        "name": "Energy Institute Statistical Review of World Energy",
+        "url": "https://www.energyinst.org/statistical-review",
+        "category": "energy_data",
+        "description": "全球石油、天然气、煤炭、核能、可再生能源历史统计年鉴（原BP Statistical Review）",
+        "usageHint": "历史能源统计、产量、消费、长期趋势",
+        "allowFullText": true,
+        "notes": "数据集公开下载"
+      },
+      {
+        "id": "ren21",
+        "name": "REN21 可再生能源政策网络",
+        "url": "https://www.ren21.net/",
+        "category": "energy_international",
+        "description": "Renewables Global Status Report，全球可再生能源政策与部署现状",
+        "usageHint": "可再生能源政策、部署现状、国别比较",
+        "allowFullText": true,
+        "notes": "年报公开，数据需溯源至原始统计机构"
+      },
+      {
+        "id": "wna",
+        "name": "WNA 世界核协会",
+        "url": "https://www.world-nuclear.org/",
+        "category": "energy_international",
+        "description": "核电厂名录、铀资源、反应堆数据、行业报告与成本估算",
+        "usageHint": "核电装机、铀资源、成本（注意行业立场）",
+        "allowFullText": true,
+        "notes": "行业组织，写作时需保持中立并交叉验证"
+      },
+      {
+        "id": "nea_china",
+        "name": "国家能源局 (NEA China)",
+        "url": "http://www.nea.gov.cn/",
+        "category": "china_regulator",
+        "description": "中国能源政策、规划、统计数据、项目核准公开信息",
+        "usageHint": "国内能源政策、规划、运行数据",
+        "allowFullText": true,
+        "notes": "政策与统计公报公开"
+      },
+      {
+        "id": "cec",
+        "name": "中国电力企业联合会 (CEC)",
+        "url": "https://www.cec.org.cn/",
+        "category": "china_technical",
+        "description": "中国电力行业统计、运行数据、行业年度报告",
+        "usageHint": "国内电力装机、发电、用电统计",
+        "allowFullText": false,
+        "notes": "统计公报公开，详报多为会员/付费"
+      },
+      {
+        "id": "unesco_uis",
+        "name": "UNESCO 统计研究所 (UIS)",
+        "url": "http://uis.unesco.org/",
+        "category": "education_statistics",
+        "description": "全球教育统计数据库，入学率、识字率、生师比、教育经费",
+        "usageHint": "国际教育指标、跨国可比数据",
+        "allowFullText": true,
+        "notes": "数据库公开下载"
+      },
+      {
+        "id": "oecd_edu",
+        "name": "OECD 教育指标 (Education at a Glance / PISA)",
+        "url": "https://www.oecd.org/education/",
+        "category": "education_statistics",
+        "description": "PISA、教育概览、技能评估、教育投入产出指标",
+        "usageHint": "国际比较、PISA结果、教育投入产出",
+        "allowFullText": true,
+        "notes": "部分数据集公开，部分需订阅"
+      },
+      {
+        "id": "worldbank_edu",
+        "name": "World Bank 教育主题",
+        "url": "https://www.worldbank.org/en/topic/education",
+        "category": "education_statistics",
+        "description": "教育数据、发展指标、EdStats数据库",
+        "usageHint": "发展中国家教育数据、投入与公平",
+        "allowFullText": true,
+        "notes": "EdStats数据公开"
+      },
+      {
+        "id": "eric",
+        "name": "ERIC 教育资源信息中心",
+        "url": "https://eric.ed.gov/",
+        "category": "education_research",
+        "description": "美国教育部教育资源数据库，文献题录与部分全文（EJ期刊/ED报告）",
+        "usageHint": "教育研究文献综述、实证论文检索",
+        "allowFullText": true,
+        "notes": "大量题录公开，部分可下载全文"
+      },
+      {
+        "id": "nces",
+        "name": "NCES 美国国家教育统计中心",
+        "url": "https://nces.ed.gov/",
+        "category": "education_statistics",
+        "description": "美国教育统计、Digest of Education Statistics、 longitudinal数据",
+        "usageHint": "美国教育统计、趋势、纵向研究",
+        "allowFullText": true,
+        "notes": "统计公开下载"
+      },
+      {
+        "id": "moe_china",
+        "name": "中华人民共和国教育部",
+        "url": "http://www.moe.gov.cn/",
+        "category": "china_regulator",
+        "description": "中国教育政策、统计公报、发展规划、学科目录",
+        "usageHint": "国内教育政策、统计数据、学科专业设置",
+        "allowFullText": true,
+        "notes": "政策与统计公报公开"
+      },
+      {
+        "id": "arxiv",
+        "name": "arXiv 预印本库",
+        "url": "https://arxiv.org/",
+        "category": "ai_research",
+        "description": "开放预印本平台，CS/AI/ML论文（cs.AI、cs.LG、cs.CL）",
+        "usageHint": "最新AI/ML论文、方法复现；引用须标注为预印本且未同行评审",
+        "allowFullText": true,
+        "notes": "预印本，正式结论须引述同行评审版本"
+      },
+      {
+        "id": "acl_anthology",
+        "name": "ACL Anthology 计算语言学协会会议论文库",
+        "url": "https://aclanthology.org/",
+        "category": "ai_research",
+        "description": "NLP/CL顶会论文全集（ACL/EMNLP/NAACL等），开放获取",
+        "usageHint": "自然语言处理、大模型相关论文",
+        "allowFullText": true,
+        "notes": "全文开放"
+      },
+      {
+        "id": "pwc",
+        "name": "Papers with Code",
+        "url": "https://paperswithcode.com/",
+        "category": "ai_research",
+        "description": "论文—代码—基准关联，SOTA榜单与方法实现",
+        "usageHint": "基准方法、复现、SOTA对比；引用须溯源至原始会议论文",
+        "allowFullText": true,
+        "notes": "非一级来源，应引用原始论文"
+      },
+      {
+        "id": "ai_index",
+        "name": "Stanford AI Index",
+        "url": "https://aiindex.stanford.edu/",
+        "category": "ai_index",
+        "description": "年度AI指数报告，全球AI发展指标（论文量、投资、算力、政策、公众态度）",
+        "usageHint": "AI趋势、投资、论文产出、算力与政策宏观数据",
+        "allowFullText": true,
+        "notes": "报告公开，数据须注明统计口径"
+      },
+      {
+        "id": "oecd_ai",
+        "name": "OECD.AI",
+        "url": "https://oecd.ai/",
+        "category": "ai_policy",
+        "description": "AI政策、指标、可信AI原则、国家AI监测",
+        "usageHint": "AI治理、政策、指标、跨国比较",
+        "allowFullText": true,
+        "notes": "指标公开"
+      },
+      {
+        "id": "nist_ai",
+        "name": "NIST AI 风险管理框架",
+        "url": "https://www.nist.gov/itl/ai-risk-management-framework",
+        "category": "ai_standard",
+        "description": "AI风险管理框架（AI RMF 1.0）、生成式AI Profile",
+        "usageHint": "AI治理、可信AI、风险框架引用",
+        "allowFullText": true,
+        "notes": "框架全文公开"
+      },
+      {
+        "id": "iso_iec_sc42",
+        "name": "ISO/IEC JTC1 SC42 人工智能分技术委员会",
+        "url": "https://www.iso.org/committee/6794475.html",
+        "category": "ai_standard",
+        "description": "人工智能国际标准（术语ISO/IEC 22989、风险管理ISO/IEC 23894、管理体系ISO/IEC 42001）",
+        "usageHint": "AI术语、治理、管理体系标准编号与版本核查",
+        "allowFullText": false,
+        "notes": "全文付费，可查题录与现行版本"
+      },
+      {
+        "id": "caict",
+        "name": "中国信息通信研究院 (CAICT)",
+        "url": "https://www.caict.ac.cn/",
+        "category": "china_technical",
+        "description": "人工智能、大模型、算力白皮书与评估，国内ICT权威智库",
+        "usageHint": "国内AI产业、大模型、政策研究",
+        "allowFullText": true,
+        "notes": "行业智库，引用须标明机构来源与报告编号"
+      },
+      {
+        "id": "ieee_xplore",
+        "name": "IEEE Xplore Digital Library",
+        "url": "https://ieeexplore.ieee.org/",
+        "category": "ai_research",
+        "description": "IEEE期刊/会议论文与标准（AI、计算机、电子）",
+        "usageHint": "AI、计算机、电子论文与IEEE标准",
+        "allowFullText": false,
+        "notes": "全文付费，可引题录与DOI"
+      },
+      {
+        "id": "acm_dl",
+        "name": "ACM Digital Library",
+        "url": "https://dl.acm.org/",
+        "category": "ai_research",
+        "description": "ACM会议期刊论文（AI、计算机科学）",
+        "usageHint": "计算机、AI论文题录与DOI",
+        "allowFullText": false,
+        "notes": "全文付费，可引题录"
+      },
+      {
+        "id": "neurips_proceedings",
+        "name": "NeurIPS Proceedings",
+        "url": "https://proceedings.neurips.cc/",
+        "category": "ai_research",
+        "description": "NeurIPS会议论文全文开放库",
+        "usageHint": "机器学习顶会论文全文",
+        "allowFullText": true,
+        "notes": "全文开放"
+      },
+      {
+        "id": "nstl",
+        "name": "国家科技图书文献中心 (NSTL)",
+        "url": "http://www.nstl.gov.cn/",
+        "category": "technical_report_library",
+        "description": "中文科技文献、外文库、标准、学位论文、会议文献的题录与部分全文",
+        "usageHint": "跨领域中文灰色文献、外文书目检索；注意区分全文/题录",
+        "allowFullText": true,
+        "notes": "部分需注册，全文须来自原始出版方"
+      },
+      {
+        "id": "crossref",
+        "name": "Crossref DOI 解析与元数据",
+        "url": "https://www.crossref.org/",
+        "category": "scholarly_index",
+        "description": "学术论文DOI注册与元数据，用于核实引用、出版信息、版本",
+        "usageHint": "引用核验、获取规范引文格式与出版年；作为核验工具而非内容来源",
+        "allowFullText": false,
+        "notes": "仅元数据，须回原始出版方获取全文"
+      },
+      {
+        "id": "semantic_scholar",
+        "name": "Semantic Scholar",
+        "url": "https://www.semanticscholar.org/",
+        "category": "scholarly_index",
+        "description": "AI驱动的学术文献检索与引文图谱，含开放全文链接",
+        "usageHint": "文献发现、引文网络、相关性检索；最终须溯源至原始出版方",
+        "allowFullText": false,
+        "notes": "发现工具，引用以原始来源为准"
+      },
+      {
+        "id": "ntis_ntrl",
+        "name": "NTRL 美国国家技术报告库 (NTIS)",
+        "url": "https://ntrl.ntis.gov/NTRL/",
+        "category": "cross_technical_report_library",
+        "description": "美国商务部国家技术情报局运营的联邦资助技术报告库，收录DOD（AD报告）、DOE、NASA、NIST等历史与现代公开科研成果",
+        "usageHint": "检索美国联邦资助历史工程档案（PB/AD编号系列）、国防军工材料试验、失效分析报告",
+        "allowFullText": true,
+        "notes": "绝大多数已解密数字化技术报告可免费下载PDF，具档案法律效力；注意AD/PB报告号体系"
+      },
+      {
+        "id": "nasa_ntrs",
+        "name": "NASA 技术报告服务器 (NTRS)",
+        "url": "https://ntrs.nasa.gov/",
+        "category": "cross_technical_report_library",
+        "description": "NASA官方航空航天与尖端工程技术报告库，涵盖耐高温材料、复合材料断裂力学、极端环境可靠性与数字仿真",
+        "usageHint": "检索极端工况材料物性测试、结构应力分析、可靠性工程方法（NASA SP系列报告）",
+        "allowFullText": true,
+        "notes": "NASA公开技术成果全量免费下载，含严苛工况实测数据与实验规程"
+      },
+      {
+        "id": "nsfc_npd",
+        "name": "国家自然科学基金大数据知识管理服务门户 (NSFC)",
+        "url": "https://kd.nsfc.cn/",
+        "category": "china_funding_repository",
+        "description": "国家自然科学基金委员会官方成果/结题大数据门户，可查基金资助项目结题报告、成果与标注论文（原 npd.nsfc.gov.cn 基础研究知识库迁移至此域名）",
+        "usageHint": "核实NSFC项目结题成果真实性、依托单位、技术方案、基金批准号与资助成效；门户为JS动态页，深度检索建议辅以websearch",
+        "allowFullText": true,
+        "notes": "引用须标注项目批准号；结题报告为灰色文献，成果与论文可在门户关联核验"
+      },
+      {
+        "id": "nstrs",
+        "name": "国家科技报告服务系统 (NSTRS)",
+        "url": "https://www.nstrs.cn/",
+        "category": "china_tech_report_system",
+        "description": "科技部国家科技报告统筹管理平台，汇总国家重点研发计划、国家科技重大专项等中央财政科技计划结题报告与技术报告",
+        "usageHint": "检索国家重大科技攻关任务结题技术指标、测试实验报告与共性技术突破",
+        "allowFullText": true,
+        "notes": "实名注册可按权限阅读全文；引用必须标注国家科技报告收录号"
+      },
+      {
+        "id": "nist_mgi",
+        "name": "NIST Materials Data & Gateway",
+        "url": "https://materialsdata.nist.gov/",
+        "category": "materials_data",
+        "description": "NIST材料科学数据门户，涵盖相图热力学（CALPHAD）、力学测试标样数据、腐蚀动力学基准与标准参考物质（SRM）",
+        "usageHint": "材料微观组织常数、相平衡计算参数、标准参考物质性能指标核验",
+        "allowFullText": true,
+        "notes": "结构化科学数据，适用于材料计算模型验证与失效基准对比"
+      },
+      {
+        "id": "matweb",
+        "name": "MatWeb 工程材料性能数据库",
+        "url": "https://www.matweb.com/",
+        "category": "materials_engineering_data",
+        "description": "工程材料物性参数在线库，涵盖金属合金、工程塑料、先进陶瓷及复合材料的力学、热学、电学工程数据",
+        "usageHint": "工程选材、抗拉/屈服强度、热膨胀系数、绝缘等级等实测参数比对",
+        "allowFullText": true,
+        "notes": "商业数据库，免费提供基础物性；关键性能参数须溯源至ASTM/MIL等原始试验标准，不得直接作为认证依据"
+      },
+      {
+        "id": "crystallography_open_database",
+        "name": "COD 晶体学开放数据库",
+        "url": "https://www.crystallography.net/cod/",
+        "category": "materials_scientific_database",
+        "description": "全球最大开源晶体结构数据库，收录无机物、矿物、金属间化合物及有机小分子CIF结构文件",
+        "usageHint": "XRD物相鉴定、晶胞参数比对、晶体对称性空间群核查",
+        "allowFullText": true,
+        "notes": "全量CIF文件免费开放下载；引用须附带COD ID编号"
+      },
+      {
+        "id": "tc260",
+        "name": "全国信息安全标准化技术委员会 (TC260 / 信安标委)",
+        "url": "https://www.tc260.org.cn/",
+        "category": "ai_china_standard",
+        "description": "中国网络安全与数据安全核心标委会，制定《生成式人工智能服务安全基本要求》《人工智能安全治理框架》等技术规范",
+        "usageHint": "国内生成式AI服务合规、训练语料安全、算法安全评估标准引证",
+        "allowFullText": true,
+        "notes": "技术规范、实践指南及征求意见稿官网免费提供PDF下载"
+      }
+    ],
+    "forbidSources": [
+      {
+        "id": "blog_media",
+        "description": "禁止：个人博客、知乎、自媒体、公众号、论坛、第三方资讯网站，不得作为正式写作引用来源"
+      },
+      {
+        "id": "unofficial_repost",
+        "description": "禁止：非官方转载的PDF、网盘文档；必须从原始权威站点获取文档，拒绝二次转述的二手资料"
+      },
+      {
+        "id": "unverified_wiki",
+        "description": "禁止：维基百科、百度百科，仅可做初步理解，不可写入正式报告参考文献"
+      },
+      {
+        "id": "ai_vendor_blog",
+        "description": "禁止：AI企业官方博客、产品发布页、营销白皮书（如OpenAI/Google/Anthropic Blog）作为事实性或统计性来源；其正式同行评审论文与技术标准可引用，须溯源至原始出版物"
+      },
+      {
+        "id": "education_selfmedia",
+        "description": "禁止：教育类自媒体、培训机构软文、升学/排名营销号作为数据来源；教育统计须来自官方统计机构"
+      },
+      {
+        "id": "preprint_unpeer",
+        "description": "警示：arXiv等预印本未经过同行评审，写入正式报告须同时引述已正式发表版本或明确标注“预印本”，不得作为终版结论依据"
+      }
+    ],
+    "skillPromptRules": {
+      "rule1": "优先从authoritativeSources列表内站点检索；如需要补充综述材料，可以使用通用检索，但输出的事实、报告编号、标准号必须再回权威源复核",
+      "rule2": "输出必须附带来源标识：来源id、文档编号、url、发布年份；禁止编造NUREG/EPRI/IAEA/ISO/IEEE报告编号、标准号",
+      "rule3": "当allowFullText为false时，只引用摘要与编号，不得虚构全文内容",
+      "rule4": "检索标准时，必须先在std.samr.gov.cn确认标准现行有效，不允许引用废止标准",
+      "rule5": "禁止使用forbidSources中列出的来源作为正式引用依据",
+      "rule6": "预印本（arXiv等）仅作最新进展参考，正式结论须引述同行评审版本；引用时标注提交/版本日期",
+      "rule7": "跨领域检索时，标准“现行有效性”须在该标准发布机构官网或std.samr.gov.cn复核；ISO/IEC/ASTM等外文标准需核对最新版本年份",
+      "rule8": "统计类数据（能源/教育/材料性能）须引用原始统计机构，二次引用须注明“转引自”，不得用智库/媒体图表替代官方数据"
+    }
+  }
+}

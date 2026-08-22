@@ -1,0 +1,25 @@
+# Pipeline workspace artifacts
+proposal_workspace/
+*.pdf
+reference_files/
+pdf_text/
+figures/
+
+# Secrets & credentials
+.env
+.env.*
+*.key
+*.pem
+*.pfx
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# OS / editors
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/

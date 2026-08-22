@@ -1,0 +1,33 @@
+# evidence-suite unified Python dependencies (evidence-writer / evidence-reviewer)
+#   pip install -r requirements.txt
+#
+# Core scripts (check_citations.py / select_sources.py / download_reference_files.py)
+# use only the Python standard library.
+
+# NSFC 结题报告 fetch (fetch_nsfc_report.py) — required
+requests>=2.31
+pycryptodome>=3.20
+
+# Stage 3 sub-step 3c PDF text extraction (extract_pdf_text.py) — required for stage 3
+pdfplumber>=0.10
+PyPDF2>=3.0
+
+# Charts (generate_charts.py) — optional
+matplotlib>=3.8
+numpy>=1.26
+
+# Stage 10 PDF export (export_pdf.py, weasyprint engine) — optional
+weasyprint>=61
+
+# Stage 10 MD→HTML degraded path when pandoc is unavailable (export_pdf.py
+# fallback; also used by visual_qa.py for .md input) — optional
+markdown>=3.4
+
+# Stage 10 DOCX export (export_docx.py, Word deliverables) — optional
+python-docx>=1.1
+
+# NSFC --pdf rebuild (fetch_nsfc_report.py) — optional
+PyMuPDF>=1.24
+
+# NSFC --ocr (fetch_nsfc_report.py) — OPTIONAL & heavy (pulls torch); install separately:
+#   pip install easyocr

@@ -1,0 +1,81 @@
+{
+  "note": "示例数据（幼儿体育课题）。换题请复制本文件并修改数值，再用 --data 传入；结构与脚本的校验规则见 generate_charts.py docstring。",
+  "charts": {
+    "fig01_effect_sizes": {
+      "type": "horizontal_bar",
+      "filename": "fig01_effect_sizes.png",
+      "title": "图1  结构化运动干预对幼儿基本动作技能 (FMS) 的效应量比较",
+      "xlabel": "效应量 (Cohen's d / Hedges' g / η² / SMD)",
+      "xlim": 1.2,
+      "categories": ["位移技能", "操控技能", "总FMS", "位移技能", "位移技能", "操控技能"],
+      "category_colors": {"位移技能": "#4472C4", "操控技能": "#ED7D31", "总FMS": "#70AD47"},
+      "labels": [
+        "运动游戏 vs 精神运动学\n位移",
+        "运动游戏 vs 精神运动学\n操控",
+        "结构化主动游戏\nvs PE教学",
+        "结构化 vs 非结构化\n位移",
+        "Goodway干预\n位移 (2003)",
+        "Goodway干预\n操控 (2003)"
+      ],
+      "values": [0.95, 1.0, 0.74, 0.44, 0.7, 0.74],
+      "metrics": ["d", "d", "SMD", "g", "η²", "η²"],
+      "sources": ["S28", "S28", "S33", "S34", "S53", "S53"],
+      "reference_line": {"value": 0.5, "label": "d=0.5 (中等效应量基准)"},
+      "en_labels": {
+        "位移技能": "Locomotor",
+        "操控技能": "Object Control",
+        "总FMS": "Total FMS"
+      }
+    },
+    "fig02_fms_trajectory": {
+      "type": "line_area",
+      "filename": "fig02_fms_trajectory.png",
+      "title": "图2  3-7岁幼儿基本动作技能 (FMS) 发展轨迹与动作发展阶段",
+      "subtitle": "(数据来源: TGMD-3上海常模 [S23]; 阶段划分: Gallahue [S50])",
+      "xlabel": "年龄 (岁)",
+      "ylabel": "TGMD-3 得分",
+      "x": [3, 4, 5, 6, 7],
+      "x_ticks": [3, 4, 5, 6, 7],
+      "xlim": [2.8, 7.2],
+      "ylim": [10, 60],
+      "series": [
+        {"label": "位移技能 (位移/56)", "color": "#4472C4", "marker": "o", "values": [22, 34, 44, 50, 52]},
+        {"label": "操控技能 (操控/54)", "color": "#ED7D31", "marker": "s", "values": [18, 28, 38, 48, 52]}
+      ],
+      "stages": [
+        {"xmin": 2, "xmax": 3.5, "color": "#4472C4", "label": "初始阶段\n(约2-3岁)"},
+        {"xmin": 3.5, "xmax": 5.5, "color": "#70AD47", "label": "初级基础阶段\n(约3-5岁)"},
+        {"xmin": 5.5, "xmax": 7.5, "color": "#ED7D31", "label": "成熟阶段\n(约5-7岁)"}
+      ],
+      "annotation": {"x": 4.5, "y": 52, "text": "FMS发展\n关键窗口"},
+      "en_labels": {
+        "位移技能 (位移/56)": "Locomotor (/56)",
+        "操控技能 (操控/54)": "Object Control (/54)",
+        "初始阶段\n(约2-3岁)": "Initial (2-3y)",
+        "初级基础阶段\n(约3-5岁)": "Elementary (3-5y)",
+        "成熟阶段\n(约5-7岁)": "Mature (5-7y)"
+      }
+    },
+    "fig03_pa_guidelines": {
+      "type": "grouped_bar",
+      "filename": "fig03_pa_guidelines.png",
+      "title": "图3  幼儿每日身体活动量国际标准对比",
+      "subtitle": "(单位: 分钟/天, 适用年龄 3-6岁)",
+      "standards": ["中国\n(专家共识版, 2018)", "WHO\n(2019)", "SHAPE America\n(2020)", "澳大利亚\n(EYLF V2.0, 2022)"],
+      "groups": {
+        "total": [180, 180, 60, 60],
+        "mvpa": [60, 60, 60, 60]
+      },
+      "sources": ["[S27]", "[INT-01]", "[INT-02]", "[INT-03]"],
+      "series_labels": {"total": "每日身体活动总量", "mvpa": "其中: 中高强度活动 (MVPA)"},
+      "colors": {"total": "#4472C4", "mvpa": "#ED7D31"},
+      "ylabel": "分钟/天",
+      "ylim": 220,
+      "note": {"x": 2, "y": 65, "text": "* SHAPE America: 额外建议\n  60分钟非结构化活动", "target_y": 100},
+      "en_labels": {
+        "每日身体活动总量": "Total Daily PA",
+        "其中: 中高强度活动 (MVPA)": "MVPA"
+      }
+    }
+  }
+}
