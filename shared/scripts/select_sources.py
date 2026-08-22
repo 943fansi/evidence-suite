@@ -26,8 +26,9 @@ try:
 except (AttributeError, io.UnsupportedOperation):
     pass
 
-SKILL_DIR = Path(__file__).resolve().parents[1]
-DEFAULT_REGISTRY = SKILL_DIR / "references" / "source_registry.json"
+SUITE_ROOT = Path(__file__).resolve().parents[2]  # evidence-suite/ 根目录
+SHARED_DIR = SUITE_ROOT / "shared"  # 等价于 parents[1]
+DEFAULT_REGISTRY = SHARED_DIR / "references" / "source_registry.json"
 
 ROUTING = {
     "nuclear": [
