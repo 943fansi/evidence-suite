@@ -55,6 +55,8 @@
 |-------------|-------------|---------|----------------|
 | [Sx] | P1/P2/P3/某技术主张 | critical/high/medium | yes/no（如何回应） |
 
+并对每条核心 claim 核对 `reconciliation.verdict` 是否与反证权重一致：存在 direct 反证却判为 `supported`、或可回应反证却判为 `contradicted`，须标记为"调和错误"并要求写作者重做。
+
 ### 3. 整体不确定性暴露
 
 列出所有 confidence ≤ medium 的关键主张，按不确定性来源分类：

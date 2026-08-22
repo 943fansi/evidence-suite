@@ -85,6 +85,33 @@ actual_evidence: [citation_only]  ← insufficient
 
 **判定原则**：`evidence_status` 由 `support_level` 的分布 + 反证权重决定，**不是由来源数量决定**。两条 `weak_inference` 不等于一条 `direct`；一条 `contradictory` 会压制多条支持。
 
+## Reconciliation（反证调和）
+
+对每条**核心 claim**（P1–P3、T1–T3，以及 `claim_type ∈ {superiority_claim, novelty_claim, causal_claim, generalization_claim}`），必须显式走「支持 → 反证 → 调和 → 判决」四步，**禁止"有 N 条来源 → PASS"**：
+
+1. **支持侧**：列出 `source_support_levels ∈ {direct, strong_inference}` 的来源。
+2. **反证侧**：列出 `source_support_levels = contradictory` 的来源 + `counter_evidence.evidence_against`。
+3. **调和**：判断反证是"可回应"（弱来源 / 仅背景，可在正文回应）还是"关键"（direct 反证且无法否定，压制支持）。
+4. **判决**：落 `evidence_status`。
+
+| 判决 | 条件 |
+|------|------|
+| `supported` | ≥1 条 `direct` 支持 且 无反证 |
+| `partially_supported` | 仅 `weak_inference` 支持，或存在可回应的反证 |
+| `contradicted` | 反证权重大于支持（direct 反证且无法否定） |
+| `unsupported` | 无充分支持 |
+
+每条核心 claim 需落盘 `reconciliation` 字段：
+
+```json
+{
+  "support_summary": "S1(direct), S4(strong_inference)",
+  "contradiction_summary": "S9(contradictory)",
+  "verdict": "partially_supported",
+  "rationale": "S9 反对的是某子场景，不否定主结论，正文须回应"
+}
+```
+
 ## JSON Schema Extensions
 
 ### For evidence_map.json (Stage 4)
@@ -98,6 +125,12 @@ Each entry in `evidence_map[]` extends with:
   "supporting_sources": ["S1"],
   "source_support_levels": {"S1": "direct"},
   "evidence_status": "supported",
+  "reconciliation": {
+    "support_summary": "S1(direct)",
+    "contradiction_summary": "",
+    "verdict": "supported",
+    "rationale": ""
+  },
   "claim_decomposition": {
     "observation": "factual data point with source",
     "interpretation": "what the data means",

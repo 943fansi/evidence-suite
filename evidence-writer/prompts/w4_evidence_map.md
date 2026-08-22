@@ -39,6 +39,8 @@
    - 依据 support_level 分布 + 反证权重，给整条 claim 落一个 `evidence_status`：verified / supported / partially_supported / inferred / contradicted / unsupported / unverified / internal_confirm
    - **按"直接度"而非"来源数量"判定**：两条 weak_inference 不等于一条 direct；一条 contradictory 需在 counter_evidence 中显式回应
 
+12. **反证调和（Reconciliation）**：对每条核心 claim（P1–P3、T1–T3，及 superiority/novelty/causal/generalization 类），输出 `reconciliation` 字段（support_summary / contradiction_summary / verdict / rationale），走「支持 → 反证 → 调和 → 判决」四步，判决落 `evidence_status`；禁止"有 N 条来源 → PASS"。
+
 请输出 JSON：
 {
   "topic": "{topic}",
@@ -68,6 +70,12 @@
       "supporting_sources": ["S1", "S2"],
       "source_support_levels": {"S1": "direct", "S2": "weak_inference"},
       "evidence_status": "partially_supported",
+      "reconciliation": {
+        "support_summary": "S1(direct)",
+        "contradiction_summary": "S5(contradictory)",
+        "verdict": "partially_supported",
+        "rationale": "S5 反对的是某子场景，正文须回应"
+      },
       "source_access_status": {"S1": "confirmed", "S2": "web_accessible"},
       "source_strength": "strong/medium/weak",
       "allowed_expression": "",

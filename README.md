@@ -80,6 +80,14 @@ evidence-suite/
 
 本套件会让 Agent 获得本地脚本执行与联网能力（来源检索、PDF 下载、NSFC 抓取）。凭据与边界见 `SECURITY.md`。
 
+## 测试
+
+```bash
+python tests/run_tests.py
+```
+
+覆盖 `check_citations.py`（引用闭合 / 缺失 URL / 来源数下限 / 正文深度下限 / 数字引文闭合）与 `validate_sources.py`（重复 URL / 可疑域名），仅用 Python 标准库。
+
 ## 限制
 
 - 单一 Agent 内「写作者 / 审查者」是同模型角色隔离，属**内部红队**；真正的独立审查需不同模型或人类专家（审查方会自动标注评审类型，不伪造专家）。
@@ -91,8 +99,8 @@ evidence-suite/
 - [x] 引入 `support_level` / `evidence_status` 证据语义
 - [x] 审查独立性标注（Independent AI Review vs External Expert Review）
 - [x] 运行模式（Quick / Research / Document / Review）
-- [ ] 反证 reconciliation 正式阶段
-- [ ] 最小回归测试套件
+- [x] 反证 reconciliation 正式阶段
+- [x] 最小回归测试套件（`tests/run_tests.py`）
 - [ ] 证据质量评测基准
 
 ## 许可
