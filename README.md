@@ -101,7 +101,7 @@ python tests/run_tests.py
 - [x] 运行模式（Quick / Research / Document / Review）
 - [x] 反证 reconciliation 正式阶段
 - [x] 最小回归测试套件（`tests/run_tests.py`）
-- [ ] 证据质量评测基准
+- [x] 评测基准用例定义（`benchmarks/`，打分需实跑 agent）
 
 ## 许可
 
