@@ -296,7 +296,7 @@ w6 / w8 修订规则：
 - **阶段3 子步骤 3c 抽取 PDF 文本**：`python ${SUITE_ROOT}/shared/scripts/extract_pdf_text.py --manifest reference_files/manifest.json --sources 04_validated_sources.json --pdf-dir reference_files --update-sources --extract-quotes`
 - **NSFC 结题报告**（funding/engineering 域证据）：`python ${SUITE_ROOT}/shared/scripts/fetch_nsfc_report.py --approval-no <批准号> -o nsfc_dir/ [--pdf] [--ocr]` ⚠️ 逆向门户 API，使用前须确认符合 NSFC 门户条款
 - **定稿净化**（正式交付前）：`python ${SUITE_ROOT}/shared/scripts/finalize_draft.py 11_定稿.md -o 11_定稿_clean.md [--sources 04_validated_sources.json]`（`--check` 仅校验不重写）
-- **阶段10 导出 PDF**：`python ${SUITE_ROOT}/shared/scripts/export_pdf.py 11_定稿.md -o 11_定稿.pdf`（pandoc 优先，缺失时降级 python-markdown；需 Chrome/Edge 或 weasyprint 之一）
+- **阶段10 导出 PDF**：`python ${SUITE_ROOT}/shared/scripts/export_pdf.py 11_定稿.md -o 11_定稿.pdf`（pandoc 优先，缺失时降级 python-markdown；需 Chrome/Edge 或 weasyprint 之一）。Mermaid 图默认 local-first（mermaid-cli），无本地渲染器回退 mermaid.ink（远程）；敏感内容加 `--mermaid-engine local` 禁止联网。
 - **阶段10 导出 DOCX**：`python ${SUITE_ROOT}/shared/scripts/export_docx.py 11_定稿.md [-o 输出.docx]`（需 `pip install python-docx`）
 - **阶段10 视觉抽检**：`python ${SUITE_ROOT}/shared/scripts/visual_qa.py 11_定稿.md -o qa/ --sections "参考文献"`
 - **可选图表**：`python ${SUITE_ROOT}/shared/scripts/generate_charts.py -o figures/ [--data <your_data.json>]`

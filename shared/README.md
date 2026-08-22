@@ -32,7 +32,7 @@ Multi-agent evidence-driven pipeline for drafting, reviewing, and revising sourc
 - **Proof-Level Markers**: `[Sx]`, `[Gx]`, `[假设]`, `[待内部确认]` with document header legend.
 - **Gap-Adjacent Strategy**: When core claims are themselves the research gap, adjacent-domain evidence splicing with transparent claims mapping.
 - **Anti-Formulaic Writing**: Problem-driven narrative structure, theory-selection rationales, and forbidden boilerplate detection built into quality heuristics.
-- **PDF Export**: Mermaid diagrams rendered to SVG via mermaid.ink API (no Node.js needed), Markdown → PDF via pandoc + Chrome headless with A4-optimized CJK typography.
+- **PDF Export**: Mermaid 图默认 local-first（mermaid-cli `mmdc`），无本地渲染器时回退 mermaid.ink（远程，图内容发送第三方）；`--mermaid-engine local` 可禁止联网。Markdown → PDF via pandoc + Chrome headless with A4-optimized CJK typography.
 - **Statistical Charts**: Optional matplotlib chart generation from evidence data (effect sizes, trends, comparisons).
 - **Parallel External Reviews**: Run multiple external agents (ChatGPT, 豆包, etc.) for comprehensive expert review.
 - **Research-Depth Minimums**: Per-document-type minimum reference counts (proposal ≥15 … PhD ≥60) enforced via `check_citations.py --min-sources`, plus P/T coverage and review-section density checks.

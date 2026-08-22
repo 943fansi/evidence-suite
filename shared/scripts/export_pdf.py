@@ -2,11 +2,12 @@
 r"""Export evidence-driven draft Markdown to PDF with Mermaid diagram rendering.
 
 Pipeline:
-  1. Extract Mermaid code blocks, render each via mermaid.ink API → SVG
-     (No Node.js needed — plain base64url, retried with deflate+base64url on
-     HTTP/URL-limit errors; over-long node labels are warned and, on total
-     failure, replaced with a VISIBLE fenced-warning block instead of being
-     silently dropped)
+  1. Extract Mermaid code blocks and render to SVG. Local-first by default:
+     mermaid-cli (mmdc) if installed, else mermaid.ink API fallback (remote —
+     sends diagram source to a third party). Over-long node labels are warned
+     and, on total failure, replaced with a VISIBLE fenced-warning block instead
+     of being silently dropped. Use --mermaid-engine local to forbid the remote
+     fallback (sensitive 核/国防/工业 content).
   2. Replace code blocks with inline SVG image references
   3. Convert processed Markdown to standalone HTML:
      - Primary: pandoc (--embed-resources for >=2.19, --self-contained for older)
@@ -141,13 +142,33 @@ def _encode_mermaid_compressed(text: str) -> str:
     return MERMAID_INK + encoded
 
 
-def render_mermaid_blocks(text: str, out_dir: Path) -> str:
+def _render_mermaid_local(code: str, out_path: Path) -> bytes | None:
+    """Render via local mermaid-cli (mmdc); return SVG bytes or None if unavailable/failed."""
+    mmdc = _which("mmdc")
+    if not mmdc:
+        return None
+    src = out_path.with_suffix(".mmd")
+    src.write_text(code, encoding="utf-8")
+    try:
+        res = subprocess.run(
+            [mmdc, "-i", str(src), "-o", str(out_path), "-b", "transparent"],
+            capture_output=True, timeout=120,
+        )
+        if res.returncode == 0 and out_path.exists():
+            return out_path.read_bytes()
+    except Exception:
+        pass
+    finally:
+        src.unlink(missing_ok=True)
+    return None
+
+
+def render_mermaid_blocks(text: str, out_dir: Path, engine: str = "auto") -> str:
     """Find ```mermaid blocks, render to SVG, replace with image refs.
 
-    Per-block: warn on over-long labels, request the plain URL first, retry
-    with the deflate-compressed URL on HTTP/URL-limit errors, and on total
-    failure leave a visible ```fenced-warning block instead of silently
-    dropping the diagram.
+    engine: "auto" (local mmdc first, mermaid.ink fallback), "local" (mmdc only,
+    no network), "remote" (mermaid.ink only). Local-first keeps diagram source
+    on-machine — prefer it for sensitive (核/国防/工业) content.
     """
     pattern = re.compile(r"```mermaid\n(.*?)```", re.DOTALL)
     blocks = list(pattern.finditer(text))
@@ -155,6 +176,8 @@ def render_mermaid_blocks(text: str, out_dir: Path) -> str:
         print("  No Mermaid blocks found — skipping rendering.")
         return text
 
+    local_ok = engine in ("auto", "local")
+    remote_ok = engine in ("auto", "remote")
     out_dir.mkdir(parents=True, exist_ok=True)
     for i, match in enumerate(blocks):
         mermaid_code = match.group(1).strip()
@@ -166,23 +189,34 @@ def render_mermaid_blocks(text: str, out_dir: Path) -> str:
         img_path = out_dir / f"mermaid_diagram_{i + 1}.svg"
         svg_data: bytes | None = None
         err: Exception | None = None
-        for url in urls:
-            try:
-                req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
-                with urllib.request.urlopen(req, timeout=30) as resp:
-                    svg_data = resp.read()
-                if len(svg_data) > 0:
-                    break
-            except Exception as exc:  # HTTP 400/414/network
-                err = exc
-                svg_data = None
+        # 1. Local renderer first (auto/local): mmdc / mermaid-cli
+        if local_ok:
+            svg_data = _render_mermaid_local(mermaid_code, img_path)
+            if svg_data:
+                print(f"  Mermaid block {i + 1}: rendered locally (mmdc)")
+        # 2. Remote fallback (auto/remote): mermaid.ink
+        if svg_data is None and remote_ok:
+            for url in urls:
+                try:
+                    req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
+                    with urllib.request.urlopen(req, timeout=30) as resp:
+                        svg_data = resp.read()
+                    if len(svg_data) > 0:
+                        print(f"  Mermaid block {i + 1}: rendered via mermaid.ink "
+                              f"(远程，图内容已发送第三方；敏感内容请装 mermaid-cli 用 --mermaid-engine local)")
+                        break
+                except Exception as exc:  # HTTP 400/414/network
+                    err = exc
+                    svg_data = None
         if svg_data is None:
-            print(f"  Mermaid block {i + 1}: FAILED after both encodings ({err})", file=sys.stderr)
+            print(f"  Mermaid block {i + 1}: FAILED ({err if err else 'renderer unavailable'})",
+                  file=sys.stderr)
             # Fall back to a VISIBLE warning block so the missing diagram is
             # never silent in the final PDF.
             original = match.group(0)
-            replacement = (f"```\n⚠️ 图 {i + 1} 渲染失败（mermaid.ink HTTP 400/414）。"
-                           f"请精简节点标签后重跑 export_pdf.py。\n原始代码：\n{mermaid_code}\n```")
+            replacement = (f"```\n⚠️ 图 {i + 1} 渲染失败。"
+                           f"请精简节点标签、或安装 mermaid-cli（本地渲染）后重跑 export_pdf.py。\n"
+                           f"原始代码：\n{mermaid_code}\n```")
             text = text.replace(original, replacement, 1)
             continue
         img_path.write_bytes(svg_data)
@@ -383,6 +417,9 @@ def main(argv: list[str]) -> int:
     parser.add_argument("input", type=Path, help="Input markdown file (e.g., 11_定稿.md).")
     parser.add_argument("-o", "--output", type=Path, default=None,
                         help="Output PDF path (default: input.html or input.pdf).")
+    parser.add_argument("--mermaid-engine", choices=["auto", "local", "remote"], default="auto",
+                        help="Mermaid renderer: auto (local mmdc first, mermaid.ink fallback), "
+                             "local (mmdc only, no network), remote (mermaid.ink only)")
     args = parser.parse_args(argv)
 
     if not args.input.exists():
@@ -405,7 +442,7 @@ def main(argv: list[str]) -> int:
 
     # Step 1: Render Mermaid to SVG
     print("Step 1: Rendering Mermaid diagrams...")
-    text = render_mermaid_blocks(text, figures_dir)
+    text = render_mermaid_blocks(text, figures_dir, engine=args.mermaid_engine)
 
     # Step 2: Fix image paths to absolute so pandoc can embed them.
     # Use file:// URIs (via as_uri) — handles spaces and non-ASCII on Windows,

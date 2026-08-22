@@ -15,7 +15,7 @@
 | `fetch_nsfc_report.py` | 是 | 是（输出目录） | 是（逆向 NSFC 门户 API） | 见下方专项说明 |
 | `extract_pdf_text.py` | 否 | 是（`pdf_text/`） | 否 | 本地 PDF 抽文本 |
 | `build_references.py` / `check_citations.py` / `validate_sources.py` / `check_framework_depth.py` / `finalize_draft.py` / `inspect_pipeline.py` | 否 | 可选写 | 否 | 确定性校验 / 生成 |
-| `export_pdf.py` / `export_docx.py` | 部分（mermaid.ink 渲染图时） | 是（导出物） | 是（mermaid.ink） | 导出 PDF/DOCX |
+| `export_pdf.py` / `export_docx.py` | 部分（mermaid 图远程渲染时，默认 local-first） | 是（导出物） | 是（mermaid.ink 回退） | 导出 PDF/DOCX；`--mermaid-engine local` 禁止联网 |
 | `visual_qa.py` | 否 | 是（`qa/`） | 否 | 本地浏览器截图 |
 
 ## 凭据与密钥
