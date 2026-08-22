@@ -6,7 +6,7 @@
 >
 > 本文仅作**概念/字段参考**（如 evidence_map schema、route diagram 规范、quality heuristics），**不要**据此执行阶段或校验文件名。执行与门禁一律以 SKILL.md 与 `inspect_pipeline.py` 为准。
 >
-> **路径约定**：文中路径示例以 `${SUITE_ROOT}` 开头（当前 `SUITE_ROOT = D:\evidence-suite`），执行时按现行 SKILL.md 顶部"路径常量"替换为实际根路径。
+> **路径约定**：文中路径示例以 `${SUITE_ROOT}` 开头，即**套件根目录**（`shared/` 的上一级），由 agent 加载 skill 时解析；脚本以 `Path(__file__).resolve().parents[2]` 自行定位，无需手工替换。
 >
 > ⚠️ **字段名冲突警示**：本文档 `Stage 4` 的旧 schema 用 `sections[]`（含 `needed_gap` 等字段）；现行权威 schema 见 `${SUITE_ROOT}/evidence-writer/prompts/w4_evidence_map.md`，用 `evidence_map[]`（含 `claim_decomposition`、`counter_evidence`、`claim_type`、`confidence_assessment`）。**生成/校验 `06_evidence_map.json` 一律以现行 prompt 的字段为准**，勿按本文档写 `sections[]`。
 

@@ -1,6 +1,6 @@
 # Evidence-Driven Proposal Writer Pro (Shared Asset Library)
 
-> **路径常量（SUITE_ROOT）**：本库与两侧 skill（evidence-writer / evidence-reviewer）的脚本、参考指南、模板引用统一以 `${SUITE_ROOT}` 开头，**当前取值 `SUITE_ROOT = D:\evidence-suite`**。**迁移整个目录时：全量把 `${SUITE_ROOT}` 替换为新根路径即可**（如 `C:\Users\<你的用户名>\skills\evidence-suite`），无需逐处修改；执行命令前先替换为实际路径。
+> **路径常量（SUITE_ROOT）**：本库与两侧 skill（evidence-writer / evidence-reviewer）的脚本、参考指南、模板引用统一以 `${SUITE_ROOT}` 开头。`${SUITE_ROOT}` 即**套件根目录**（本 `shared/` 的上一级），由 agent 加载 skill 时解析，**不要写死为绝对路径**；`shared/scripts/` 内的脚本也以 `Path(__file__).resolve().parents[2]` 自行定位套件根，无需手工替换。
 
 > ⚠️ **本目录现为共享资产库**：原单流水线 `SKILL.md` 已停用，按「编写 / 审核」职责拆分为两个**相互对抗**的 skill——**`${SUITE_ROOT}/evidence-writer`**（生产：适配/检索/语料/图谱/起草/修订/导出）与 **`${SUITE_ROOT}/evidence-reviewer`**（审查：来源审计/诚实性自评/框架深度门/初稿审查/外部评审/终审门）。本目录仅保留 `scripts/`、`references/`、`templates/` 供两侧按绝对路径调用。下方 Pipeline 概览为历史快照，执行以两个新 skill 的 SKILL.md 为准。
 

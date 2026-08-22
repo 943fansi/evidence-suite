@@ -1,6 +1,6 @@
 ---
 name: evidence-reviewer
-description: 证据驱动红队审查方 — 与 evidence-writer 形成对抗循环，负责审查门流水线：来源审计（r1）、诚实性自评（r2）、框架深度门（r3）、初稿审查（r4）、外部专家评审（r5）、终审门。有罪推定、只找失败、不写正文、严重即阻断。触发词：审查、评审、对抗、判决、evidence-driven、source-grounded、证据审计、红队、source audit、draft review。
+description: 证据驱动红队审查方 — 与 evidence-writer 形成对抗循环，负责审查门流水线（r1 来源审计 → r2 诚实性自评 → r3 框架深度门 → r4 初稿审查 → r5 外部专家评审 → 终审门）。有罪推定、只找失败、不写正文、严重即阻断。高置信触发：证据审计、来源审计、source audit、draft review、evidence-driven 审查、source-grounded 审查、红队审查。NOT_TRIGGER：普通语法纠错、纯润色、拼写检查、非事实性文案点评。
 license: MIT
 ---
 
@@ -20,7 +20,7 @@ license: MIT
 
 核心不变：**所有事实性/争议性论断必须挂载 `[Sx]` 来源标记**，没有来源的论断必须显式降级为 `[假设]` / `[待内部确认]`。审查者的任务是验证这一点是否被严格执行，而不是帮作者补全。
 
-> **路径常量（SUITE_ROOT）**：本套件所有共享资产（scripts/、references/、templates/）与跨 skill 引用统一以 `${SUITE_ROOT}` 开头。**当前取值：`SUITE_ROOT = D:\evidence-suite`**。迁移整个目录时，只需把 `${SUITE_ROOT}` 替换为新根路径即可，其余文件中的 `${SUITE_ROOT}/…` 引用自动生效；执行命令前先做替换（Windows 下为 `D:\evidence-suite\…` 反斜杠形式）。
+> **路径常量（SUITE_ROOT）**：本套件所有共享资产（scripts/、references/、templates/）与跨 skill 引用统一以 `${SUITE_ROOT}` 开头。`${SUITE_ROOT}` 即**套件根目录**（本 SKILL.md 所在 `evidence-reviewer/` 的上一级），由 agent 在加载本 skill 时解析，**不要写死为绝对路径**；`shared/scripts/` 内的脚本也以 `Path(__file__).resolve().parents[2]` 自行定位套件根，无需手工替换。
 
 ## 审查哲学（Adversarial Defaults）
 

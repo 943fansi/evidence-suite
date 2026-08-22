@@ -1,6 +1,6 @@
 ---
 name: evidence-writer
-description: 证据驱动写作方 — 与 evidence-reviewer 形成对抗循环，负责提案/论文/专利/GF报告等文档的完整生产流水线：文档适配（w1）、来源检索（w2）、验证语料（w3）、证据图谱（w4）、起草（w5）、修订（w6）、humanizer 文风修复（w7）、专家修订（w8）、导出（w9）。触发词：开题报告、论文写作、期刊投稿、专利交底书、GF报告、实施方案、调研报告、可行性报告、白皮书、evidence-driven、source-grounded、证据驱动写作、学术写作流水线。
+description: 证据驱动写作方 — 与 evidence-reviewer 形成对抗循环，负责提案/论文/专利/GF报告等文档的完整生产流水线（w1 文档适配 → w2 来源检索 → w3 验证语料 → w4 证据图谱 → w5 起草 → w6 修订 → w7 humanizer → w8 专家修订 → w9 导出）。高置信触发：evidence-driven、source-grounded、证据驱动写作、学术写作流水线、需逐条核验引用的技术/学术文档。低置信触发（需用户明确要求可追溯来源）：开题报告、论文写作、期刊投稿、专利交底书、GF报告、实施方案、调研报告、可行性报告、白皮书。NOT_TRIGGER：纯润色、拼写检查、普通摘要、简单改写、非事实性创作、PPT文案。
 license: MIT
 ---
 
@@ -20,7 +20,7 @@ license: MIT
 
 核心不变：**所有事实性/争议性论断都挂载 `[Sx]` 来源标记**，没有来源的论断必须显式降级为 `[假设]` / `[待内部确认]`。
 
-> **路径常量（SUITE_ROOT）**：本套件所有共享资产（scripts/、references/、templates/）与跨 skill 引用统一以 `${SUITE_ROOT}` 开头。**当前取值：`SUITE_ROOT = D:\evidence-suite`**。迁移整个目录时，只需把 `${SUITE_ROOT}` 替换为新根路径即可，其余文件中的 `${SUITE_ROOT}/…` 引用自动生效；执行命令前先做替换（Windows 下为 `D:\evidence-suite\…` 反斜杠形式）。
+> **路径常量（SUITE_ROOT）**：本套件所有共享资产（scripts/、references/、templates/）与跨 skill 引用统一以 `${SUITE_ROOT}` 开头。`${SUITE_ROOT}` 即**套件根目录**（本 SKILL.md 所在 `evidence-writer/` 的上一级），由 agent 在加载本 skill 时解析，**不要写死为绝对路径**；`shared/scripts/` 内的脚本也以 `Path(__file__).resolve().parents[2]` 自行定位套件根，无需手工替换。
 
 ## 签名原则（Signature）
 

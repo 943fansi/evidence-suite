@@ -12,7 +12,7 @@
 
 ## 路径常量（SUITE_ROOT）
 
-本套件所有共享资产与跨 skill 引用统一以 `${SUITE_ROOT}` 开头，**当前取值 `SUITE_ROOT = D:\evidence-suite`**。迁移整个目录时，全量把 `${SUITE_ROOT}` 替换为新根路径即可（Windows 下为 `D:\evidence-suite\…` 反斜杠形式）。
+本套件所有共享资产与跨 skill 引用统一以 `${SUITE_ROOT}` 开头。`${SUITE_ROOT}` 即**套件根目录**（含 `evidence-writer/`、`evidence-reviewer/`、`shared/` 的那一级），由 agent 加载 skill 时解析，无需写死绝对路径；`shared/scripts/` 内的脚本以 `Path(__file__).resolve().parents[2]` 自行定位。
 
 ## 对抗循环
 
