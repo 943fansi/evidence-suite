@@ -48,9 +48,10 @@ shared/
 ├── requirements.txt                 # Python 依赖（按需安装）
 │
 ├── config/                            # 规则配置（单一事实来源）
-│   └── rules.yaml                     # risk_tiers / claim_classes / doc_minimums /
-│                                      #   suspect_domains / stop_rule / scenario_profiles
-│                                      #   （medical / general_tech 场景档）
+│   ├── rules.yaml                     # risk_tiers / claim_classes / evidence_sufficiency /
+│   │                                  #   doc_minimums / suspect_domains / stop_rule /
+│   │                                  #   review_mode / scenario_profiles
+│   └── source_ranking.yaml            # 来源优先级知识库（authority/priority/role；registry=优先级清单非白名单）
 │
 ├── schemas/                          # Manifest 互操作契约 JSON Schema（finalize_draft.py 产出物校验基准）
 │   ├── evidence_manifest.schema.json # source-centric（--manifest）契约：schema_version / review_kind / mapping[]
@@ -102,8 +103,9 @@ shared/
 │   ├── rule_profile.py              # 规则配置加载器（default + rules.user.yaml + --rules + --profile deep-merge；PyYAML 优先，内置最小解析器回退）
 │   ├── check_framework_depth.py     # 框架深度门（每实质章目标/方法/输入输出/标准依据四要素+篇幅达标）
 │   ├── check_citations.py           # Citation closure + URL/title check + --min-sources/--min-chars gates + --academic 数字引文模式
-│   ├── check_evidence_sufficiency.py# Claim 级证据充分性（按 risk tier 判定 primary/独立来源/现行性/反证覆盖；与文档级 min_sources 解耦）
-│   ├── select_sources.py            # Stage 1 source routing selector (registry → search directives)
+│   ├── check_evidence_sufficiency.py# Claim 级证据充分性（按 risk tier 判定 primary/独立来源/现行性/反证覆盖；--review-mode 缩放阈值）
+│   ├── build_evidence_brief.py      # L1 证据简报（claim→evidence→平衡→置信度 表格 + 充分性判定，结论由 agent 填写）
+│   ├── select_sources.py            # 来源路由（--allow-discovery 开放候选池；authority/priority 排序注释）
 │   ├── fetch_nsfc_report.py         # NSFC 结题报告 fetch (search/decrypt/paged download → PDF/OCR)
 │   ├── sample_chart_data.json       # generate_charts.py 示例数据（换题请 --data 提供自己的）
 │   ├── download_reference_files.py  # Stage 3 sub-step 3a PDF download

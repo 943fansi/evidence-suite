@@ -22,6 +22,7 @@ to be recorded as live (or a live audit note), else flagged as "requires live".
 Usage:
   python scripts/check_evidence_sufficiency.py 06_evidence_map.json 04_validated_sources.json
   python scripts/check_evidence_sufficiency.py em.json vs.json --profile medical
+  python scripts/check_evidence_sufficiency.py em.json vs.json --review-mode conservative
   python scripts/check_evidence_sufficiency.py em.json vs.json --json
 
 Exit codes: 0 all claims sufficient; 1 any claim fails; 2 usage/input error.
@@ -40,6 +41,7 @@ PRIMARY_AUTHORITIES = ("A1", "A2", "A3", "B1", "B2")
 CLAIM_CLASSES = ("E", "M", "N", "L", "D", "C", "U", "J")
 DEFAULT_TIER = {"min_primary_sources": 0, "min_independent_sources": 1,
                 "live": False, "contradiction_coverage": False}
+REVIEW_MODES = ("conservative", "balanced", "exploratory")
 
 
 def _ensure_utf8_streams() -> None:
@@ -83,8 +85,14 @@ def _coverage_ok(claim: dict) -> bool:
     return False
 
 
-def check_claim(claim: dict, source_by_id: dict, tier: dict) -> dict:
-    """Return {pass, reasons[], stats} for one claim against its tier."""
+def check_claim(claim: dict, source_by_id: dict, tier: dict,
+                multiplier: float = 1.0, live_for_all: bool = False) -> dict:
+    """Return {pass, reasons[], stats} for one claim against its tier.
+
+    multiplier: review_mode evidence multiplier applied to primary/independent
+    thresholds (rounded up). live_for_all: force live/currentness for every claim.
+    """
+    import math
     risk = str(claim.get("risk", "R1")).strip()
     claim_class = str(claim.get("claim_class", "")).strip()
     levels = claim.get("source_support_levels") or {}
@@ -99,18 +107,19 @@ def check_claim(claim: dict, source_by_id: dict, tier: dict) -> dict:
         _freshness_of(source_by_id.get(sid, {})) == "current"
         for sid in primary_ids
     )
-    live_required = bool(tier.get("live"))
+    min_primary = math.ceil(tier.get("min_primary_sources", 0) * multiplier)
+    min_independent = math.ceil(tier.get("min_independent_sources", 1) * multiplier)
+    live_required = bool(tier.get("live")) or live_for_all
     contradiction_required = bool(tier.get("contradiction_coverage"))
     covered = _coverage_ok(claim)
 
     reasons: list[str] = []
-    if primary_count < tier.get("min_primary_sources", 0):
+    if primary_count < min_primary:
         reasons.append(
-            f"primary sources {primary_count} < required {tier.get('min_primary_sources')} "
+            f"primary sources {primary_count} < required {min_primary} "
             f"(authority ∈ {', '.join(PRIMARY_AUTHORITIES)})")
-    if independent_count < tier.get("min_independent_sources", 1):
-        reasons.append(f"independent sources {independent_count} < required "
-                       f"{tier.get('min_independent_sources')}")
+    if independent_count < min_independent:
+        reasons.append(f"independent sources {independent_count} < required {min_independent}")
     if live_required:
         if claim_class == "N":
             if not current_primary:
@@ -140,6 +149,9 @@ def main() -> int:
     parser.add_argument("validated_sources", type=Path, help="04_validated_sources.json")
     parser.add_argument("--rules", type=Path, default=None, help="rules override file")
     parser.add_argument("--profile", type=str, default=None, help="scenario profile")
+    parser.add_argument("--review-mode", choices=list(REVIEW_MODES), default=None,
+                        help="override review mode (conservative/balanced/exploratory); "
+                             "default from rules.yaml review_mode")
     parser.add_argument("--json", action="store_true", help="machine-readable output")
     args = parser.parse_args()
 
@@ -158,6 +170,11 @@ def main() -> int:
         print(f"error: cannot load rules: {exc}", file=sys.stderr)
         return 2
 
+    mode = args.review_mode or rules.get("review_mode") or "balanced"
+    mode_cfg = rules.get("review_modes", {}).get(mode) or {}
+    multiplier = float(mode_cfg.get("evidence_multiplier", 1.0))
+    live_for_all = bool(mode_cfg.get("live_for_all", False))
+
     sufficiency = rules.get("evidence_sufficiency") or {}
     source_by_id = {str(s.get("source_id", "")).strip(): s for s in vs.get("sources", [])}
 
@@ -168,7 +185,8 @@ def main() -> int:
         risk = str(claim.get("risk", "R1")).strip()
         tier = dict(DEFAULT_TIER)
         tier.update(sufficiency.get(risk, {}) if isinstance(sufficiency.get(risk), dict) else {})
-        outcome = check_claim(claim, source_by_id, tier)
+        outcome = check_claim(claim, source_by_id, tier,
+                              multiplier=multiplier, live_for_all=live_for_all)
         claim_id = f"C-{i:03d}"
         results.append({"claim_id": claim_id,
                         "claim_class": str(claim.get("claim_class", "")).strip(),
@@ -182,6 +200,8 @@ def main() -> int:
     failed = len(results) - passed
     if args.json:
         print(json.dumps({"profile": rules.get("active_profile"),
+                          "review_mode": mode,
+                          "evidence_multiplier": multiplier,
                           "results": results, "passed": passed, "failed": failed},
                          ensure_ascii=False, indent=2))
     else:
@@ -191,7 +211,8 @@ def main() -> int:
             for reason in r["reasons"]:
                 print(f"      - {reason}")
         print(f"\nEvidence sufficiency: {passed}/{len(results)} claims sufficient "
-              f"({rules.get('active_profile') or 'default'})")
+              f"(mode={mode}, multiplier={multiplier:g}, "
+              f"profile={rules.get('active_profile') or 'default'})")
     return 1 if failed else 0
 
 

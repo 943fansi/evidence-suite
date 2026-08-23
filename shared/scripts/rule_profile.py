@@ -32,6 +32,7 @@ from pathlib import Path
 SUITE_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_RULES = SUITE_ROOT / "shared" / "config" / "rules.yaml"
 USER_RULES = SUITE_ROOT / "config" / "rules.user.yaml"
+SOURCE_RANKING = SUITE_ROOT / "shared" / "config" / "source_ranking.yaml"
 
 
 def _scalar(s: str):
@@ -201,6 +202,32 @@ def effective_suspect_domains(rules: dict, cli_extra: list[str] | None = None) -
 def doc_minimum(rules: dict, doc_type: str) -> dict:
     """Return {min_sources, min_chars} for a doc type, or {} if not configured."""
     return dict(rules.get("doc_minimums", {}).get(doc_type, {}))
+
+
+def load_source_ranking() -> dict:
+    """Load the source-priority knowledge base (shared/config/source_ranking.yaml).
+
+    Returns {default_by_category: {...}, sources: {...}}; falls back to empty
+    dicts if the file is missing so select_sources.py still runs unranked.
+    """
+    if not SOURCE_RANKING.exists():
+        return {}
+    data = _read(SOURCE_RANKING)
+    return data or {}
+
+
+def rank_source(source: dict, ranking: dict) -> dict:
+    """Annotate a registry source with authority/priority/role (id override wins)."""
+    rank = dict(ranking.get("default_by_category", {}).get(source.get("category") or "", {})
+                or {})
+    override = ranking.get("sources", {}).get(source.get("id") or "")
+    if isinstance(override, dict):
+        rank = {**rank, **override}
+    return {
+        "authority": rank.get("authority", ""),
+        "priority": int(rank.get("priority", 50) or 50),
+        "role": list(rank.get("role", []) or []),
+    }
 
 
 if __name__ == "__main__":

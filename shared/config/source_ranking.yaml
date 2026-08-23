@@ -1,0 +1,187 @@
+# Source Registry 优先级知识库（registry = 优先级清单，不是白名单）
+#
+# 配套 select_sources.py --allow-discovery：
+#   registry 来源（origin=registry）按其 authority/priority 优先排序进入候选池；
+#   未入册但被检索到的来源（origin=discovered，含厂商报告/国家实验室/会议论文等）
+#   允许进入候选池，并按权威分级后参与竞争——"没进 Registry ≠ 不是好证据"。
+#
+# 结构：default_by_category 提供按 category 的默认分级；sources 提供按 id 的覆盖
+# （id 覆盖优先）。authority 复用 A1–D2 体系；priority 0–100，越高越优先。
+# 规则文件为块式 YAML，内置最小解析器可读。
+
+default_by_category:
+  international_regulator:
+    authority: "A1"
+    priority: 100
+    role: [normative, safety]
+  china_regulator:
+    authority: "A1"
+    priority: 95
+    role: [normative, safety]
+  international_standard:
+    authority: "A2"
+    priority: 90
+    role: [normative]
+  china_standard:
+    authority: "A3"
+    priority: 88
+    role: [normative]
+  international_industry:
+    authority: "B1"
+    priority: 85
+    role: [engineering, international_guidance]
+  industry_technical:
+    authority: "B1"
+    priority: 80
+    role: [engineering, technical]
+  government_agency:
+    authority: "B1"
+    priority: 78
+    role: [official, policy]
+  national_lab:
+    authority: "B1"
+    priority: 76
+    role: [technical]
+  technical_report_library:
+    authority: "B1"
+    priority: 75
+    role: [technical, literature]
+  nuclear_data:
+    authority: "B1"
+    priority: 72
+    role: [data]
+  cross_technical_report_library:
+    authority: "B1"
+    priority: 70
+    role: [technical, literature]
+  energy_international:
+    authority: "B1"
+    priority: 68
+    role: [engineering, data]
+  energy_data:
+    authority: "B1"
+    priority: 66
+    role: [data]
+  materials_data:
+    authority: "B2"
+    priority: 65
+    role: [data]
+  ai_policy:
+    authority: "B1"
+    priority: 62
+    role: [policy]
+  materials_engineering_data:
+    authority: "B2"
+    priority: 60
+    role: [engineering, data]
+  materials_scientific_database:
+    authority: "B2"
+    priority: 60
+    role: [data]
+  ai_index:
+    authority: "B1"
+    priority: 60
+    role: [data]
+  ai_china_standard:
+    authority: "A3"
+    priority: 58
+    role: [normative]
+  ai_research:
+    authority: "C1"
+    priority: 55
+    role: [literature]
+  education_statistics:
+    authority: "B1"
+    priority: 55
+    role: [data]
+  education_research:
+    authority: "B1"
+    priority: 50
+    role: [literature]
+  china_technical:
+    authority: "B2"
+    priority: 50
+    role: [technical]
+  china_funding_repository:
+    authority: "B1"
+    priority: 45
+    role: [funding]
+  china_tech_report_system:
+    authority: "B1"
+    priority: 45
+    role: [technical, funding]
+  scholarly_index:
+    authority: "C1"
+    priority: 40
+    role: [discovery, literature]
+
+# 按 id 覆盖（核能领域重点来源显式标注 role / priority）
+sources:
+  iaea:
+    authority: "A1"
+    priority: 100
+    role: [normative, safety, international_guidance]
+  nrc:
+    authority: "A1"
+    priority: 100
+    role: [normative, safety]
+  nnsa:
+    authority: "A1"
+    priority: 95
+    role: [normative, safety]
+  epri:
+    authority: "B1"
+    priority: 88
+    role: [engineering, nuclear_equipment, aging_management]
+  oecd_nea:
+    authority: "B1"
+    priority: 86
+    role: [engineering, international_guidance]
+  ieee_standards:
+    authority: "A2"
+    priority: 92
+    role: [normative, equipment_qualification]
+  iec:
+    authority: "A2"
+    priority: 90
+    role: [normative]
+  iso:
+    authority: "A2"
+    priority: 90
+    role: [normative]
+  astm:
+    authority: "A2"
+    priority: 90
+    role: [normative, materials_testing]
+  icrp:
+    authority: "A2"
+    priority: 90
+    role: [normative, radiation_protection]
+  std_samr:
+    authority: "A3"
+    priority: 88
+    role: [normative]
+  openstd_samr:
+    authority: "A3"
+    priority: 86
+    role: [normative, discovery]
+  osti:
+    authority: "B1"
+    priority: 78
+    role: [technical, literature]
+  inis:
+    authority: "B1"
+    priority: 76
+    role: [literature, discovery]
+  iaea_nds:
+    authority: "B1"
+    priority: 72
+    role: [data, nuclear_data]
+  arxiv:
+    authority: "C1"
+    priority: 50
+    role: [literature, preprint]
+  crossref:
+    authority: "C1"
+    priority: 40
+    role: [discovery]

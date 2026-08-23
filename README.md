@@ -46,9 +46,11 @@ evidence-suite —— Claim 提取 → 分类 → 证据映射 → static/live �
 
 | 模式 | 做什么 | 是否进对抗循环 |
 |------|--------|--------------|
-| Quick Evidence | 单个事实 / 标准条款 → 检索 + 核验 → 直接结论 | 否 |
-| Evidence Research | 技术调研 / 综述 → 证据图谱 → research memo | 否 |
-| Document Production | 完整交付物（默认）→ 全链路 + 红队审查 | 是 |
+| Quick Evidence（L0 Answer） | 单个事实 / 标准条款 → 检索 + 核验 → 直接结论 | 否 |
+| Evidence Brief（L1） | 5–20 claims → claim→evidence→平衡 表格 + 充分性（`build_evidence_brief.py`） | 否 |
+| Evidence Research（L2） | 技术调研 / 综述 → 证据图谱 → research memo | 否 |
+| Document Production（L3） | 完整交付物（默认）→ 全链路 + 红队审查 | 是 |
+| Safety/Regulatory（L4） | 核安全/法规产出 → `--review-mode conservative` + 跨模型/人类评审 | 是 |
 | Review Only | 已有文档 → 只审不写 → 判决 | 是（仅审查方） |
 
 ## 证据模型
@@ -61,7 +63,9 @@ evidence-suite —— Claim 提取 → 分类 → 证据映射 → static/live �
 - `risk`（R0–R4）：R1 单源 / R2 独立交叉 / R3 primary+现行性+live / R4 独立复现/人工签核——把"一律有罪推定"缩小到真正高险的论断。
 - `authority`（来源权威 A1–D2）：法规 A1 / 标准 A2 / 国标行标 A3 / 官方报告 B1 / 原始实验 B2 / 期刊 C1 / 学位 C2 / 厂商 D1 / 二手 D2；R3/R4 要求来源 ≥ A2。
 - `freshness`（证据新鲜度 current / recent / historical / superseded / unknown）：政策/标准类 R3/R4 须 `current`，`superseded` 不得作现行依据。
-- 判定按「直接度」而非「来源数量」：两条 `weak_inference` ≠ 一条 `direct`；**claim 级证据充分性**由 `check_evidence_sufficiency.py` 按 risk tier 判定（primary/独立来源/现行性/反证覆盖），文档级 `min_sources` 只是写作格式下限。
+- **判定按「直接度」而非「来源数量」**：两条 `weak_inference` ≠ 一条 `direct`；**claim 级证据充分性**由 `check_evidence_sufficiency.py` 按 risk tier 判定（primary/独立来源/现行性/反证覆盖），文档级 `min_sources` 只是写作格式下限。
+- **审查模式（Risk-adaptive）**：`rules.yaml` 的 `review_mode` 控制证据充分性阈值乘数与默认立场——`conservative`（1.5×，核安全/法规）/ `balanced`（1.0×，默认）/ `exploratory`（0.7×）；`check_evidence_sufficiency.py --review-mode` 生效。
+- **来源优先级清单**：`source_ranking.yaml` 给 Registry 来源标注 `authority/priority/role`，`select_sources.py --allow-discovery` 开放候选池（`source_origin` 四类来源可进入），Registry 是优先级清单而非白名单。
 - 交付时 `finalize_draft.py --manifest` 产出 `evidence_manifest.json`（`[n]→来源` 可回溯），保留证据 provenance。
 
 详见 `shared/references/claim_evidence_layer.md`。

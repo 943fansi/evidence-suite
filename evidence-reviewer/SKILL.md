@@ -131,6 +131,29 @@ license: MIT
 - **superseded 来源**：作 R3/R4 现行性依据 → 阻断；作历史沿革引用且标注 → 通过但须在报告中显式标记。
 - **降级可见性**：作者把来源悄悄降级为 `unverified` 却不写入 manifest / 写作说明 → r2/r4 标记"降级不可见"，要求补记。
 
+## 风险自适应审查（Risk-adaptive Review）与审查模式
+
+**R0–R4 不只是标签，而是全套件的主控制器**（`rules.yaml` 的 `evidence_sufficiency` + `review_mode`）：
+
+| risk | 审查深度 |
+|------|---------|
+| R0 | 一致性检查（不查外部来源） |
+| R1 | 来源检查（static 单源核对） |
+| R2 | 交叉来源检查（≥2 独立来源 + primary 要求 + 反证覆盖） |
+| R3 | live 回源验证（现行性/可达性；规范类须 `freshness=current`） |
+| R4 | 独立复现 / 跨模型 / 人类专家评审（`review_kind=human-expert` 或 `ai-cross-model`） |
+
+**审查模式（`rules.yaml` `review_mode`，可 `--review-mode` 覆盖）**：
+
+| 模式 | evidence 乘数 | 默认立场 | live | 适用 |
+|------|--------------|---------|------|------|
+| `conservative` | 1.5× | 有罪推定 | 全部 | 核安全/法规/安全关键（默认建议） |
+| `balanced` | 1.0× | 有罪推定 | 按 risk | 通用研究（默认） |
+| `exploratory` | 0.7× | 中立 | 按 risk | 探索/低风险综述 |
+
+- 阻断/放行标准按所选模式缩放证据充分性阈值（`check_evidence_sufficiency.py --review-mode`）。
+- "宁可误伤"只在 `conservative` 下作为默认；`balanced`/`exploratory` 下先补材料再判决，不轻易放行也不轻易误伤。
+
 ## 审查方法（Review Methods）
 
 按工件类型选用，细节见对应 prompt 文件：

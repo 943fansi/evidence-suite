@@ -1,6 +1,6 @@
 # 来源路由表（Domain Routing）
 
-把题目域（topic_domain）映射到 `source_registry.json` 中的 category 白名单，再由 `scripts/select_sources.py` 展开为具体检索指令。路由目的：**Stage 1 只把相关权威源注入检索范围，避免广撒网与无关源污染。**
+把题目域（topic_domain）映射到 `source_registry.json` 中的 category 清单，再由 `scripts/select_sources.py` 展开为具体检索指令。路由目的：**Stage 1 把相关权威源按优先级注入检索范围，避免广撒网与无关源污染**。`select_sources.py --allow-discovery` 时 Registry 是**优先级清单而非白名单**——未入册的厂商报告/国家实验室/机构公开文件/会议论文等可进入候选池（`source_origin=discovered`），按 authority 重新定级后参与竞争。
 
 ## 路由规则
 

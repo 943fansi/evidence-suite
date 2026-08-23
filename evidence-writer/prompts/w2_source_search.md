@@ -11,12 +11,12 @@ Use this prompt format to instruct an external agent (e.g., DeepSeek, ChatGPT, C
 你只负责资料检索、证据整理和 JSON 输出，不要撰写文档正文，不要进行自由发挥。
 
 来源路由约束（Source Routing，强制）：
-检索前先运行 `python ${SUITE_ROOT}/shared/scripts/select_sources.py --domain <topic_domain>`（topic_domain 见 ${SUITE_ROOT}/shared/references/domain_routing.md），把输出的 `selected_sources[]` 及其 `search_directive` 作为本轮的**指定权威来源清单**注入：
+检索前先运行 `python ${SUITE_ROOT}/shared/scripts/select_sources.py --domain <topic_domain> --allow-discovery`（topic_domain 见 ${SUITE_ROOT}/shared/references/domain_routing.md），把输出的 `selected_sources[]` 及其 `search_directive` 作为本轮的**指定权威来源清单**（按 `authority`/`priority` 排序的**优先级清单，不是白名单**）注入：
 1. 对每个 selected source，按 `search_directive` 执行 `site:<domain> <query>` 定向检索；命中时该来源的 `id` 记入每条 source 的 `registry_id` 字段。
 2. `allowFullText: false` 的来源（如 EPRI/IEC/ISO/ASTM 付费报告、ICRP）仅允许取题录/摘要与文档编号，禁止虚构全文内容。
 3. `must_verify_standard_current: true` 的来源，检索到的标准必须先到 std.samr.gov.cn 或发布机构官网核对现行有效性，禁止引用废止标准。
-4. 清单外的补充来源允许存在，但须在 `sources[].registry_id` 填 `"supplementary"` 并在 `credibility_reason` 中说明补充理由。
-5. 禁止使用 registry 中 `forbidden_and_rules` 列出的 forbidSources（自媒体、非官方转载、百科、AI厂商营销、教育软文等）作为正式引用依据。
+4. **Registry 之外允许发现来源**（`--allow-discovery`）：厂商技术报告、国家实验室报告、EDF/CNSC/JAEA/UJV 等机构公开文件、国内公开科技报告、学术会议论文等可进入候选池。每条来源须标 `source_origin ∈ {registry, discovered, user, emergent}`（registry 命中项按优先级清单的 authority；discovered 在 r1 重新定级）；清单外来源 `registry_id` 填 `"supplementary"` 并在 `credibility_reason` 说明补充理由。
+5. 禁止使用 registry 中 `forbidden_and_rules` 列出的 forbidSources（自媒体、非官方转载、百科、AI厂商营销、教育软文等）作为正式引用依据（可作 discovery evidence 追到原始来源）。
 6. 预印本（arXiv 等）仅作最新进展参考，须标注提交/版本日期，正式结论引同行评审版本。
 
 反证主动搜索（Counter-Evidence Search，强制）：

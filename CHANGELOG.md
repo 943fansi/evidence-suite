@@ -82,6 +82,12 @@
 - **P0-④ Eval/Golden 套件**：新增 `eval/golden/` 14 个 golden 用例（9 script 级自动判分 + 5 agent 行为级人工打分）+ `eval/run_eval.py` harness（输出 `eval/report.md`）；benchmarks/README 标注 eval/ 迁移
 - 回归测试 43→50 用例（claim 证据模型、充分性正负例、eval harness、quickstart fixtures 充分性）
 
+### V2 评审 P1 批次（风险自适应 + Registry 分级 + Evidence Brief）
+- **P1-⑤ Registry 分级**：新增 `shared/config/source_ranking.yaml`（default_by_category + 按 id 覆盖的 authority/priority/role）；`rule_profile.py` 增 `load_source_ranking`/`rank_source`；`select_sources.py` 输出 authority/priority/role、按 priority 排序、标注 `source_origin=registry`，新增 `--allow-discovery` 开放候选池（discovered/user/emergent 可进入，discovery_directives）；w2 prompt 与 domain_routing.md 同步改为"优先级清单非白名单"
+- **P1-⑥⑦ Risk-adaptive review + review_mode**：`rules.yaml` 增 `review_mode`（conservative/balanced/exploratory）与 `review_modes`（evidence_multiplier / default_presumption / live_for_all）；`check_evidence_sufficiency.py --review-mode` 按乘数缩放阈值（ceil）并支持 live_for_all；审查方 SKILL 增「风险自适应审查」梯子（R0 一致性 → R1 来源 → R2 交叉 → R3 live → R4 跨模型/人类）
+- **P1-⑧ Evidence Brief（L1）**：新增 `shared/scripts/build_evidence_brief.py`——evidence_map + sources → claim→evidence→平衡→置信度 表格 + 逐条详情 + 充分性判定（复用 check_claim，review-mode aware），结论由 agent 填写不代写；写作者 SKILL 运行模式表升级为 L0–L4 梯子（Quick/Brief/Research/Document/Safety + Review Only）
+- 回归测试 50→53 用例（Registry 排序与 discovery、review_mode 缩放、Evidence Brief 渲染）
+
 ### 冻结（暂不实现，无消费者 / 过早）
 - `engine/` / `policies/` 三层目录重构
 - 评测基准的**实跑打分**（需接真实 agent，当前仅用例集定义）

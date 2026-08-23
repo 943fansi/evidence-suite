@@ -147,6 +147,26 @@ evidence_sufficiency:
     live: true
     contradiction_coverage: true
 
+# 审查模式（Risk-adaptive review）。核安全/法规场景默认 conservative；
+# 通用研究可用 balanced；探索/低风险可用 exploratory。
+#   evidence_multiplier  对 evidence_sufficiency 的 primary/独立来源阈值乘数
+#   default_presumption  审查者默认立场（guilty=有罪推定 / neutral=中立）
+#   live_for_all         是否对全部 claim 强制 live 回源
+review_mode: balanced
+review_modes:
+  conservative:
+    evidence_multiplier: 1.5
+    default_presumption: guilty
+    live_for_all: true
+  balanced:
+    evidence_multiplier: 1.0
+    default_presumption: guilty
+    live_for_all: false
+  exploratory:
+    evidence_multiplier: 0.7
+    default_presumption: neutral
+    live_for_all: false
+
 # 文档类型 → 来源数 / 正文深度下限（SKILL.md「参考文献数量下限」表以此为源）
 doc_minimums:
   proposal:

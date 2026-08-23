@@ -88,13 +88,15 @@ license: MIT
 
 | 模式 | 适用场景 | 触发信号 | 运行阶段 | 产物 |
 |------|---------|---------|---------|------|
-| **Quick Evidence（快问快答）** | 单个事实 / 标准条款 / 技术问题 | 问句、单点问题、"核实/查一下/XX 标准怎么规定" | w2 检索 → w3 核验 → 直接作答 | 结论 + `[Sx]` + `support_level`（不建工作区） |
-| **Evidence Research（证据调研）** | 技术调研 / 标准研究 / 文献综述 | "调研/综述/梳理证据/给一份研究备忘录" | w1 Topic Card → w2 → w3 → w4 | `research_memo.md`（不进入起草/审查对抗） |
-| **Document Production（文档生产）** | 论文/报告/专利/方案/白皮书等完整交付物 | 明确的文档类型 + 交付要求 | w1→w9 全链路 + 审查方 r1→r5→终审门 | 交付版 PDF/DOCX |
+| **Quick Evidence（L0 Answer）** | 单个事实 / 标准条款 / 技术问题 | 问句、单点问题、"核实/查一下/XX 标准怎么规定" | w2 检索 → w3 核验 → 直接作答 | 结论 + `[Sx]` + `support_level`（不建工作区） |
+| **Evidence Brief（L1）** | 5–20 个 claims 的短调研 | "给一份证据简报/claim 证据表" | w2 → w3 → w4 → `build_evidence_brief.py` | `evidence_brief.md`（claim→evidence→平衡→结论） |
+| **Evidence Research（L2）** | 技术调研 / 标准研究 / 文献综述 | "调研/综述/梳理证据/给一份研究备忘录" | w1 Topic Card → w2 → w3 → w4 | `research_memo.md`（不进入起草/审查对抗） |
+| **Document Production（L3）** | 论文/报告/专利/方案/白皮书等完整交付物 | 明确的文档类型 + 交付要求 | w1→w9 全链路 + 审查方 r1→r5→终审门 | 交付版 PDF/DOCX |
+| **Safety/Regulatory（L4）** | 核安全/法规/安全关键产出 | R3/R4 密集或明确安全要求 | L3 全链路 + `--review-mode conservative` + 跨模型/人类评审 | 交付物 + `review_kind ∈ {ai-cross-model, human-expert}` |
 | **Review Only（只审不写）** | 用户已有文档，只要审查意见 | "帮我审查/审阅/红队这份现有文档" | 直接交审查方（r1→r2→r4→终审门） | 判决文件 |
 
 - **默认 = Document Production**；拿不准时先问用户意图，不得擅自降级或升级模式。
-- Quick Evidence / Evidence Research 产出**不进入对抗循环**（无需审查方判决），但结论仍必须挂 `[Sx]` 并标明 `support_level`；证据不足时降级为 `[假设]`/`[待内部确认]`，或诚实回答"证据不足"。
+- Quick Evidence / Evidence Brief / Evidence Research 产出**不进入对抗循环**（无需审查方判决），但结论仍必须挂 `[Sx]` 并标明 `support_level`；证据不足时降级为 `[假设]`/`[待内部确认]`，或诚实回答"证据不足"。Evidence Brief 用 `build_evidence_brief.py` 生成证据表，结论由 agent 基于表内态势填写。
 - Review Only 由审查方 evidence-reviewer 全权执行，本 skill 不参与改写。
 
 ## 模式开关（Mode Switch：full / light）
@@ -346,6 +348,7 @@ w6 / w8 修订规则：
 - **阶段3 子步骤 3a 批量下载 PDF**：`python ${SUITE_ROOT}/shared/scripts/download_reference_files.py 04_validated_sources.json -o reference_files/ --update-sources`（`--dry-run` 预览）
 - **阶段3 子步骤 3b 下载校验**：检查语料 `access_status` 无空值（门禁由审核方校验）
 - **阶段3 子步骤 3c 抽取 PDF 文本**：`python ${SUITE_ROOT}/shared/scripts/extract_pdf_text.py --manifest reference_files/manifest.json --sources 04_validated_sources.json --pdf-dir reference_files --update-sources --extract-quotes`
+- **Evidence Brief（L1 模式）**：`python ${SUITE_ROOT}/shared/scripts/build_evidence_brief.py 06_evidence_map.json 04_validated_sources.json -o evidence_brief.md [--review-mode <mode>]`
 - **NSFC 结题报告**（funding/engineering 域证据）：`python ${SUITE_ROOT}/shared/scripts/fetch_nsfc_report.py --approval-no <批准号> -o nsfc_dir/ [--pdf] [--ocr]` ⚠️ 逆向门户 API，使用前须确认符合 NSFC 门户条款
 - **定稿净化**（正式交付前）：`python ${SUITE_ROOT}/shared/scripts/finalize_draft.py 11_定稿.md -o 11_定稿_clean.md [--sources 04_validated_sources.json]`（`--check` 仅校验不重写）
 - **阶段10 导出 PDF**：`python ${SUITE_ROOT}/shared/scripts/export_pdf.py 11_定稿.md -o 11_定稿.pdf`（pandoc 优先，缺失时降级 python-markdown；需 Chrome/Edge 或 weasyprint 之一）。Mermaid 图默认 local-first（mermaid-cli），无本地渲染器回退 mermaid.ink（远程）；敏感内容加 `--mermaid-engine local` 禁止联网。

@@ -41,6 +41,8 @@ FINALIZE = SCRIPTS / "finalize_draft.py"
 VALIDATE_MANIFEST = SCRIPTS / "validate_manifest.py"
 SUFFICIENCY = SCRIPTS / "check_evidence_sufficiency.py"
 EVAL = ROOT / "eval" / "run_eval.py"
+SELECT = SCRIPTS / "select_sources.py"
+BRIEF = SCRIPTS / "build_evidence_brief.py"
 
 
 def run(script: Path, *args: str) -> tuple[int, str, str]:
@@ -870,6 +872,80 @@ class EvalHarnessTests(unittest.TestCase):
         self.assertEqual(data["errors"], 0)
         self.assertGreaterEqual(data["passed"], 9)
         self.assertGreaterEqual(data["manual"], 4, "agent-behavior golden cases should exist")
+
+
+class P1RegistryRankingTests(unittest.TestCase):
+    """select_sources.py: registry is a priority list, not a whitelist."""
+
+    def setUp(self):
+        self._tmp = tempfile.TemporaryDirectory()
+        self.tmp = Path(self._tmp.name)
+
+    def tearDown(self):
+        self._tmp.cleanup()
+
+    def test_registry_ranked_and_discovery(self):
+        out = self.tmp / "sel.json"
+        rc, o, e = run(SELECT, "--domain", "nuclear", "--allow-discovery", "--output", str(out))
+        self.assertEqual(rc, 0, f"rc={rc}\nstdout={o}\nstderr={e}")
+        data = json.loads(out.read_text(encoding="utf-8"))
+        self.assertTrue(data["allow_discovery"])
+        self.assertIn("discovery_directives", data)
+        sources = data["selected_sources"]
+        self.assertTrue(sources)
+        priorities = [s["priority"] for s in sources]
+        self.assertEqual(priorities, sorted(priorities, reverse=True),
+                         "selected sources must be sorted by priority desc")
+        for s in sources:
+            self.assertEqual(s["source_origin"], "registry")
+            self.assertIn(s["authority"],
+                          ("A1", "A2", "A3", "B1", "B2", "C1", "C2", "D1", "D2"))
+        by_id = {s["id"]: s for s in sources}
+        self.assertEqual(by_id["iaea"]["authority"], "A1")
+        self.assertGreaterEqual(by_id["iaea"]["priority"], 90)
+
+
+class P1ReviewModeTests(unittest.TestCase):
+    """check_evidence_sufficiency.py --review-mode scales thresholds."""
+
+    def test_conservative_stricter_than_balanced(self):
+        em = ROOT / "examples" / "quickstart" / "evidence_map.json"
+        vs = ROOT / "examples" / "quickstart" / "sources.json"
+        rc_bal, out_bal, _ = run(SUFFICIENCY, str(em), str(vs), "--json")
+        rc_cons, out_cons, _ = run(SUFFICIENCY, str(em), str(vs),
+                                   "--review-mode", "conservative", "--json")
+        self.assertEqual(rc_bal, 0)
+        self.assertEqual(rc_cons, 1)
+        bal = json.loads(out_bal)
+        cons = json.loads(out_cons)
+        self.assertEqual(bal["passed"], 2)
+        self.assertEqual(cons["review_mode"], "conservative")
+        self.assertGreater(bal["passed"], cons["passed"])
+
+
+class P1EvidenceBriefTests(unittest.TestCase):
+    """build_evidence_brief.py: L1 human-readable evidence brief."""
+
+    def setUp(self):
+        self._tmp = tempfile.TemporaryDirectory()
+        self.tmp = Path(self._tmp.name)
+
+    def tearDown(self):
+        self._tmp.cleanup()
+
+    def test_brief_renders(self):
+        em = ROOT / "examples" / "quickstart" / "evidence_map.json"
+        vs = ROOT / "examples" / "quickstart" / "sources.json"
+        out = self.tmp / "brief.md"
+        rc, o, e = run(BRIEF, str(em), str(vs), "-o", str(out))
+        self.assertEqual(rc, 0, f"rc={rc}\nstdout={o}\nstderr={e}")
+        text = out.read_text(encoding="utf-8")
+        self.assertIn("# Evidence Brief", text)
+        self.assertIn("| C-001", text)
+        self.assertIn("| C-002", text)
+        self.assertIn("结论（由 Agent 填写）", text)
+        self.assertIn("充分性", text)
+        self.assertIn("平衡", text)
 
 
 if __name__ == "__main__":
