@@ -182,12 +182,15 @@ proposal_workspace/
 ### 默认严谨层级（Default Rigor Level）
 
 - **默认要求**：证据类论断（E/M/N/L）必须带 `[Sx]`，来源须经审核方 r1 审计；严谨度按 `risk` 分级（R0–R4，见 `claim_evidence_layer.md` 的 Risk Tier）。
-- **规则可配置**：`risk_tiers` / `doc_minimums` / 可疑域名等规则的权威取值在 `${SUITE_ROOT}/shared/config/rules.yaml`（本 SKILL 与 `claim_evidence_layer.md` 的表格是其默认档文档化快照）。场景覆盖用 `--profile <scenario>`（如 `medical` 提高 R2/R3 权威要求、`general_tech` 放宽 R3 至 B1）或仓库级 `config/rules.user.yaml`；脚本（`validate_sources.py`、`check_citations.py`）经 `--profile`/`--doc-type`/`--rules` 读取同一份规则。
+- **证据充分性（claim 级）**：每个证据类论断由 `check_evidence_sufficiency.py` 按 `rules.yaml` 的 `evidence_sufficiency[risk]` 判定——primary 来源数、独立来源数、现行性（N 类须 `current`）、反证覆盖；不足即标注缺口，**与文档级来源数量下限解耦**。
+- **规则可配置**：`risk_tiers` / `evidence_sufficiency` / `doc_minimums` / 可疑域名等规则的权威取值在 `${SUITE_ROOT}/shared/config/rules.yaml`（本 SKILL 与 `claim_evidence_layer.md` 的表格是其默认档文档化快照）。场景覆盖用 `--profile <scenario>`（如 `medical` 提高 R2/R3 权威要求、`general_tech` 放宽 R3 至 B1）或仓库级 `config/rules.user.yaml`；脚本（`validate_sources.py`、`check_citations.py`、`check_evidence_sufficiency.py`）经 `--profile`/`--doc-type`/`--rules` 读取同一份规则。
 - 未经审计的 w2 检索内容 → 标注 `[待内部确认]`，不得用作支撑性证据。
 - **Risk Tier 决定约束**：R1 静态单源即可；R2 需 ≥2 独立来源交叉；R3（监管/安全/财务）需 primary source + 现行性 + live 回源；R4（安全关键/法律/投稿关键）需独立复现或人工签核。
 - 默认大多数普通事实为 R1/R2；**方法论、核心贡献、结论、安全/监管/财务类段落标 R3/R4**，勿把全套重约束用在每个论断上。
 
-### 参考文献数量下限（Minimum Source Count）
+### 参考文献数量下限（Minimum Source Count = 写作格式下限，非证据质量代理）
+
+> **重要**：下表是**写作格式下限**（院校/期刊/机构的篇幅与文献格式要求），**不是证据质量门**。证据是否足够由 `check_evidence_sufficiency.py` 按 claim 逐条判定（primary / 独立来源 / 现行性 / 反证覆盖，见 `rules.yaml` 的 `evidence_sufficiency`）。**不要为了凑数量而灌无关来源**——三条强原始证据（如 IAEA + NRC + EPRI）可能胜过 20 篇弱相关论文。
 
 正文参考文献（`[Sx]` 条目）数量不得低于文档类型对应的下限，否则视为**调研不充分**，审核方会退回 w2 补检索：
 

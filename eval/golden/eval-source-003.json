@@ -1,0 +1,12 @@
+{
+  "id": "eval-source-003",
+  "dimension": "source_suspect_domain",
+  "kind": "script",
+  "expectation": "block",
+  "description": "百科域名作来源 → BLOCK（语料自检）",
+  "fixtures": {
+    "corpus.json": "{\n  \"sources\": [\n    {\"source_id\": \"S1\", \"title\": \"A\", \"url\": \"https://baike.baidu.com/item/xxx\", \"access_status\": \"confirmed\", \"type\": \"report\", \"authority\": \"D2\", \"freshness\": \"unknown\"}\n  ]\n}\n"
+  },
+  "expect_rc": 1,
+  "expect_stdout_has": ["suspect domain"]
+}

@@ -1,0 +1,12 @@
+{
+  "id": "eval-source-005",
+  "dimension": "manifest_schema",
+  "kind": "script",
+  "expectation": "block",
+  "description": "manifest 含非法枚举/缺字段 → 契约校验拒绝",
+  "fixtures": {
+    "manifest.json": "{\n  \"schema_version\": \"0.2.0\",\n  \"review_kind\": \"ai-internal\",\n  \"verification_mode\": \"static\",\n  \"finalized_at\": \"2026-08-22\",\n  \"claims\": [\n    {\"claim_id\": \"C-001\", \"claim_class\": \"X\", \"claim_text\": \"t\", \"evidence\": [{\"source_id\": \"S1\", \"support_level\": \"bogus\"}]}\n  ]\n}\n"
+  },
+  "expect_rc": 1,
+  "expect_stdout_has": ["claim_class has illegal value"]
+}

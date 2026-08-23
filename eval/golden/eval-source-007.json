@@ -1,0 +1,13 @@
+{
+  "id": "eval-source-007",
+  "dimension": "evidence_sufficiency",
+  "kind": "script",
+  "expectation": "pass",
+  "description": "R3 规范论断：2 独立来源（1 现行标准）+ 反证负结果 → 充分",
+  "fixtures": {
+    "em.json": "{\n  \"evidence_map\": [\n    {\"claim_to_write\": \"某规范论断\", \"claim_class\": \"N\", \"risk\": \"R3\", \"evidence_status\": \"supported\", \"source_support_levels\": {\"S1\": \"direct\", \"S2\": \"direct\"}, \"counter_evidence_search\": [\"本次检索未找到公开反证\"]}\n  ]\n}\n",
+    "vs.json": "{\n  \"sources\": [\n    {\"source_id\": \"S1\", \"title\": \"A\", \"url\": \"https://example.com/a\", \"access_status\": \"confirmed\", \"type\": \"standard\", \"authority\": \"A2\", \"freshness\": \"current\"},\n    {\"source_id\": \"S2\", \"title\": \"B\", \"url\": \"https://example.com/b\", \"access_status\": \"confirmed\", \"type\": \"technical_report\", \"authority\": \"B1\", \"freshness\": \"current\"}\n  ]\n}\n"
+  },
+  "expect_rc": 0,
+  "expect_stdout_has": []
+}

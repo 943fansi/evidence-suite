@@ -109,6 +109,44 @@ claim_classes:
     needs_source: false
     check: "reasoning_chain"
 
+# claim-weighted evidence sufficiency（证据充分性，按 claim 的 risk tier 逐条判定）
+#
+# 文档级 doc_minimums.min_sources 只是「写作格式下限」（院校/期刊/机构要求），
+# 不是证据质量代理；证据是否足够由 check_evidence_sufficiency.py 按 claim 判定。
+#   min_primary_sources      该 risk 至少需要几条 primary 来源
+#                             （primary = authority ∈ {A1,A2,A3,B1,B2}）
+#   min_independent_sources  至少需要几条独立来源（按 source_id 去重计）
+#   live                     该 risk 是否要求 live 回源 / 现行性核验
+#   contradiction_coverage   是否要求显式反证覆盖
+#                             （counter_evidence 非空，或 counter_evidence_search
+#                               已记录"本次检索未找到公开反证"负结果）
+evidence_sufficiency:
+  R0:
+    min_primary_sources: 0
+    min_independent_sources: 0
+    live: false
+    contradiction_coverage: false
+  R1:
+    min_primary_sources: 0
+    min_independent_sources: 1
+    live: false
+    contradiction_coverage: false
+  R2:
+    min_primary_sources: 1
+    min_independent_sources: 2
+    live: false
+    contradiction_coverage: true
+  R3:
+    min_primary_sources: 1
+    min_independent_sources: 2
+    live: true
+    contradiction_coverage: true
+  R4:
+    min_primary_sources: 2
+    min_independent_sources: 2
+    live: true
+    contradiction_coverage: true
+
 # 文档类型 → 来源数 / 正文深度下限（SKILL.md「参考文献数量下限」表以此为源）
 doc_minimums:
   proposal:

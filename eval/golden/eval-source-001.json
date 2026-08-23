@@ -1,0 +1,12 @@
+{
+  "id": "eval-source-001",
+  "dimension": "citation_closure",
+  "kind": "script",
+  "expectation": "block",
+  "description": "正文引用语料中不存在的 S3 → 引用未闭合，应 BLOCK",
+  "fixtures": {
+    "draft.md": "# 正文\n\n这是一个论断 [S1]，还有一个没来源的 [S3]。\n\n## 参考文献\n\n[S1] 某来源标题一. http://example.com/a\n"
+  },
+  "expect_rc": 1,
+  "expect_stdout_has": ["orphaned_s"]
+}

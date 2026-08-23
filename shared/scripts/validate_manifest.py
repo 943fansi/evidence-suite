@@ -31,7 +31,7 @@ import re
 import sys
 from pathlib import Path
 
-SCHEMA_VERSION = "0.1.0"
+SCHEMA_VERSION = "0.2.0"
 
 REVIEW_KINDS = ("ai-internal", "ai-cross-model", "human-expert")
 VERIFICATION_MODES = ("static", "live")
@@ -47,6 +47,9 @@ EVIDENCE_STATUSES = (
 )
 AUTHORITIES = ("A1", "A2", "A3", "B1", "B2", "C1", "C2", "D1", "D2")
 FRESHNESSES = ("current", "recent", "historical", "superseded", "unknown")
+RELATIONS = ("supports", "contradicts", "context_only")
+CONFIDENCES = ("high", "medium", "low")
+LOCATOR_KEYS = ("page", "section", "paragraph", "quote_hash")
 
 SOURCE_ID_RE = re.compile(r"^S\d+$")
 CLAIM_ID_RE = re.compile(r"^C-\d+$")
@@ -185,6 +188,23 @@ def _validate_claims(data: dict) -> list[str]:
             _check_enum(problems, ev, "support_level", SUPPORT_LEVELS)
             _check_enum(problems, ev, "authority", AUTHORITIES)
             _check_enum(problems, ev, "freshness", FRESHNESSES)
+            _check_enum(problems, ev, "relation", RELATIONS)
+            locator = ev.get("locator")
+            if locator is not None:
+                if not isinstance(locator, dict):
+                    problems.append(f"{eprefix}.locator must be an object")
+                else:
+                    for k in locator:
+                        if k not in LOCATOR_KEYS:
+                            problems.append(f"{eprefix}.locator has unknown key {k!r} "
+                                            f"(allowed: {', '.join(LOCATOR_KEYS)})")
+                        elif k == "page" and not isinstance(locator[k], int):
+                            problems.append(f"{eprefix}.locator.page must be an integer")
+                        elif k == "paragraph" and not isinstance(locator[k], int):
+                            problems.append(f"{eprefix}.locator.paragraph must be an integer")
+        _check_enum(problems, claim, "confidence", CONFIDENCES)
+        if "interpretation" in claim and not isinstance(claim.get("interpretation"), str):
+            problems.append(f"{prefix}.interpretation must be a string")
     return problems
 
 

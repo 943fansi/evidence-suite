@@ -1,0 +1,9 @@
+{
+  "id": "eval-ssrf-002",
+  "dimension": "ssrf_guard",
+  "kind": "script",
+  "expectation": "pass",
+  "description": "公开公网 IP 字面量 → 放行",
+  "url": "http://93.184.216.34/a.pdf",
+  "expect_blocked": false
+}

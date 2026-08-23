@@ -1,0 +1,12 @@
+{
+  "id": "eval-source-002",
+  "dimension": "citation_closure",
+  "kind": "script",
+  "expectation": "pass",
+  "description": "引用完全闭合 → PASS",
+  "fixtures": {
+    "draft.md": "# 正文\n\n这是一个论断 [S1]，另一个 [S2]。\n\n## 参考文献\n\n[S1] 某来源标题一. http://example.com/a\n[S2] 某来源标题二. http://example.com/b\n"
+  },
+  "expect_rc": 0,
+  "expect_stdout_has": []
+}

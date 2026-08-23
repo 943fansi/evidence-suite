@@ -6,9 +6,17 @@
       "claim_class": "M",
       "risk": "R2",
       "evidence_status": "supported",
-      "source_support_levels": {"S1": "direct"},
+      "source_support_levels": {"S1": "direct", "S3": "strong_inference"},
+      "source_relations": {"S1": "supports", "S3": "supports"},
+      "source_locators": {
+        "S1": {"page": 12, "section": "2.1", "paragraph": 3},
+        "S3": {"page": 4, "section": "1.2"}
+      },
+      "confidence": "high",
+      "interpretation": "S1 综述直接陈述该议题，S3 官方报告独立佐证；推理链两步内闭合",
+      "counter_evidence_search": ["本次检索未找到公开反证"],
       "reconciliation": {
-        "support_summary": "S1(direct)",
+        "support_summary": "S1(direct), S3(strong_inference)",
         "contradiction_summary": "",
         "verdict": "supported",
         "rationale": "本次检索未找到公开反证"
@@ -20,9 +28,17 @@
       "claim_class": "N",
       "risk": "R3",
       "evidence_status": "supported",
-      "source_support_levels": {"S2": "direct"},
+      "source_support_levels": {"S2": "direct", "S3": "direct"},
+      "source_relations": {"S2": "supports", "S3": "supports"},
+      "source_locators": {
+        "S2": {"section": "5.2.3", "quote_hash": "sha256:abcdef"},
+        "S3": {"section": "3.1"}
+      },
+      "confidence": "high",
+      "interpretation": "标准条款级定位（5.2.3），EPRI 报告独立佐证，freshness=current",
+      "counter_evidence_search": ["本次检索未找到公开反证"],
       "reconciliation": {
-        "support_summary": "S2(direct)",
+        "support_summary": "S2(direct), S3(direct)",
         "contradiction_summary": "",
         "verdict": "supported",
         "rationale": "现行标准，freshness=current"

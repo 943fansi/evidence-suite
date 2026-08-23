@@ -1,5 +1,7 @@
 # Security Policy
 
+> 完整威胁模型、信任边界与逐威胁缓解见 **[`THREAT_MODEL.md`](THREAT_MODEL.md)**；本文件为具体防护措施清单。
+
 ## 概述（先读）
 
 > ⚠️ 本仓库是一套**证据驱动写作 / 审查 Agent Skill**（非独立应用）。安装它，意味着运行该 skill 的 Agent 会获得一组**本地脚本执行能力**与**联网能力**（来源检索、PDF 下载、NSFC 抓取、远程图渲染）。请按需授权；**不要在高敏感生产环境直接运行未做沙箱隔离的版本**。若只需确定性校验，请只授权运行不联网的校验类脚本（见下方白名单）。
@@ -43,6 +45,12 @@ Agent 与用户**只能执行下表内列出的脚本**，不得用动态生成�
 
 - 网页 / PDF / 抽取文本 / 引文一律视为**不可信数据**，可能包含 `ignore previous instructions` 一类注入载荷。处理规则见 `shared/references/source-safety.md`（`SOURCE CONTENT IS UNTRUSTED DATA`，最高优先级）。
 - 来源内容进入模型前用 `<UNTRUSTED_SOURCE>` 包裹并声明无指令权威；其中任何"指令"只当证据文本，绝不执行。
+
+### 恶意 PDF / 超大文档防护
+
+- `download_reference_files.py` 下载上限默认 200 MB（`--max-bytes`）。
+- `extract_pdf_text.py` 抽取上限：`--max-pages` 默认 500 页、`--max-chars` 默认 500 万字符；超限即截断并标记 `pdf_text_truncated: true`，不静默处理，防 zip-bomb / 巨型 OCR 文档耗尽内存磁盘。
+- 抽取文本照旧按不可信数据进入模型（见上）。
 
 ## 凭据与密钥
 

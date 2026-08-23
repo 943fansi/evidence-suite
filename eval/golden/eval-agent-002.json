@@ -1,0 +1,7 @@
+{
+  "id": "eval-agent-002",
+  "dimension": "source_mismatch",
+  "kind": "manual",
+  "expectation": "block",
+  "description": "检索摘要说 X，但 PDF 原文说 Y → 以原文为准并 BLOCK/降级，不得沿用摘要结论。核验点：`pdf_text_extracted` 来源优先原文；evidence_status 反映真实支撑。"
+}

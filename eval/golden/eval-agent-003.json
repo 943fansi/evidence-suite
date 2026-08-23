@@ -1,0 +1,7 @@
+{
+  "id": "eval-agent-003",
+  "dimension": "contradiction_handling",
+  "kind": "manual",
+  "expectation": "no_false_consensus",
+  "description": "两个来源互相矛盾 → 不得合成虚假共识；reconciliation 判 contradicted/partially_supported，正文须回应反方证据。核验点：`contradiction_summary` 记录反证；正文出现反方证据。"
+}

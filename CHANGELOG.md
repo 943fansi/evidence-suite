@@ -75,6 +75,13 @@
 - **export_pdf.py 补齐首行缩进**：正文段落 `text-indent: 2em`（中文 2 字符，与 DOCX 对齐；blockquote/li/表格单元/参考文献悬挂缩进不受影响），新增 `--no-indent` 关闭
 - README 新增「导出能力」矩阵；回归测试 38→43 用例（DOCX 缩进 XML / Mermaid PNG 嵌入 / 失败占位 / PDF CSS 缩进开关）
 
+### V2 评审 P0 批次（证据工程化）
+- **P0-② 证据模型升级（Claim–Evidence–Source 图）**：claim_manifest schema 的 evidence 增加 `relation`（supports/contradicts/context_only）与 `locator`（page/section/paragraph/quote_hash），claim 级增加 `confidence`（high/medium/low）与 `interpretation`；`schema_version` 0.1.0→**0.2.0**；`validate_manifest.py` 校验新字段；`finalize_draft.py` 从 evidence_map 的 `source_relations`/`source_locators`/`confidence`/`interpretation` 透传，relation 可由 support_level 派生（contradictory→contradicts 等）；`claim_evidence_layer.md` 新增 V2 数据模型章节
+- **P0-① 证据充分性解耦**：`rules.yaml` 新增 `evidence_sufficiency`（按 risk tier 的 primary/独立来源/live/反证覆盖）；新增 `shared/scripts/check_evidence_sufficiency.py` claim 级逐条判定，与文档级 `min_sources` 解耦（后者明确为写作格式下限）；quickstart demo 升级为充分性达标示例（+EPRI 官方来源 + 反证负结果）并在 demo 脚本加入充分性步骤
+- **P0-③ 安全威胁模型**：新增 `THREAT_MODEL.md`（信任边界 / T1–T7 逐威胁分析 / 数据分级 / 残余风险）；`extract_pdf_text.py` 增加 `--max-pages`（500）与 `--max-chars`（500 万）防恶意 PDF/zip-bomb，超限标记 `pdf_text_truncated`；`SECURITY.md` 增加恶意 PDF 小节并链接 THREAT_MODEL
+- **P0-④ Eval/Golden 套件**：新增 `eval/golden/` 14 个 golden 用例（9 script 级自动判分 + 5 agent 行为级人工打分）+ `eval/run_eval.py` harness（输出 `eval/report.md`）；benchmarks/README 标注 eval/ 迁移
+- 回归测试 43→50 用例（claim 证据模型、充分性正负例、eval harness、quickstart fixtures 充分性）
+
 ### 冻结（暂不实现，无消费者 / 过早）
 - `engine/` / `policies/` 三层目录重构
 - 评测基准的**实跑打分**（需接真实 agent，当前仅用例集定义）

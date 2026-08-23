@@ -102,6 +102,7 @@ shared/
 │   ├── rule_profile.py              # 规则配置加载器（default + rules.user.yaml + --rules + --profile deep-merge；PyYAML 优先，内置最小解析器回退）
 │   ├── check_framework_depth.py     # 框架深度门（每实质章目标/方法/输入输出/标准依据四要素+篇幅达标）
 │   ├── check_citations.py           # Citation closure + URL/title check + --min-sources/--min-chars gates + --academic 数字引文模式
+│   ├── check_evidence_sufficiency.py# Claim 级证据充分性（按 risk tier 判定 primary/独立来源/现行性/反证覆盖；与文档级 min_sources 解耦）
 │   ├── select_sources.py            # Stage 1 source routing selector (registry → search directives)
 │   ├── fetch_nsfc_report.py         # NSFC 结题报告 fetch (search/decrypt/paged download → PDF/OCR)
 │   ├── sample_chart_data.json       # generate_charts.py 示例数据（换题请 --data 提供自己的）

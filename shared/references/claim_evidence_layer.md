@@ -223,6 +223,28 @@ actual_evidence: [citation_only]  ← insufficient
 }
 ```
 
+## Claim–Evidence–Source Model（V2 核心数据模型）
+
+> 从「引用管理器」（Claim → `[Sx]`）升级为**双向可审计图**：
+
+```text
+Claim
+  ↓
+Evidence（support/against）
+  ↓
+Source（authority / freshness / locator）
+  ↓
+Verification（static/live）
+  ↓
+Review → Decision → Artifact
+```
+
+每条 `claim` 的 `evidence[]` 增加：
+
+- **`relation`**：`supports` / `contradicts` / `context_only` —— 该来源对 claim 的方向性关系（可由 `support_level` 派生：`contradictory`→`contradicts`，`context_only`→`context_only`，其余→`supports`；`source_relations` 可显式覆盖）。
+- **`locator`**：原文定位 `{page, section, paragraph, quote_hash}` —— `quote_hash` 可用 `sha256(引用片段)`，让机器能把正文引文与原文片段对账，而非只存"引用到某篇"。
+- claim 级新增 **`confidence`**（high/medium/low）与 **`interpretation`**（解释层：观察→解读的推理摘要），对应 5-Layer 分解。
+
 ## JSON Schema Extensions
 
 ### For evidence_map.json (Stage 4)
@@ -237,6 +259,11 @@ Each entry in `evidence_map[]` extends with:
   "risk": "R2",
   "supporting_sources": ["S1"],
   "source_support_levels": {"S1": "direct"},
+  "source_relations": {"S1": "supports"},
+  "source_locators": {"S1": {"page": 37, "section": "5.2.3", "paragraph": 3,
+                              "quote_hash": "sha256…"}},
+  "confidence": "high",
+  "interpretation": "S1 原文直接陈述了该观点；观测→解读的推理一步成立",
   "evidence_status": "supported",
   "reconciliation": {
     "support_summary": "S1(direct)",

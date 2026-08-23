@@ -9,12 +9,31 @@
         {
           "source_id": "S1",
           "support_level": "direct",
+          "relation": "supports",
+          "locator": {
+            "page": 12,
+            "section": "2.1",
+            "paragraph": 3
+          },
           "authority": "C1",
           "freshness": "recent"
+        },
+        {
+          "source_id": "S3",
+          "support_level": "strong_inference",
+          "relation": "supports",
+          "locator": {
+            "page": 4,
+            "section": "1.2"
+          },
+          "authority": "B1",
+          "freshness": "current"
         }
       ],
       "evidence_status": "supported",
-      "verdict": "supported"
+      "verdict": "supported",
+      "confidence": "high",
+      "interpretation": "S1 综述直接陈述该议题，S3 官方报告独立佐证；推理链两步内闭合"
     },
     {
       "claim_id": "C-002",
@@ -25,16 +44,33 @@
         {
           "source_id": "S2",
           "support_level": "direct",
+          "relation": "supports",
+          "locator": {
+            "section": "5.2.3",
+            "quote_hash": "sha256:abcdef"
+          },
           "authority": "A2",
+          "freshness": "current"
+        },
+        {
+          "source_id": "S3",
+          "support_level": "direct",
+          "relation": "supports",
+          "locator": {
+            "section": "3.1"
+          },
+          "authority": "B1",
           "freshness": "current"
         }
       ],
       "evidence_status": "supported",
-      "verdict": "supported"
+      "verdict": "supported",
+      "confidence": "high",
+      "interpretation": "标准条款级定位（5.2.3），EPRI 报告独立佐证，freshness=current"
     }
   ],
-  "schema_version": "0.1.0",
+  "schema_version": "0.2.0",
   "review_kind": "ai-internal",
   "verification_mode": "static",
-  "finalized_at": "2026-08-22"
+  "finalized_at": "2026-08-23"
 }

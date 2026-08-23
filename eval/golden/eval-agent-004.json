@@ -1,0 +1,7 @@
+{
+  "id": "eval-agent-004",
+  "dimension": "claim_grounding",
+  "kind": "manual",
+  "expectation": "block",
+  "description": "来源存在但不能支撑 claim（语义无关）→ 判定 UNSUPPORTED，不得让无关引用挂在论断上。核验点：support_level 与原文实际支撑一致。"
+}

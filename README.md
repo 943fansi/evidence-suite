@@ -55,12 +55,13 @@ evidence-suite —— Claim 提取 → 分类 → 证据映射 → static/live �
 
 - 标记：`[Sx]` 已审计来源、`[Gx]` 研究空白、`[假设]` / `[待内部确认]` 显式留白。
 - `support_level`（direct / strong_inference / weak_inference / context_only / contradictory / unsupported）：**证据能多大程度直接证明该结论**。
+- `relation`（supports / contradicts / context_only）：证据对 claim 的方向性关系；`locator`（page/section/paragraph/quote_hash）把引用落到原文位置；claim 级 `confidence`（high/medium/low）与 `interpretation`——构成 **Claim→Evidence→Source→Locator→Relation→Confidence** 双向可审计图。
 - `evidence_status`（verified / supported / partially_supported / inferred / contradicted / unsupported / unverified / internal_confirm）：**该结论最终处于什么状态**。
 - `claim_class`（E/M/N/L 需 `[Sx]`；D 定义 / C 计算 / U 用户提供 / J 判断 不走来源真实性审查）——见 `claim_evidence_layer.md`。
 - `risk`（R0–R4）：R1 单源 / R2 独立交叉 / R3 primary+现行性+live / R4 独立复现/人工签核——把"一律有罪推定"缩小到真正高险的论断。
 - `authority`（来源权威 A1–D2）：法规 A1 / 标准 A2 / 国标行标 A3 / 官方报告 B1 / 原始实验 B2 / 期刊 C1 / 学位 C2 / 厂商 D1 / 二手 D2；R3/R4 要求来源 ≥ A2。
 - `freshness`（证据新鲜度 current / recent / historical / superseded / unknown）：政策/标准类 R3/R4 须 `current`，`superseded` 不得作现行依据。
-- 判定按「直接度」而非「来源数量」：两条 `weak_inference` ≠ 一条 `direct`。
+- 判定按「直接度」而非「来源数量」：两条 `weak_inference` ≠ 一条 `direct`；**claim 级证据充分性**由 `check_evidence_sufficiency.py` 按 risk tier 判定（primary/独立来源/现行性/反证覆盖），文档级 `min_sources` 只是写作格式下限。
 - 交付时 `finalize_draft.py --manifest` 产出 `evidence_manifest.json`（`[n]→来源` 可回溯），保留证据 provenance。
 
 详见 `shared/references/claim_evidence_layer.md`。
@@ -74,15 +75,18 @@ evidence-suite —— Claim 提取 → 分类 → 证据映射 → static/live �
 
 ```json
 {
-  "schema_version": "0.1.0",
+  "schema_version": "0.2.0",
   "review_kind": "ai-internal",
   "claim_id": "C-017",
   "claim_class": "N",
   "risk": "R3",
   "claim_text": "……",
+  "confidence": "high",
+  "interpretation": "……",
   "evidence": [
     { "source_id": "S-04", "authority": "A2", "freshness": "current",
-      "support_level": "direct", "evidence_status": "supported" }
+      "support_level": "direct", "relation": "supports",
+      "locator": {"page": 37, "section": "5.2.3", "quote_hash": "sha256…"} }
   ],
   "verification_mode": "live",
   "verdict": "supported"
@@ -100,14 +104,17 @@ evidence-suite/
 ├── evidence-writer/     # 写作方 SKILL.md + prompts/w1–w9
 ├── evidence-reviewer/   # 审查方 SKILL.md + prompts/r1–r5 + final_gate
 ├── shared/
-│   ├── scripts/         # 14 个确定性工具（Bash 执行）
+│   ├── scripts/         # 16 个确定性工具（Bash 执行）
 │   ├── schemas/         # manifest 互操作契约 JSON Schema（evidence_manifest / claim_manifest）
-│   ├── config/          # 规则配置（rules.yaml：risk_tiers / doc_minimums / 可疑域名 / 停止规则）
+│   ├── config/          # 规则配置（rules.yaml：risk_tiers / evidence_sufficiency / doc_minimums / …）
 │   ├── references/      # 按需加载的参考指南
 │   └── templates/       # 13 类文档模板
-├── examples/            # 最小示例（quickstart：一键复现净化→manifest→校验）
+├── examples/            # 最小示例（quickstart：净化→manifest→充分性→校验 一键复现）
+├── eval/                # Eval/Golden 套件（run_eval.py 自动判分 + golden 用例）
+├── tests/               # 回归测试（run_tests.py，50 用例）
 ├── README.md
 ├── SECURITY.md
+├── THREAT_MODEL.md      # 威胁模型与信任边界
 └── LICENSE
 ```
 
@@ -156,15 +163,18 @@ evidence-suite/
 
 ## 安全
 
-本套件会让 Agent 获得本地脚本执行与联网能力（来源检索、PDF 下载、NSFC 抓取）。凭据与边界见 `SECURITY.md`。
+本套件会让 Agent 获得本地脚本执行与联网能力（来源检索、PDF 下载、NSFC 抓取）。威胁模型与信任边界见 **`THREAT_MODEL.md`**，具体防护措施见 `SECURITY.md`（SSRF 拦截、路径约束、脚本白名单、恶意 PDF 上限、凭据隔离、风险声明）。
 
-## 测试
+## 测试与评测
 
 ```bash
-python tests/run_tests.py
+python tests/run_tests.py      # 回归：50 用例，仅 Python 标准库
+python eval/run_eval.py        # Eval/Golden：自动判分 + 人工打分表
 ```
 
-覆盖 `check_citations.py`（引用闭合 / 缺失 URL / 来源数下限 / 正文深度下限 / 数字引文闭合）、`validate_sources.py`（重复 URL / 可疑域名 / 缺 authority / superseded 来源 / 非法枚举）、`validate_manifest.py`（manifest 契约校验：缺失字段 / 非法枚举）、`finalize_draft.py`（manifest 生成 / dry-run 预览）、`download_reference_files.py` 的 SSRF 守卫与 `rule_profile.py`（规则配置加载 / 场景档 / 最小 YAML 解析器等价性），脚本运行路径仅用 Python 标准库。
+- **回归**（`tests/run_tests.py`）：引用闭合 / 缺 URL / 来源与深度下限 / 数字引文 / 语料自检（含 authority/freshness/superseded）/ manifest 契约校验 / SSRF 守卫 / 规则配置 / 证据充分性 / DOCX 排版与 Mermaid 嵌入 / PDF CSS。
+- **Eval/Golden**（`eval/`）：14 个 golden 用例，9 个 script 级**自动判分**（引用闭合、可疑域名、废止标准、契约非法枚举、证据充分性、SSRF 拦截），5 个 agent 行为级（prompt injection、摘要≠原文、矛盾处理、论断对齐、幻觉）需真实 agent 运行 + 人工/第二模型回填打分；结果写入 `eval/report.md`。
+- 脚本层覆盖明细见 `benchmarks/README.md`（18 个 agent 行为场景定义 + 量化指标）。
 
 ## 最小演示（Quickstart）
 

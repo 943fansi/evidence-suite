@@ -19,6 +19,16 @@
       "authority": "A2",
       "freshness": "current",
       "registry_id": "ieee"
+    },
+    {
+      "source_id": "S3",
+      "title_or_name": "EPRI 设备老化管理技术报告",
+      "url": "https://www.epri.com/example",
+      "access_status": "confirmed",
+      "type": "technical_report",
+      "authority": "B1",
+      "freshness": "current",
+      "registry_id": "epri"
     }
   ]
 }

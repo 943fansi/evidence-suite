@@ -33,6 +33,10 @@ except ImportError:
     HAS_PYPDF2 = False
 
 
+DEFAULT_MAX_PAGES = 500
+DEFAULT_MAX_CHARS = 5_000_000
+
+
 def sanitize_filename(text: str, max_len: int = 90) -> str:
     text = re.sub(r"[\\/:*?\"<>|]+", " ", text)
     text = re.sub(r"\s+", " ", text).strip()
@@ -41,44 +45,69 @@ def sanitize_filename(text: str, max_len: int = 90) -> str:
     return text[:max_len].strip("._") or "untitled"
 
 
-def extract_with_pdfplumber(pdf_path: Path) -> tuple[str, int]:
-    """Extract text using pdfplumber. Returns (text, char_count)."""
+def extract_with_pdfplumber(pdf_path: Path, max_pages: int = DEFAULT_MAX_PAGES,
+                            max_chars: int = DEFAULT_MAX_CHARS) -> tuple[str, int, bool]:
+    """Extract text using pdfplumber. Returns (text, char_count, truncated).
+
+    Defensive against malicious/oversized PDFs (zombie OCR, zip-bomb-style huge
+    extraction): caps page count and extracted chars; `truncated=True` marks a
+    truncated extraction instead of letting one PDF blow up memory/disk.
+    """
     parts: list[str] = []
+    total = 0
+    truncated = False
     with pdfplumber.open(str(pdf_path)) as pdf:
-        for page in pdf.pages:
+        pages = pdf.pages
+        for page in pages[:max_pages]:
             page_text = page.extract_text()
             if page_text:
                 parts.append(page_text)
+                total += len(page_text)
+                if total > max_chars:
+                    truncated = True
+                    break
+        if len(pages) > max_pages:
+            truncated = True
     text = "\n\n".join(parts)
-    return text, len(text)
+    return text, len(text), truncated
 
 
-def extract_with_pypdf2(pdf_path: Path) -> tuple[str, int]:
-    """Extract text using PyPDF2 as fallback."""
+def extract_with_pypdf2(pdf_path: Path, max_pages: int = DEFAULT_MAX_PAGES,
+                        max_chars: int = DEFAULT_MAX_CHARS) -> tuple[str, int, bool]:
+    """Extract text using PyPDF2 as fallback (same page/char caps)."""
     with open(pdf_path, "rb") as fh:
         reader = PyPDF2.PdfReader(fh)
         parts: list[str] = []
-        for page in reader.pages:
+        total = 0
+        truncated = False
+        for page in reader.pages[:max_pages]:
             page_text = page.extract_text()
             if page_text and page_text.strip():
                 parts.append(page_text)
+                total += len(page_text)
+                if total > max_chars:
+                    truncated = True
+                    break
+        if len(reader.pages) > max_pages:
+            truncated = True
     text = "\n\n".join(parts)
-    return text, len(text)
+    return text, len(text), truncated
 
 
-def extract_text(pdf_path: Path) -> tuple[str, int] | tuple[None, None]:
-    """Try pdfplumber first, fall back to PyPDF2. Returns (text, chars) or (None, None)."""
+def extract_text(pdf_path: Path, max_pages: int = DEFAULT_MAX_PAGES,
+                 max_chars: int = DEFAULT_MAX_CHARS) -> tuple[str, int, bool] | tuple[None, None, None]:
+    """Try pdfplumber first, fall back to PyPDF2. Returns (text, chars, truncated)."""
     if HAS_PDFPLUMBER:
         try:
-            return extract_with_pdfplumber(pdf_path)
+            return extract_with_pdfplumber(pdf_path, max_pages, max_chars)
         except Exception:
             pass
     if HAS_PYPDF2:
         try:
-            return extract_with_pypdf2(pdf_path)
+            return extract_with_pypdf2(pdf_path, max_pages, max_chars)
         except Exception:
             pass
-    return None, None
+    return None, None, None
 
 
 def load_json(path: Path) -> dict:
@@ -103,6 +132,12 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
                         help="Directory for extracted .txt files (default: same as --pdf-dir/pdf_text).")
     parser.add_argument("--extract-quotes", action="store_true",
                         help="Also search for key sentences matching topic keywords.")
+    parser.add_argument("--max-pages", type=int, default=DEFAULT_MAX_PAGES,
+                        help=f"Abort extraction of any PDF exceeding this page count "
+                             f"(default {DEFAULT_MAX_PAGES}; anti-malicious-PDF guard)")
+    parser.add_argument("--max-chars", type=int, default=DEFAULT_MAX_CHARS,
+                        help=f"Stop extracting once a single PDF exceeds this many chars "
+                             f"(default {DEFAULT_MAX_CHARS:,}; anti-zip-bomb guard)")
     parser.add_argument("--update-sources", action="store_true",
                         help="Write extraction metadata back into 04_validated_sources.json.")
     parser.add_argument("--dry-run", action="store_true",
@@ -163,12 +198,16 @@ def main(argv: list[str]) -> int:
             print(f"  [{sid}] dry-run: would extract {pdf_path} → {txt_path}")
             continue
 
-        text, chars = extract_text(pdf_path)
+        text, chars, truncated = extract_text(pdf_path, args.max_pages, args.max_chars)
         if text is None or chars == 0:
             print(f"  [{sid}] FAILED (no extractable text — likely scanned PDF): {title[:70]}")
             failed += 1
             _mark_source(id_to_source.get(sid), False, 0, "")
             continue
+
+        if truncated:
+            print(f"  [{sid}] ⚠️  TRUNCATED (>{args.max_pages} pages or >{args.max_chars:,} chars) — "
+                  f"extraction capped; 注意该 PDF 可能为恶意超大文档")
 
         # Write text file with metadata header
         source = id_to_source.get(sid, {})
@@ -177,7 +216,7 @@ def main(argv: list[str]) -> int:
         header = (
             f"[{sid}] {title}\n"
             f"URL: {source_url}\n"
-            f"Chars: {chars}\n"
+            f"Chars: {chars}" + (" (TRUNCATED)" if truncated else "") + "\n"
             f"{'=' * 60}\n\n"
         )
         with open(txt_path, "w", encoding="utf-8") as fh:
@@ -188,7 +227,7 @@ def main(argv: list[str]) -> int:
         if args.extract_quotes and chars > 100:
             verified_quote = _extract_quote(text, sources_data.get("topic", ""))
 
-        _mark_source(id_to_source.get(sid), True, chars, safe_rel, verified_quote)
+        _mark_source(id_to_source.get(sid), True, chars, safe_rel, verified_quote, truncated)
 
         print(f"  [{sid}] OK {chars:>7} chars  {title[:65]}")
         success += 1
@@ -204,12 +243,14 @@ def main(argv: list[str]) -> int:
     return 0
 
 
-def _mark_source(source: dict | None, ok: bool, chars: int, path: str, quote: str = "") -> None:
+def _mark_source(source: dict | None, ok: bool, chars: int, path: str, quote: str = "",
+                 truncated: bool = False) -> None:
     if source is None:
         return
     source["pdf_text_extracted"] = ok
     source["pdf_text_chars"] = chars
     source["pdf_text_path"] = path
+    source["pdf_text_truncated"] = truncated
     if quote:
         source["verified_quote"] = quote
 

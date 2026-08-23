@@ -1,0 +1,12 @@
+{
+  "id": "eval-source-004",
+  "dimension": "superseded_source",
+  "kind": "script",
+  "expectation": "block",
+  "description": "已废止标准被用作现行依据 → BLOCK",
+  "fixtures": {
+    "corpus.json": "{\n  \"sources\": [\n    {\"source_id\": \"S1\", \"title\": \"A\", \"url\": \"https://example.com/a\", \"access_status\": \"confirmed\", \"type\": \"standard\", \"authority\": \"A3\", \"freshness\": \"superseded\"}\n  ]\n}\n"
+  },
+  "expect_rc": 1,
+  "expect_stdout_has": ["superseded"]
+}

@@ -35,6 +35,8 @@
           "claim_class": { "type": "string", "enum": ["E", "M", "N", "L", "D", "C", "U", "J"] },
           "risk": { "type": "string", "enum": ["R0", "R1", "R2", "R3", "R4"] },
           "claim_text": { "type": "string" },
+          "interpretation": { "type": "string" },
+          "confidence": { "type": "string", "enum": ["high", "medium", "low"] },
           "evidence": {
             "type": "array",
             "items": {
@@ -47,6 +49,21 @@
                 "support_level": {
                   "type": "string",
                   "enum": ["direct", "strong_inference", "weak_inference", "context_only", "contradictory", "unsupported"]
+                },
+                "relation": {
+                  "type": "string",
+                  "enum": ["supports", "contradicts", "context_only"],
+                  "description": "该来源对该 claim 的方向性关系：supports=支持 / contradicts=反证 / context_only=仅背景"
+                },
+                "locator": {
+                  "type": "object",
+                  "description": "来源原文定位：页码/节号/段落/引用片段哈希（quote_hash 可用 sha256(原文片段) 便于机器对账）",
+                  "properties": {
+                    "page": { "type": "integer" },
+                    "section": { "type": "string" },
+                    "paragraph": { "type": "integer" },
+                    "quote_hash": { "type": "string" }
+                  }
                 }
               }
             }

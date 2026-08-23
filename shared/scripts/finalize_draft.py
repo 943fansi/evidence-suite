@@ -157,6 +157,15 @@ def source_metadata(sources_path: Path | None) -> dict[str, dict[str, str]]:
     return meta
 
 
+def _relation_from_level(level: str) -> str:
+    """Derive the directional relation from a support_level when not explicit."""
+    if level == "contradictory":
+        return "contradicts"
+    if level == "context_only":
+        return "context_only"
+    return "supports"
+
+
 def evidence_map_claims(em_path: Path | None) -> dict[str, list[dict[str, str]]]:
     """Load per-source claim provenance from 06_evidence_map.json."""
     if not em_path or not em_path.exists():
@@ -173,9 +182,21 @@ def evidence_map_claims(em_path: Path | None) -> dict[str, list[dict[str, str]]]
         levels = entry.get("source_support_levels") or {}
         if not isinstance(levels, dict):
             levels = {}
+        relations = entry.get("source_relations") or {}
+        if not isinstance(relations, dict):
+            relations = {}
+        locators = entry.get("source_locators") or {}
+        if not isinstance(locators, dict):
+            locators = {}
         for sid, lvl in levels.items():
-            rec = {"claim_text": claim_text, "claim_class": claim_class,
-                   "support_level": str(lvl), "evidence_status": status}
+            rec: dict = {"claim_text": claim_text, "claim_class": claim_class,
+                         "support_level": str(lvl), "evidence_status": status}
+            rel = relations.get(sid)
+            if rel:
+                rec["relation"] = str(rel)
+            loc = locators.get(sid)
+            if isinstance(loc, dict):
+                rec["locator"] = loc
             out.setdefault(str(sid), []).append(rec)
     return out
 
@@ -192,9 +213,20 @@ def build_claim_manifest(em_path: Path, meta: dict) -> dict:
         levels = entry.get("source_support_levels") or {}
         if not isinstance(levels, dict):
             levels = {}
+        relations = entry.get("source_relations") or {}
+        if not isinstance(relations, dict):
+            relations = {}
+        locators = entry.get("source_locators") or {}
+        if not isinstance(locators, dict):
+            locators = {}
         evidence: list[dict] = []
         for sid, lvl in levels.items():
             rec: dict = {"source_id": str(sid), "support_level": str(lvl)}
+            rel = relations.get(sid)
+            rec["relation"] = str(rel) if rel else _relation_from_level(str(lvl))
+            loc = locators.get(sid)
+            if isinstance(loc, dict) and loc:
+                rec["locator"] = loc
             m = meta.get(str(sid))
             if m:
                 if m.get("authority"):
@@ -205,7 +237,7 @@ def build_claim_manifest(em_path: Path, meta: dict) -> dict:
         status = str(entry.get("evidence_status", "")).strip()
         recon = entry.get("reconciliation") or {}
         verdict = status or str(recon.get("verdict", "")).strip()
-        claims.append({
+        claim: dict = {
             "claim_id": f"C-{i:03d}",
             "claim_class": str(entry.get("claim_class", "")).strip(),
             "risk": str(entry.get("risk", "")).strip(),
@@ -213,7 +245,14 @@ def build_claim_manifest(em_path: Path, meta: dict) -> dict:
             "evidence": evidence,
             "evidence_status": status,
             "verdict": verdict,
-        })
+        }
+        confidence = entry.get("confidence")
+        if confidence:
+            claim["confidence"] = str(confidence)
+        interpretation = entry.get("interpretation")
+        if interpretation:
+            claim["interpretation"] = str(interpretation).strip()
+        claims.append(claim)
     return {"claims": claims}
 
 

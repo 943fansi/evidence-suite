@@ -1,6 +1,6 @@
 # Evidence Suite 评测基准（Benchmark）
 
-衡量「证据驱动写作 / 审查」这套 skill 在**实际 agent 运行**中的表现——测的不是脚本，而是"skill 是否被正确触发、是否正确处置证据"。脚本层的确定性门禁已由 `tests/run_tests.py` 覆盖；本基准针对 **LLM/agent 行为层**，因此必须由真实 agent 运行用例后打分，不能离线生成。
+衡量「证据驱动写作 / 审查」这套 skill 在**实际 agent 运行**中的表现——测的不是脚本，而是"skill 是否被正确触发、是否正确处置证据"。脚本层的确定性门禁已由 `tests/run_tests.py` 覆盖；**可自动判分的 golden 用例已迁至 `eval/`**（`eval/run_eval.py` 一键跑分，9 个 script 级用例自动判分 + 5 个 agent 行为用例留人工/第二模型打分）。本基准保留 18 个 agent 行为场景定义与指标，供真跑 agent 时横向对比。
 
 ## 指标
 

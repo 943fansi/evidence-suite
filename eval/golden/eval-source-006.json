@@ -1,0 +1,13 @@
+{
+  "id": "eval-source-006",
+  "dimension": "evidence_sufficiency",
+  "kind": "script",
+  "expectation": "block",
+  "description": "R2 核心论断仅单源弱证据支撑 → 证据不足",
+  "fixtures": {
+    "em.json": "{\n  \"evidence_map\": [\n    {\"claim_to_write\": \"单源弱证据论断\", \"claim_class\": \"M\", \"risk\": \"R2\", \"evidence_status\": \"partially_supported\", \"source_support_levels\": {\"S1\": \"weak_inference\"}}\n  ]\n}\n",
+    "vs.json": "{\n  \"sources\": [\n    {\"source_id\": \"S1\", \"title\": \"A\", \"url\": \"https://example.com/a\", \"access_status\": \"confirmed\", \"type\": \"journal_paper\", \"authority\": \"C1\", \"freshness\": \"recent\"}\n  ]\n}\n"
+  },
+  "expect_rc": 1,
+  "expect_stdout_has": ["primary sources"]
+}

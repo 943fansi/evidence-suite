@@ -14,6 +14,9 @@ Coverage:
   - download_reference_files.py: SSRF guard (pure function, no network).
   - rule_profile.py: rules loader + scenario profiles + YAML fallback parser;
     validate_sources --profile; check_citations --doc-type/--profile.
+  - check_evidence_sufficiency.py: claim-weighted sufficiency (primary/independent/
+    currentness/contradiction coverage) + quickstart fixtures.
+  - eval/run_eval.py: auto-scored golden cases stay green.
   - export_docx.py: 2-char first-line indent, Mermaid PNG embedding + failure
     placeholder. export_pdf.py: print CSS first-line indent (on/off).
 
@@ -36,6 +39,8 @@ CHECK = SCRIPTS / "check_citations.py"
 VALIDATE = SCRIPTS / "validate_sources.py"
 FINALIZE = SCRIPTS / "finalize_draft.py"
 VALIDATE_MANIFEST = SCRIPTS / "validate_manifest.py"
+SUFFICIENCY = SCRIPTS / "check_evidence_sufficiency.py"
+EVAL = ROOT / "eval" / "run_eval.py"
 
 
 def run(script: Path, *args: str) -> tuple[int, str, str]:
@@ -180,6 +185,23 @@ EVIDENCE_MAP = """\
 """
 
 
+EVIDENCE_MAP_RICH = """\
+{
+  "evidence_map": [
+    {"claim_to_write": "某论断A", "claim_class": "M", "risk": "R2",
+     "evidence_status": "supported", "confidence": "high",
+     "interpretation": "S1 原文直接陈述",
+     "source_support_levels": {"S1": "direct"},
+     "source_relations": {"S1": "supports"},
+     "source_locators": {"S1": {"page": 12, "section": "2.1", "paragraph": 3}}},
+    {"claim_to_write": "某论断B", "claim_class": "N", "risk": "R3",
+     "evidence_status": "contradicted",
+     "source_support_levels": {"S2": "contradictory"}}
+  ]
+}
+"""
+
+
 class CitationClosureTests(unittest.TestCase):
     def setUp(self):
         self._tmp = tempfile.TemporaryDirectory()
@@ -317,7 +339,7 @@ class FinalizeManifestTests(unittest.TestCase):
         self.assertEqual(rc, 0, f"rc={rc}\nstdout={o}\nstderr={e}")
         data = json.loads(cm.read_text(encoding="utf-8"))
         self.assertEqual(data["verification_mode"], "static")
-        self.assertEqual(data["schema_version"], "0.1.0")
+        self.assertEqual(data["schema_version"], "0.2.0")
         self.assertEqual(data["review_kind"], "ai-internal")
         self.assertEqual(len(data["claims"]), 2)
         first = data["claims"][0]
@@ -336,6 +358,28 @@ class FinalizeManifestTests(unittest.TestCase):
         self.assertIn("dry-run", o)
         self.assertFalse(out.exists(), "dry-run must not write the cleaned draft")
         self.assertFalse(man.exists(), "dry-run must not write the manifest")
+
+    def test_claim_manifest_evidence_model(self):
+        """V2 model: relation derived, locator/confidence/interpretation carried."""
+        draft = write(self.tmp, "draft.md", CLEAN_DRAFT)
+        emap = write(self.tmp, "emap.json", EVIDENCE_MAP_RICH)
+        sources = write(self.tmp, "sources.json", CLEAN_CORPUS)
+        cm = self.tmp / "claim_manifest.json"
+        rc, o, e = run(FINALIZE, str(draft), "--claim-manifest", str(cm),
+                       "--evidence-map", str(emap), "--sources", str(sources))
+        self.assertEqual(rc, 0, f"rc={rc}\nstdout={o}\nstderr={e}")
+        data = json.loads(cm.read_text(encoding="utf-8"))
+        first = data["claims"][0]
+        self.assertEqual(first["confidence"], "high")
+        self.assertIn("interpretation", first)
+        ev = first["evidence"][0]
+        self.assertEqual(ev["relation"], "supports")
+        self.assertEqual(ev["locator"]["page"], 12)
+        self.assertEqual(ev["locator"]["section"], "2.1")
+        # relation derived from contradictory support_level when not explicit
+        second = data["claims"][1]
+        self.assertEqual(second["evidence"][0]["relation"], "contradicts")
+        self.assertNotIn("confidence", second)
 
 
 class ManifestSchemaTests(unittest.TestCase):
@@ -360,7 +404,7 @@ class ManifestSchemaTests(unittest.TestCase):
         self.assertEqual(rc, 0, f"rc={rc}\nstdout={out}\nstderr={err}")
         data = json.loads(man.read_text(encoding="utf-8"))
         self.assertEqual(data["review_kind"], "ai-cross-model")
-        self.assertEqual(data["schema_version"], "0.1.0")
+        self.assertEqual(data["schema_version"], "0.2.0")
 
     def test_generated_claim_manifest_validates(self):
         draft = write(self.tmp, "draft.md", CLEAN_DRAFT)
@@ -376,7 +420,7 @@ class ManifestSchemaTests(unittest.TestCase):
     def test_illegal_enum_blocks(self):
         bad = write(self.tmp, "bad.json", """\
 {
-  "schema_version": "0.1.0",
+  "schema_version": "0.2.0",
   "review_kind": "ai-internal",
   "verification_mode": "static",
   "finalized_at": "2026-08-22",
@@ -394,7 +438,7 @@ class ManifestSchemaTests(unittest.TestCase):
     def test_missing_review_kind_blocks(self):
         bad = write(self.tmp, "nork.json", """\
 {
-  "schema_version": "0.1.0",
+  "schema_version": "0.2.0",
   "verification_mode": "static",
   "finalized_at": "2026-08-22",
   "claims": []
@@ -407,7 +451,7 @@ class ManifestSchemaTests(unittest.TestCase):
     def test_missing_mapping_claim_blocks(self):
         bad = write(self.tmp, "empty.json", """\
 {
-  "schema_version": "0.1.0",
+  "schema_version": "0.2.0",
   "review_kind": "ai-internal",
   "verification_mode": "static",
   "finalized_at": "2026-08-22"
@@ -416,6 +460,27 @@ class ManifestSchemaTests(unittest.TestCase):
         rc, out, err = run(VALIDATE_MANIFEST, str(bad))
         self.assertEqual(rc, 1)
         self.assertIn("either a 'mapping' array", out)
+
+    def test_illegal_relation_locator_confidence_blocks(self):
+        bad = write(self.tmp, "badrel.json", """\
+{
+  "schema_version": "0.2.0",
+  "review_kind": "ai-internal",
+  "verification_mode": "static",
+  "finalized_at": "2026-08-22",
+  "claims": [
+    {"claim_id": "C-001", "claim_class": "N", "claim_text": "t",
+     "confidence": "certain",
+     "evidence": [{"source_id": "S1", "support_level": "direct",
+                   "relation": "rejects", "locator": {"page": "x"}}]}
+  ]
+}
+""")
+        rc, out, err = run(VALIDATE_MANIFEST, str(bad))
+        self.assertEqual(rc, 1)
+        self.assertIn("relation has illegal value 'rejects'", out)
+        self.assertIn("locator.page must be an integer", out)
+        self.assertIn("confidence has illegal value 'certain'", out)
 
 
 class SsrfGuardTests(unittest.TestCase):
@@ -685,6 +750,126 @@ class ExportPdfCssTests(unittest.TestCase):
         css = self.pdf._print_css(indent=False)
         self.assertIn("text-indent: 0", css)
         self.assertNotIn("text-indent: 2em", css)
+
+
+EM_SUFFICIENT = """\
+{
+  "evidence_map": [
+    {"claim_to_write": "某论断A", "claim_class": "M", "risk": "R2",
+     "evidence_status": "supported",
+     "source_support_levels": {"S1": "direct", "S2": "direct"},
+     "counter_evidence_search": ["本次检索未找到公开反证"]},
+    {"claim_to_write": "某论断B", "claim_class": "N", "risk": "R3",
+     "evidence_status": "supported",
+     "source_support_levels": {"S2": "direct", "S3": "direct"},
+     "counter_evidence_search": ["本次检索未找到公开反证"]}
+  ]
+}
+"""
+
+EM_INSUFFICIENT = """\
+{
+  "evidence_map": [
+    {"claim_to_write": "单源弱证据论断", "claim_class": "M", "risk": "R2",
+     "evidence_status": "partially_supported",
+     "source_support_levels": {"S1": "weak_inference"}}
+  ]
+}
+"""
+
+EM_STALE_NORMATIVE = """\
+{
+  "evidence_map": [
+    {"claim_to_write": "用已废止标准作现行依据", "claim_class": "N", "risk": "R3",
+     "evidence_status": "supported",
+     "source_support_levels": {"S1": "direct", "S2": "direct"},
+     "counter_evidence_search": ["本次检索未找到公开反证"]}
+  ]
+}
+"""
+
+SOURCES_SUFFICIENT = """\
+{
+  "sources": [
+    {"source_id": "S1", "title": "A", "url": "https://example.com/a", "access_status": "confirmed",
+     "type": "journal_paper", "authority": "C1", "freshness": "recent"},
+    {"source_id": "S2", "title": "B", "url": "https://example.com/b", "access_status": "confirmed",
+     "type": "technical_report", "authority": "B1", "freshness": "current"},
+    {"source_id": "S3", "title": "C", "url": "https://example.com/c", "access_status": "confirmed",
+     "type": "standard", "authority": "A2", "freshness": "current"}
+  ]
+}
+"""
+
+SOURCES_STALE = """\
+{
+  "sources": [
+    {"source_id": "S1", "title": "A", "url": "https://example.com/a", "access_status": "confirmed",
+     "type": "standard", "authority": "A3", "freshness": "superseded"},
+    {"source_id": "S2", "title": "B", "url": "https://example.com/b", "access_status": "confirmed",
+     "type": "technical_report", "authority": "B1", "freshness": "recent"}
+  ]
+}
+"""
+
+
+class EvidenceSufficiencyTests(unittest.TestCase):
+    """check_evidence_sufficiency.py: claim-weighted gate, decoupled from min_sources."""
+
+    def setUp(self):
+        self._tmp = tempfile.TemporaryDirectory()
+        self.tmp = Path(self._tmp.name)
+
+    def tearDown(self):
+        self._tmp.cleanup()
+
+    def test_sufficient_claims_pass(self):
+        em = write(self.tmp, "em.json", EM_SUFFICIENT)
+        vs = write(self.tmp, "vs.json", SOURCES_SUFFICIENT)
+        rc, out, err = run(SUFFICIENCY, str(em), str(vs), "--json")
+        self.assertEqual(rc, 0, f"rc={rc}\nstdout={out}\nstderr={err}")
+        data = json.loads(out)
+        self.assertEqual(data["passed"], 2)
+        self.assertEqual(data["failed"], 0)
+
+    def test_single_weak_source_fails(self):
+        em = write(self.tmp, "em2.json", EM_INSUFFICIENT)
+        vs = write(self.tmp, "vs2.json", SOURCES_SUFFICIENT)
+        rc, out, err = run(SUFFICIENCY, str(em), str(vs), "--json")
+        self.assertEqual(rc, 1)
+        data = json.loads(out)
+        self.assertEqual(data["failed"], 1)
+        joined = "\n".join(data["results"][0]["reasons"])
+        self.assertIn("primary sources", joined)
+        self.assertIn("independent sources", joined)
+
+    def test_stale_normative_source_fails(self):
+        em = write(self.tmp, "em3.json", EM_STALE_NORMATIVE)
+        vs = write(self.tmp, "vs3.json", SOURCES_STALE)
+        rc, out, err = run(SUFFICIENCY, str(em), str(vs), "--json")
+        self.assertEqual(rc, 1)
+        joined = "\n".join(json.loads(out)["results"][0]["reasons"])
+        self.assertIn("current", joined)
+
+    def test_quickstart_fixtures_pass(self):
+        em = ROOT / "examples" / "quickstart" / "evidence_map.json"
+        vs = ROOT / "examples" / "quickstart" / "sources.json"
+        rc, out, err = run(SUFFICIENCY, str(em), str(vs), "--json")
+        self.assertEqual(rc, 0, f"rc={rc}\nstdout={out}\nstderr={err}")
+        self.assertEqual(json.loads(out)["passed"], 2)
+
+
+class EvalHarnessTests(unittest.TestCase):
+    """eval/run_eval.py: auto-scored golden cases must stay green."""
+
+    def test_auto_golden_cases_pass(self):
+        rc, out, err = run(EVAL, "--json")
+        self.assertEqual(rc, 0, f"rc={rc}\nstdout={out}\nstderr={err}")
+        data = json.loads(out)
+        self.assertEqual(data["failed"], 0)
+        self.assertEqual(data["errors"], 0)
+        self.assertGreaterEqual(data["passed"], 9)
+        self.assertGreaterEqual(data["manual"], 4, "agent-behavior golden cases should exist")
 
 
 if __name__ == "__main__":
