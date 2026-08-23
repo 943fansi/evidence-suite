@@ -425,6 +425,41 @@ def _change_summary(orig: str, out: str) -> str:
     return "\n".join(lines)
 
 
+def build_source_manifest(text: str, sources_path: Path | None,
+                          evidence_map_path: Path | None,
+                          review_kind: str, verification_mode: str) -> dict:
+    """Build the source-centric interop manifest ([Sx]→[n]→source_id + claims[]).
+
+    Extracted from the --manifest write path so export_provenance.py can reuse it.
+    """
+    id_map = id_map_from_draft(text)
+    meta = source_metadata(sources_path)
+    claims = evidence_map_claims(evidence_map_path)
+    mapping = []
+    for key in sorted(id_map, key=lambda k: int(id_map[k])):
+        entry: dict = {
+            "citation": f"[{key}]", "mapped": f"[{id_map[key]}]", "source_id": key,
+        }
+        m = meta.get(key)
+        if m:
+            if m.get("title"):
+                entry["title"] = m["title"]
+            if m.get("url"):
+                entry["url"] = m["url"]
+        cs = claims.get(key)
+        if cs:
+            entry["claims"] = cs
+        mapping.append(entry)
+    return {
+        "schema_version": SCHEMA_VERSION,
+        "review_kind": review_kind,
+        "verification_mode": verification_mode,
+        "finalized_at": date.today().isoformat(),
+        "note": "claim 级字段来自 06_evidence_map.json（--evidence-map 提供时自动合并）",
+        "mapping": mapping,
+    }
+
+
 def main() -> int:
     _ensure_utf8_streams()
     parser = argparse.ArgumentParser(description=__doc__)
@@ -506,32 +541,8 @@ def main() -> int:
         sys.stdout.write(out)
 
     if args.manifest:
-        id_map = id_map_from_draft(text)
-        meta = source_metadata(args.sources)
-        claims = evidence_map_claims(args.evidence_map)
-        mapping = []
-        for key in sorted(id_map, key=lambda k: int(id_map[k])):
-            entry: dict = {
-                "citation": f"[{key}]", "mapped": f"[{id_map[key]}]", "source_id": key,
-            }
-            m = meta.get(key)
-            if m:
-                if m.get("title"):
-                    entry["title"] = m["title"]
-                if m.get("url"):
-                    entry["url"] = m["url"]
-            cs = claims.get(key)
-            if cs:
-                entry["claims"] = cs
-            mapping.append(entry)
-        manifest = {
-            "schema_version": SCHEMA_VERSION,
-            "review_kind": args.review_kind,
-            "verification_mode": args.verification_mode,
-            "finalized_at": date.today().isoformat(),
-            "note": "claim 级字段来自 06_evidence_map.json（--evidence-map 提供时自动合并）",
-            "mapping": mapping,
-        }
+        manifest = build_source_manifest(text, args.sources, args.evidence_map,
+                                         args.review_kind, args.verification_mode)
         if not args.no_validate_manifest:
             problems = validate_manifest(manifest)
             if problems:

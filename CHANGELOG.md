@@ -88,6 +88,12 @@
 - **P1-⑧ Evidence Brief（L1）**：新增 `shared/scripts/build_evidence_brief.py`——evidence_map + sources → claim→evidence→平衡→置信度 表格 + 逐条详情 + 充分性判定（复用 check_claim，review-mode aware），结论由 agent 填写不代写；写作者 SKILL 运行模式表升级为 L0–L4 梯子（Quick/Brief/Research/Document/Safety + Review Only）
 - 回归测试 50→53 用例（Registry 排序与 discovery、review_mode 缩放、Evidence Brief 渲染）
 
+### V2 评审 P2 批次（Provenance 机器可审计 + Research-case + Evidence Score）
+- **P2-⑩ Provenance 五件套**：`finalize_draft.py` 抽出 `build_source_manifest` 复用；新增 `shared/scripts/export_provenance.py`——`--draft/--sources/--evidence-map/--review-dir` 产出 `research_case/provenance/report.{claims,evidence,source-map,review}.json`；`report.review.json` 从审查判决文件的 `**判决**` 行解析各阶段判决 + `review_kind`；PDF/DOCX 给人看、evidence JSON 给机器审计
+- **P2-⑨ Research-case-centric**：工作目录约定 `proposal_workspace/` → **`research_case/`**（兼容旧名），明确为"question → claims → evidence → conflicts → decisions → revisions → final artifact"档案；SKILL/README/SECURITY/final_gate/.gitignore 同步
+- **Evidence Score 评分模型**：`build_evidence_brief.py` 每条 claim 增加加权评分（权威25/直接度20/独立15/新鲜10/可溯15/反证10/可复现5，0–100 分 + Strong/Good/Moderate/Weak/Insufficient）；**评分不替代硬门禁**，先过充分性门再看分
+- 回归测试 53→55 用例（provenance 五件套 + 判决解析、Evidence Score 渲染）
+
 ### 冻结（暂不实现，无消费者 / 过早）
 - `engine/` / `policies/` 三层目录重构
 - 评测基准的**实跑打分**（需接真实 agent，当前仅用例集定义）

@@ -28,7 +28,7 @@ Agent 与用户**只能执行下表内列出的脚本**，不得用动态生成�
 
 ### 路径防护（Path Containment）
 
-- 所有共享脚本只允许访问**套件工作目录**（`${SUITE_ROOT}` 下的 `proposal_workspace/`、`reference_files/`、`pdf_text/`、`figures/`、`qa/` 等）及用户显式指定的输入/输出文件。
+- 所有共享脚本只允许访问**套件工作目录**（`${SUITE_ROOT}` 下的 `research_case/`、`reference_files/`、`pdf_text/`、`figures/`、`qa/`、`provenance/` 等）及用户显式指定的输入/输出文件。
 - 脚本路径一律基于运行时解析的 `${SUITE_ROOT}` 或 `Path(__file__).resolve()`，**不接受绝对路径输入**，并拒绝路径逃逸（`..` / `..\` 越权读取宿主敏感文件，如 `.env`、`~/.ssh/`、系统配置）。
 - 文件名清洗（`download_reference_files.py` 的 `sanitize_filename_part`）已剥离 `\ / : * ? " < > |`，语料中的 URL / 标题不得用于构造可跳出输出目录的文件名。
 - Agent 在把语料 / 网页 / PDF 中的任何路径用作文件位置前，必须先解析并确认落在允许目录内。
@@ -69,5 +69,5 @@ Agent 与用户**只能执行下表内列出的脚本**，不得用动态生成�
 ## 建议
 
 - 在受限环境（沙箱 / CI / Docker）中运行：仅授予最小权限，或只运行不联网的校验类脚本；可参考路线图"沙箱运行指引"使用容器隔离脚本执行。
-- 下载与导出的输出目录（`reference_files/`、`pdf_text/`、`proposal_workspace/`、导出物、`figures/`、`qa/`）均已加入 `.gitignore`，不会误提交。
+- 下载与导出的输出目录（`reference_files/`、`pdf_text/`、`research_case/`、`provenance/`、导出物、`figures/`、`qa/`）均已加入 `.gitignore`，不会误提交。
 - 发现安全漏洞（路径逃逸、SSRF 绕过、注入、越权执行等），请通过 GitHub Issues 联系维护者，并附最小复现；不要公开披露未修复的细节。

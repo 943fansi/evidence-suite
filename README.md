@@ -101,6 +101,8 @@ evidence-suite —— Claim 提取 → 分类 → 证据映射 → static/live �
 
 研究 Agent 只需产出 `claim → evidence → verdict` 结构即可被 Reviewer / 终审门消费；反之本套件产出的 verified manifest 也可回喂给研究 Agent 的 writer。
 
+**Provenance 五件套（`export_provenance.py`）**：终审门通过后，把交付物与其审计档案一起落地到 `research_case/provenance/`——`report.claims.json` / `report.evidence.json` / `report.source-map.json`（正文 `[n]` 引文 → source_id + locator 对账表）/ `report.review.json`（各阶段判决 + `review_kind`）。**PDF/DOCX 给人看，evidence JSON 给机器审计**，正文引文与证据图谱不再因净化而失去对应关系。
+
 ## 目录结构
 
 ```

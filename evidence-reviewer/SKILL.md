@@ -198,7 +198,8 @@ license: MIT
 - **框架深度门**：`python ${SUITE_ROOT}/shared/scripts/check_framework_depth.py 11_定稿.md`
 - **证据充分性（claim 级）**：`python ${SUITE_ROOT}/shared/scripts/check_evidence_sufficiency.py 06_evidence_map.json 04_validated_sources.json [--profile <scenario>]`——按 claim 的 risk tier 判定 primary/独立来源/现行性/反证覆盖，**与文档级来源数量下限解耦**；文档级 `--min-sources` 只是写作格式下限，不是证据质量门。
 - **净化校验**（净化版）：`python ${SUITE_ROOT}/shared/scripts/finalize_draft.py 11_定稿_clean.md --check --sources 04_validated_sources.json`（若终稿为 `14_专家修订稿.md`，改用 `14_专家修订稿_clean.md`；净化合规只对净化版检查，对工作稿会误报脚手架残留）
-- **阶段门禁**：`python ${SUITE_ROOT}/shared/scripts/inspect_pipeline.py --gates ./proposal_workspace`
+- **阶段门禁**：`python ${SUITE_ROOT}/shared/scripts/inspect_pipeline.py --gates ./research_case`
+- **Provenance 五件套（终审门后）**：`python ${SUITE_ROOT}/shared/scripts/export_provenance.py --draft 11_定稿_clean.md --sources 04_validated_sources.json --evidence-map 06_evidence_map.json --review-dir ./research_case --review-kind <kind> -o research_case/provenance`——产出 `report.{claims,evidence,source-map,review}.json` 供机器审计
 - **残留扫描**：Grep 搜索 `[Sx]`、`[Gx]`、`[假设]`、`[待内部确认]`、`图例`、`附录A`、封面占位（`编号：2023xxxx`）等。
 
 脚本通过是**必要条件**，但不是充分条件——审查者的判断（过度宣称、叙事模式、深层缺口）脚本覆盖不到，必须人工审查。

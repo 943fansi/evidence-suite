@@ -21,7 +21,7 @@ license: MIT
 - **evidence-writer（本 skill）**：负责**生产**——文档适配、来源检索、验证语料、证据图谱、起草、修订、导出。
 - **evidence-reviewer**：负责**审查**——来源审计、诚实性自评、框架深度门、初稿审查、外部专家评审、终审门。
 
-两者的关系是**提交 → 审查 → 判决 → 修订**的对抗循环：作者不自我放行，审查者不帮作者圆场。共用一套工作区文件契约（`proposal_workspace/` 下的 `00_topic.md` … `14_专家修订稿.md`）与共享资产库（`${SUITE_ROOT}/shared/`，原 SKILL.md 已停用，仅保留 scripts/references/templates 供两侧调用）。
+两者的关系是**提交 → 审查 → 判决 → 修订**的对抗循环：作者不自我放行，审查者不帮作者圆场。共用一套**Research Case** 工作区文件契约（`research_case/`，旧名 `proposal_workspace/`，下的 `00_topic.md` … `14_专家修订稿.md`）与共享资产库（`${SUITE_ROOT}/shared/`，原 SKILL.md 已停用，仅保留 scripts/references/templates 供两侧调用）。
 
 核心不变：**证据类论断**（外部事实 E / 实证 M / 规范 N / 文献 L）**挂载 `[Sx]` 来源标记**；**非证据类论断**（作者定义 D / 计算 C / 用户提供 U / 判断 J）不走外部来源真实性审查，按自身方式检查（一致性 / 可复现 / 标注来源）。证据不足的 E/M/N/L 论断显式降级为 `[假设]` / `[待内部确认]`。分类与审查路径见 `claim_evidence_layer.md` 的 Claim Class。
 
@@ -156,17 +156,17 @@ license: MIT
 
 > **定稿净化（Finalize）**：任何**正式交付物**（学位论文、期刊投稿、专利交底书/申请草案、GF 报告）在阶段 9→10 之间必须运行一次 `finalize_draft.py`，把工作稿的 `[Sx]`/`[Gx]`/`[假设]`/`[待内部确认]` 脚手架、附录 A"证据缺口清单"、`references/*.md` 内部路径、封面占位（`编号：2023xxxx`、`资助项目`）等**内部痕迹**转换为标准顺序编码 `[1]..[n]` 的干净交付版。净化清单见 `${SUITE_ROOT}/shared/references/finalize_checklist.md`。**净化不可逆**：仅对"最终导出"的文件运行，工作稿（11_定稿.md 等）保留脚手架以便回退与审计。
 
-**工作目录约定**（默认 `./proposal_workspace/`，与审核方共用同一目录与文件契约）：
+**工作目录约定（Research Case）**：默认 `./research_case/`（旧名 `proposal_workspace/`，兼容读取；**research case = 一个问题从 question → claims → evidence → conflicts → decisions → revisions → final artifact 的完整档案**，与审核方共用同一目录与文件契约）：
 
 ```
-proposal_workspace/
-├── 00_topic.md                 # 阶段0（写作者）
-├── 02_raw_sources.json         # 阶段1（写作者）
+research_case/
+├── 00_topic.md                 # 阶段0（写作者）— question / Topic Card
+├── 02_raw_sources.json         # 阶段1（写作者）— 检索候选（含 source_origin）
 ├── 03_audit_report.md          # 阶段2（审核方）
 ├── 04_validated_sources.json   # 阶段3（写作者，含 3a/3b/3c 子步骤产物）
 ├── reference_files/*.pdf       # 阶段3a 产物
 ├── pdf_text/*.txt              # 阶段3c 产物
-├── 06_evidence_map.json        # 阶段4（写作者）
+├── 06_evidence_map.json        # 阶段4（写作者）— claims + evidence + conflicts
 ├── 07_honest_assessment.md     # 阶段4b（审核方）
 ├── 08_初稿.md                  # 阶段5（写作者）
 ├── 10_review.md                # 阶段6（审核方）
@@ -174,6 +174,11 @@ proposal_workspace/
 ├── 12_外部专家意见.md          # 阶段8（审核方）
 ├── 14_专家修订稿.md            # 阶段9（写作者）
 ├── 11_定稿_clean.md            # 定稿净化产物（交付版，[1]..[n] 顺序编码）
+├── provenance/                 # 机器可审计五件套（export_provenance.py）
+│   ├── report.claims.json
+│   ├── report.evidence.json
+│   ├── report.source-map.json
+│   └── report.review.json
 ├── {filename}.pdf              # 阶段10
 ├── {filename}.docx             # 阶段10（Word 交付）
 └── qa/*.png                    # 阶段10 视觉抽检截图（交付前目检）

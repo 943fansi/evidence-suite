@@ -27,7 +27,7 @@ import json
 import sys
 from pathlib import Path
 
-from check_evidence_sufficiency import DEFAULT_TIER, check_claim
+from check_evidence_sufficiency import DEFAULT_TIER, _coverage_ok, check_claim
 from rule_profile import load_rules
 
 PRIMARY_AUTHORITIES = ("A1", "A2", "A3", "B1", "B2")
@@ -35,6 +35,56 @@ RELATION_OF = {
     "direct": "supports", "strong_inference": "supports", "weak_inference": "supports",
     "contradictory": "contradicts", "context_only": "context_only", "unsupported": "unsupported",
 }
+AUTHORITY_POINTS = {"A1": 1.0, "A2": 0.9, "A3": 0.8, "B1": 0.7, "B2": 0.6,
+                    "C1": 0.5, "C2": 0.4, "D1": 0.3, "D2": 0.2}
+LEVEL_POINTS = {"direct": 1.0, "strong_inference": 0.8, "weak_inference": 0.5}
+FRESHNESS_POINTS = {"current": 1.0, "recent": 0.7, "historical": 0.4, "superseded": 0.1}
+
+
+def _grade(score: float) -> str:
+    if score >= 90:
+        return "Strong"
+    if score >= 75:
+        return "Good"
+    if score >= 60:
+        return "Moderate"
+    if score >= 40:
+        return "Weak"
+    return "Insufficient"
+
+
+def _score_claim(claim: dict, source_by_id: dict, levels: dict,
+                 relations: dict, locators: dict) -> tuple[float, str]:
+    """Weighted Evidence Score (0–100). Weights: authority 25 / directness 20 /
+    independence 15 / recency 10 / traceability 15 / contradiction 10 /
+    reproducibility 5. Scoring complements — never replaces — the hard gate."""
+    support = []
+    for sid, lvl in levels.items():
+        rel = str(relations.get(sid, "") or RELATION_OF.get(str(lvl), "supports"))
+        if rel == "contradicts":
+            continue
+        s = source_by_id.get(sid, {})
+        support.append({
+            "lvl": str(lvl),
+            "authority": str(s.get("authority", "")),
+            "freshness": str(s.get("freshness", "")),
+            "loc": locators.get(sid) if isinstance(locators.get(sid), dict) else None,
+            "url": bool(str(s.get("url", "")).strip()),
+        })
+    if not support:
+        return 0.0, _grade(0.0)
+    n = len(support)
+    authority = sum(AUTHORITY_POINTS.get(x["authority"], 0.4) for x in support) / n * 25
+    directness = sum(LEVEL_POINTS.get(x["lvl"], 0.3) for x in support) / n * 20
+    independence = min(1.0, n / 2) * 15
+    recency = sum(FRESHNESS_POINTS.get(x["freshness"], 0.3) for x in support) / n * 10
+    traceability = sum(1 for x in support if x["loc"] or x["url"]) / n * 15
+    contradiction = 10.0 if _coverage_ok(claim) else 0.0
+    reproducibility = min(5.0, (3.0 if claim.get("claim_class") in ("C", "M") else 5.0)
+                          + (2.0 if any(x["loc"] for x in support) else 0.0))
+    score = authority + directness + independence + recency + traceability \
+        + contradiction + reproducibility
+    return round(score, 1), _grade(score)
 
 
 def _ensure_utf8_streams() -> None:
@@ -119,6 +169,7 @@ def build_brief(em: dict, vs: dict, rules: dict, review_mode: str | None = None)
             else:
                 support.append(label)
         balance = _balance_mark(support, against, context)
+        score, grade = _score_claim(claim, source_by_id, levels, relations, locators)
 
         tier = dict(DEFAULT_TIER)
         tier.update(sufficiency.get(risk, {}) if isinstance(sufficiency.get(risk), dict) else {})
@@ -129,7 +180,7 @@ def build_brief(em: dict, vs: dict, rules: dict, review_mode: str | None = None)
 
         rows.append(f"| {cid} | {claim_class} | {risk} | {text[:60]} | "
                     f"{len(support)} | {len(against)} | {status or '-'} | {balance} | "
-                    f"{confidence} |")
+                    f"{confidence} | {score}/{grade} |")
 
         details.append(f"### {cid} [{risk}/{claim_class}] {text}")
         if support:
@@ -139,6 +190,8 @@ def build_brief(em: dict, vs: dict, rules: dict, review_mode: str | None = None)
         if context:
             details.append(f"- 背景：{'；'.join(context)}")
         details.append(f"- 状态/判决：{status or '-'} / {verdict} | 平衡：{balance} | 置信度：{confidence}")
+        details.append(f"- Evidence Score：**{score}（{grade}）**（权威 25 / 直接度 20 / 独立 15 / "
+                       f"新鲜 10 / 可溯 15 / 反证 10 / 可复现 5——评分不替代硬门禁）")
         if outcome["pass"]:
             details.append(f"- 充分性：✅ 达标（{mode}，乘数 {multiplier:g}）")
         else:
@@ -150,12 +203,14 @@ def build_brief(em: dict, vs: dict, rules: dict, review_mode: str | None = None)
 
 - 生成时间：{__import__('datetime').date.today().isoformat()}
 - 审查模式：{mode}（evidence 乘数 {multiplier:g}）｜profile：{rules.get('active_profile') or 'default'}
-- 声明：本表只呈现证据与充分性判定，**结论由 agent/用户填写**，脚本不代写。
+- 声明：本表只呈现证据、充分性判定与评分，**结论由 agent/用户填写**，脚本不代写。
+- 评分：Evidence Score 0–100（权威25/直接度20/独立15/新鲜10/可溯15/反证10/可复现5）；**
+  评分不替代硬门禁**，先过门禁再看分。
 
 ## 汇总
 
-| Claim | class | risk | 论断 | 支持 | 反证 | status | 平衡 | 置信度 |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| Claim | class | risk | 论断 | 支持 | 反证 | status | 平衡 | 置信度 | 评分 |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 """
     brief = header + "\n".join(rows)
     brief += f"\n\n证据充分性：**{sufficient}/{total}** claim 达标。\n\n## 逐条详情\n\n" + "\n\n".join(details)

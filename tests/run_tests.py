@@ -15,7 +15,10 @@ Coverage:
   - rule_profile.py: rules loader + scenario profiles + YAML fallback parser;
     validate_sources --profile; check_citations --doc-type/--profile.
   - check_evidence_sufficiency.py: claim-weighted sufficiency (primary/independent/
-    currentness/contradiction coverage) + quickstart fixtures.
+    currentness/contradiction coverage) + quickstart fixtures + --review-mode.
+  - select_sources.py: registry ranking (priority/authority/source_origin) + discovery.
+  - build_evidence_brief.py: L1 brief rendering + Evidence Score.
+  - export_provenance.py: five-piece provenance bundle + review verdict parsing.
   - eval/run_eval.py: auto-scored golden cases stay green.
   - export_docx.py: 2-char first-line indent, Mermaid PNG embedding + failure
     placeholder. export_pdf.py: print CSS first-line indent (on/off).
@@ -946,6 +949,62 @@ class P1EvidenceBriefTests(unittest.TestCase):
         self.assertIn("结论（由 Agent 填写）", text)
         self.assertIn("充分性", text)
         self.assertIn("平衡", text)
+        self.assertIn("Evidence Score", text)
+        self.assertIn("Good", text)
+        self.assertIn("Strong", text)
+
+
+PROVENANCE = SCRIPTS / "export_provenance.py"
+
+
+class ProvenanceExportTests(unittest.TestCase):
+    """export_provenance.py: machine-auditable five-piece bundle."""
+
+    def setUp(self):
+        self._tmp = tempfile.TemporaryDirectory()
+        self.tmp = Path(self._tmp.name)
+
+    def tearDown(self):
+        self._tmp.cleanup()
+
+    def test_provenance_bundle_emitted(self):
+        em = ROOT / "examples" / "quickstart" / "evidence_map.json"
+        vs = ROOT / "examples" / "quickstart" / "sources.json"
+        draft = ROOT / "examples" / "quickstart" / "input_draft.md"
+        out = self.tmp / "provenance"
+        rc, o, e = run(PROVENANCE, "--draft", str(draft), "--sources", str(vs),
+                       "--evidence-map", str(em), "--review-kind", "ai-cross-model",
+                       "-o", str(out))
+        self.assertEqual(rc, 0, f"rc={rc}\nstdout={o}\nstderr={e}")
+        expected = ["report.claims.json", "report.evidence.json",
+                    "report.source-map.json", "report.review.json"]
+        for name in expected:
+            self.assertTrue((out / name).exists(), f"missing {name}")
+        claims = json.loads((out / "report.claims.json").read_text(encoding="utf-8"))
+        self.assertEqual(claims["review_kind"], "ai-cross-model")
+        self.assertEqual(claims["schema_version"], "0.2.0")
+        self.assertEqual(len(claims["claims"]), 2)
+        source_map = json.loads((out / "report.source-map.json").read_text(encoding="utf-8"))
+        self.assertGreaterEqual(len(source_map["mapping"]), 2)
+
+    def test_provenance_parses_review_verdicts(self):
+        em = ROOT / "examples" / "quickstart" / "evidence_map.json"
+        vs = ROOT / "examples" / "quickstart" / "sources.json"
+        draft = ROOT / "examples" / "quickstart" / "input_draft.md"
+        review_dir = self.tmp / "workspace"
+        review_dir.mkdir()
+        (review_dir / "10_review.md").write_text(
+            "# 10_review.md\n\n## 一、总体判决\n**判决**: 🔧 小修后通过\n",
+            encoding="utf-8")
+        out = self.tmp / "prov"
+        rc, o, e = run(PROVENANCE, "--draft", str(draft), "--sources", str(vs),
+                       "--evidence-map", str(em), "--review-dir", str(review_dir),
+                       "-o", str(out))
+        self.assertEqual(rc, 0, f"rc={rc}\nstdout={o}\nstderr={e}")
+        review = json.loads((out / "report.review.json").read_text(encoding="utf-8"))
+        self.assertEqual(len(review["stages"]), 1)
+        self.assertEqual(review["stages"][0]["file"], "10_review.md")
+        self.assertIn("小修后通过", review["stages"][0]["verdict"])
 
 
 if __name__ == "__main__":
