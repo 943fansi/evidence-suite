@@ -115,9 +115,11 @@ evidence-suite/
 │   ├── config/          # 规则配置（rules.yaml：risk_tiers / evidence_sufficiency / doc_minimums / …）
 │   ├── references/      # 按需加载的参考指南
 │   └── templates/       # 13 类文档模板
-├── examples/            # 最小示例（quickstart：净化→manifest→充分性→校验 一键复现）
+├── examples/            # 最小示例（quickstart：净化→manifest→充分性→Brief→Provenance→校验 一键复现）
 ├── eval/                # Eval/Golden 套件（run_eval.py 自动判分 + golden 用例）
-├── tests/               # 回归测试（run_tests.py，50 用例）
+├── runtime/             # 运行时能力配置（capability.yaml 模板 + probe_capabilities.py 探测结果）
+├── docker/              # Docker 沙箱（隔离脚本执行，可断网）
+├── tests/               # 回归测试（run_tests.py，56 用例）
 ├── README.md
 ├── SECURITY.md
 ├── THREAT_MODEL.md      # 威胁模型与信任边界
@@ -153,7 +155,9 @@ evidence-suite/
 
 1. 克隆仓库，让支持 `SKILL.md` 的 Agent 加载两个 skill（`evidence-writer`、`evidence-reviewer`）。
 2. 依赖：Python 3；`pip install -r shared/requirements.txt`（按需）；可选 pandoc / Chrome 用于 PDF 导出。
-3. 写文档 → 触发写作方；审文档 → 触发审查方。
+3. **能力探测**：`python shared/scripts/probe_capabilities.py --human` 生成 `runtime/capability.local.json`，Agent 据此自动选择最佳路径（pandoc 缺失→python-markdown 回退、mmdc 缺失→mermaid.ink 远程、pdfplumber 缺失→告警而非静默失败）。
+4. 写文档 → 触发写作方；审文档 → 触发审查方。
+5. **沙箱**（可选）：`docker build -t evidence-suite -f docker/Dockerfile .`，容器内断网跑校验脚本（见 `docker/README.md`）。
 
 路径约定：所有共享资产以 `${SUITE_ROOT}`（套件根目录）开头，由 agent 加载 skill 时解析，无需写死绝对路径。
 

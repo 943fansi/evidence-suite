@@ -19,6 +19,7 @@ Coverage:
   - select_sources.py: registry ranking (priority/authority/source_origin) + discovery.
   - build_evidence_brief.py: L1 brief rendering + Evidence Score.
   - export_provenance.py: five-piece provenance bundle + review verdict parsing.
+  - probe_capabilities.py: runtime capability profile emission.
   - eval/run_eval.py: auto-scored golden cases stay green.
   - export_docx.py: 2-char first-line indent, Mermaid PNG embedding + failure
     placeholder. export_pdf.py: print CSS first-line indent (on/off).
@@ -46,6 +47,7 @@ SUFFICIENCY = SCRIPTS / "check_evidence_sufficiency.py"
 EVAL = ROOT / "eval" / "run_eval.py"
 SELECT = SCRIPTS / "select_sources.py"
 BRIEF = SCRIPTS / "build_evidence_brief.py"
+PROBE = SCRIPTS / "probe_capabilities.py"
 
 
 def run(script: Path, *args: str) -> tuple[int, str, str]:
@@ -1005,6 +1007,31 @@ class ProvenanceExportTests(unittest.TestCase):
         self.assertEqual(len(review["stages"]), 1)
         self.assertEqual(review["stages"][0]["file"], "10_review.md")
         self.assertIn("小修后通过", review["stages"][0]["verdict"])
+
+
+class CapabilityProbeTests(unittest.TestCase):
+    """probe_capabilities.py: runtime capability profile (all-local checks)."""
+
+    def setUp(self):
+        self._tmp = tempfile.TemporaryDirectory()
+        self.tmp = Path(self._tmp.name)
+
+    def tearDown(self):
+        self._tmp.cleanup()
+
+    def test_probe_emits_profile(self):
+        out = self.tmp / "cap.json"
+        rc, o, e = run(PROBE, "--output", str(out))
+        self.assertEqual(rc, 0, f"rc={rc}\nstdout={o}\nstderr={e}")
+        caps = json.loads(out.read_text(encoding="utf-8"))
+        self.assertIn(caps["platform"], ("windows", "linux", "darwin"))
+        self.assertTrue(caps["filesystem"])
+        for key in ("markdown", "docx", "pdfplumber", "pypdf2", "pymupdf",
+                    "weasyprint", "matplotlib", "numpy", "yaml", "ocr",
+                    "pandoc", "mmdc", "curl", "pdf_render"):
+            self.assertIsInstance(caps.get(key), bool, f"{key} must be boolean")
+        self.assertIn("shell", caps)
+        self.assertIn("python_version", caps)
 
 
 if __name__ == "__main__":

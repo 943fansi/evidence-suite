@@ -24,6 +24,9 @@ eval/report.md
 # Repository-level rule overrides (auto-loaded by rule_profile.py)
 /config/
 
+# Runtime capability probe output (template runtime/capability.yaml is committed)
+runtime/capability.local.json
+
 # Python
 __pycache__/
 *.pyc

@@ -1,0 +1,22 @@
+# runtime capability 模板（仓库自带默认值；实际探测结果写入 runtime/capability.local.json，不提交）
+#
+# 用途：让 evidence-suite 根据运行环境自动选择最佳路径（如 pandoc 缺失→python-markdown
+# 回退、mmdc 缺失→mermaid.ink 远程、pdfplumber 缺失→跳过 PDF 原文抽取并告警）。
+# 由 probe_capabilities.py 生成 runtime/capability.local.json，Agent 在加载 skill 时读取。
+#
+# 注：本文件是默认档模板，仅描述可探测的能力；不要手工改本地值，跑一次探测即可。
+
+filesystem: true          # 本地文件系统读写（套件工作区内）
+python: ">=3.10"          # 运行脚本所需 Python 版本
+shell: auto               # powershell | bash | auto（由平台推断）
+web_search: true          # Agent 是否具备联网搜索
+web_fetch: true           # Agent 是否具备联网抓取
+pdf_extract: false        # pdfplumber/PyPDF2 是否可用（探测）
+pdf_render: false         # weasyprint / Chrome 是否可用于 PDF 导出（探测）
+mermaid_local: false      # mermaid-cli (mmdc) 是否可用（本地渲染）
+ocr: false                # easyocr 是否可用（NSFC --ocr）
+pandoc: false             # pandoc 是否可用（PDF 导出主路径）
+markdown: false           # python-markdown 是否可用（pandoc 回退）
+docx: false               # python-docx 是否可用（DOCX 导出）
+network: false            # 网络可达性（探测 --network 时判定）
+parallel_agents: false    # 是否支持并行子 agent（当前不可自动探测，人工配置）

@@ -94,6 +94,12 @@
 - **Evidence Score 评分模型**：`build_evidence_brief.py` 每条 claim 增加加权评分（权威25/直接度20/独立15/新鲜10/可溯15/反证10/可复现5，0–100 分 + Strong/Good/Moderate/Weak/Insufficient）；**评分不替代硬门禁**，先过充分性门再看分
 - 回归测试 53→55 用例（provenance 五件套 + 判决解析、Evidence Score 渲染）
 
+### V2 评审 P3 批次（运行环境可移植性 + Docker 沙箱 + demo 完整化）
+- **运行环境可移植性**：新增 `runtime/capability.yaml` 模板 + `shared/scripts/probe_capabilities.py`——探测 python 版本/平台/shell、工具库（markdown/docx/pdfplumber/PyPDF2/PyMuPDF/weasyprint/matplotlib/yaml/OCR）、pandoc/mmdc/curl、浏览器、文件系统、可选网络（`--network`）；输出 `runtime/capability.local.json`（gitignore），Agent 据此自动选路径（pandoc 缺失→python-markdown 回退等）
+- **Docker 沙箱**：`docker/Dockerfile`（python:3.12-slim + pandoc + CJK 字体 + requirements）+ `docker/README.md`（只读挂载套件、可写工作区、`--network none` 断网跑校验脚本）；`SECURITY.md` 沙箱建议指向 docker/README
+- **quickstart demo 完整化**：run_demo 增加 Evidence Brief + Provenance 步骤，展示净化→manifest→充分性→Brief→Provenance→校验全闭环
+- 回归测试 55→56 用例（能力探测 profile）
+
 ### 冻结（暂不实现，无消费者 / 过早）
 - `engine/` / `policies/` 三层目录重构
 - 评测基准的**实跑打分**（需接真实 agent，当前仅用例集定义）
