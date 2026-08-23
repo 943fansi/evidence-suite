@@ -48,6 +48,7 @@ EVAL = ROOT / "eval" / "run_eval.py"
 SELECT = SCRIPTS / "select_sources.py"
 BRIEF = SCRIPTS / "build_evidence_brief.py"
 PROBE = SCRIPTS / "probe_capabilities.py"
+FRAMEWORK = SCRIPTS / "check_framework_depth.py"
 
 
 def run(script: Path, *args: str) -> tuple[int, str, str]:
@@ -1091,6 +1092,58 @@ class CapabilityProbeTests(unittest.TestCase):
             self.assertIsInstance(caps.get(key), bool, f"{key} must be boolean")
         self.assertIn("shell", caps)
         self.assertIn("python_version", caps)
+
+
+THIN_FRAMEWORK_DRAFT = """\
+# 文档
+
+## 第一章 方法实现
+
+### 目标
+
+内容。
+
+### 方法
+
+内容。
+
+### 输入输出
+
+内容。
+
+### 标准依据
+
+内容。
+
+## 参考文献
+
+[S1] 来源一. http://example.com/a
+"""
+
+
+class FrameworkDepthRulesTests(unittest.TestCase):
+    """check_framework_depth.py reads min-chars floor from rules.yaml."""
+
+    def setUp(self):
+        self._tmp = tempfile.TemporaryDirectory()
+        self.tmp = Path(self._tmp.name)
+
+    def tearDown(self):
+        self._tmp.cleanup()
+
+    def test_rules_default_floor_flags_thin_chapter(self):
+        draft = write(self.tmp, "thin.md", THIN_FRAMEWORK_DRAFT)
+        rc, out, err = run(FRAMEWORK, str(draft), "--json")
+        self.assertEqual(rc, 1, f"rc={rc}\nstdout={out}\nstderr={err}")
+        data = json.loads(out)
+        self.assertEqual(len(data["chapters"]), 1)
+        self.assertTrue(data["chapters"][0]["thin"])
+
+    def test_explicit_lower_floor_passes(self):
+        draft = write(self.tmp, "thin.md", THIN_FRAMEWORK_DRAFT)
+        rc, out, err = run(FRAMEWORK, str(draft), "--min-chars-per-chapter", "10", "--json")
+        self.assertEqual(rc, 0, f"rc={rc}\nstdout={out}\nstderr={err}")
+        self.assertFalse(json.loads(out)["chapters"][0]["thin"])
 
 
 if __name__ == "__main__":

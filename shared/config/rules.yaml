@@ -167,6 +167,12 @@ review_modes:
     default_presumption: neutral
     live_for_all: false
 
+# 框架深度门（framework-type 文档：学位/实施方案/GF/白皮书）
+# check_framework_depth.py 读取 min_chars_per_chapter 作为默认篇幅下限。
+framework_depth:
+  min_chars_per_chapter: 1200
+  required_elements: ["目标", "方法", "输入输出", "标准依据"]
+
 # 文档类型 → 来源数 / 正文深度下限（SKILL.md「参考文献数量下限」表以此为源）
 doc_minimums:
   proposal:

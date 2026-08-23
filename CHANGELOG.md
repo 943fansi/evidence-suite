@@ -106,6 +106,13 @@
 - 审查方 SKILL / README 同步 review_independence 与增量说明；quickstart expected 重生成（manifest 含 review_independence）
 - 回归测试 56→60 用例（review_independence 默认/覆盖文件/非法值、增量 `--changed`）
 
+### V2 评审 P5 批次（CI 可验证性 + 框架深度规则化）
+- **GitHub Actions CI**：`.github/workflows/ci.yml`——matrix {ubuntu, windows} × {py3.10, py3.12}，跑回归测试 + eval golden 自动判分 + 能力探测；README 加 CI 徽章
+- **框架深度规则化**：`rules.yaml` 增 `framework_depth.min_chars_per_chapter`（默认 1200）；`check_framework_depth.py` 支持 `--rules/--profile`，未显式给 `--min-chars-per-chapter` 时读取规则默认
+- **bug 修复**：`check_framework_depth.py --json` 模式此前从不返回非零（门禁失效），已修复为 `failed>0 → rc 1`
+- 写作者 SKILL 使用建议增「运行时能力」读取 `runtime/capability.local.json` 选路径
+- 回归测试 60→62 用例（框架深度默认下限告警 / 显式放宽通过）
+
 ### 冻结（暂不实现，无消费者 / 过早）
 - `engine/` / `policies/` 三层目录重构
 - 评测基准的**实跑打分**（需接真实 agent，当前仅用例集定义）

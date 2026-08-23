@@ -308,6 +308,7 @@ w6 / w8 修订规则：
 2. 每个阶段开始前回看 Topic Card，确认论断未漂移。
 3. 本 skill 产出的 `[Gx]` 研究空白统一汇总到附录 A，不散落、不隐藏。
 4. **关键纪律**：凡表格"提交给审核方"列有内容的阶段，不提交、不评审、不进下一阶段。
+5. **运行时能力**：加载本 skill 时读取 `runtime/capability.local.json`（`probe_capabilities.py --human` 生成），按能力选路径——pandoc 缺失→python-markdown 回退、mmdc 缺失→mermaid.ink 远程、pdfplumber 缺失→PDF 原文抽取改告警；缺能力时降级而不是假装能做。
 
 ## 硬性禁止（Hard Avoids，写作者侧）
 

@@ -1,0 +1,34 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    name: tests (${{ matrix.os }} / py${{ matrix.python }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        python: ["3.10", "3.12"]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+
+      - name: Install minimal test deps
+        run: pip install python-docx pyyaml
+
+      - name: Regression tests
+        run: python tests/run_tests.py
+
+      - name: Eval golden cases (auto-scored)
+        run: python eval/run_eval.py
+
+      - name: Capability probe
+        run: python shared/scripts/probe_capabilities.py --human

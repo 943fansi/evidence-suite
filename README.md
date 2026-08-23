@@ -1,5 +1,7 @@
 # evidence-suite · 研究 Agent 的证据校验与溯源层（Evidence Integrity Layer）
 
+[![CI](https://github.com/943fansi/evidence-suite/actions/workflows/ci.yml/badge.svg)](https://github.com/943fansi/evidence-suite/actions/workflows/ci.yml)
+
 让研究 Agent（含 Deep Research / NVIDIA AI-Q 类系统）产出的技术 / 学术文档**每一条论断都能追溯到来源、并验证是否真能支撑该结论**：写作方（evidence-writer）负责生产，审查方（evidence-reviewer）有罪推定、只找失败、严重即阻断，两者形成「提交 → 审查 → 判决 → 修订」的对抗循环。
 
 ## 为什么需要它

@@ -24,6 +24,7 @@ Exit codes: 0 all chapters pass; 1 any chapter fails; 2 usage error.
 Usage:
   python scripts/check_framework_depth.py 11_定稿.md [--min-chars-per-chapter 1200]
   python scripts/check_framework_depth.py 11_定稿.md --json
+  python scripts/check_framework_depth.py 11_定稿.md --profile general_tech
 """
 
 from __future__ import annotations
@@ -33,6 +34,8 @@ import json
 import re
 import sys
 from pathlib import Path
+
+from rule_profile import load_rules
 
 # Chapter header: "## 第一章 绪论", "## 第4章 …", "## 4. 方法", "## 第二章 研究现状"
 CH_RE = re.compile(r"^##\s*(?:第\s*[一二三四五六七八九十\d]+\s*章|[\d]+[.、])\s*(.*)$")
@@ -83,14 +86,24 @@ def main() -> int:
     _ensure_utf8_streams()
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("draft", type=Path, help="draft .md")
-    parser.add_argument("--min-chars-per-chapter", type=int, default=1200,
-                        help="non-whitespace char floor per substantive chapter")
+    parser.add_argument("--min-chars-per-chapter", type=int, default=None,
+                        help="non-whitespace char floor per substantive chapter "
+                             "(default: rules.yaml framework_depth.min_chars_per_chapter = 1200)")
+    parser.add_argument("--rules", type=Path, default=None, help="rules override file")
+    parser.add_argument("--profile", type=str, default=None, help="scenario profile")
     parser.add_argument("--json", action="store_true")
     args = parser.parse_args()
 
     if not args.draft.exists():
         print(f"ERROR: draft not found: {args.draft}", file=sys.stderr)
         return 2
+    try:
+        rules = load_rules(rules_path=args.rules, profile=args.profile)
+    except (FileNotFoundError, KeyError, ValueError) as exc:
+        print(f"error: cannot load rules: {exc}", file=sys.stderr)
+        return 2
+    fd = rules.get("framework_depth") or {}
+    min_chars = args.min_chars_per_chapter or int(fd.get("min_chars_per_chapter", 1200))
     text = args.draft.read_text(encoding="utf-8")
 
     lines = text.split("\n")
@@ -120,7 +133,7 @@ def main() -> int:
         chars = len(re.sub(r"\s", "", block))
         elements = _elements_in_block(block, h3_pat)
         missing = [e for e in SKELETON if e not in elements]
-        thin = chars < args.min_chars_per_chapter
+        thin = chars < min_chars
         ok = not missing and not thin
         if not ok:
             failed += 1
@@ -136,6 +149,7 @@ def main() -> int:
     if args.json:
         print(json.dumps({"chapters": results, "failed": failed},
                          ensure_ascii=False, indent=2))
+        return 1 if failed else 0
     else:
         for r in results:
             flag = "✅" if r["pass"] else "❌"
@@ -143,7 +157,7 @@ def main() -> int:
             if r["missing_elements"]:
                 print(f"     缺少骨架要素: {r['missing_elements']}")
             if r["thin"]:
-                print(f"     篇幅过薄 <{args.min_chars_per_chapter} 非空白字符")
+                print(f"     篇幅过薄 <{min_chars} 非空白字符")
         if failed == 0:
             print(f"\n✅ PASS — all {len(results)} substantive chapters develop the "
                   f"目标/方法/输入输出/标准依据 skeleton.")
