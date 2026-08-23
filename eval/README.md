@@ -60,9 +60,11 @@ SSRF 用例（`dimension: ssrf_guard`）不用 fixtures，用：
 | --- | --- | --- |
 | `citation_closure` | `check_citations.py --json` | rc + stdout 片段 |
 | `source_suspect_domain` | `validate_sources.py --json` | rc + stdout 片段 |
+| `source_origin` | `validate_sources.py --json` | rc + stdout 片段 |
 | `superseded_source` | `validate_sources.py --json` | rc + stdout 片段 |
 | `manifest_schema` | `validate_manifest.py` | rc + stdout 片段 |
 | `evidence_sufficiency` | `check_evidence_sufficiency.py --json` | rc + stdout 片段 |
+| `machine_auditability` | `audit_provenance.py --claims` | rc + stdout 片段 |
 | `ssrf_guard` | `download_reference_files.check_url_blocked` | blocked 布尔 |
 
 manual 维度不映射脚本：`prompt_injection` / `source_mismatch` / `contradiction_handling` /

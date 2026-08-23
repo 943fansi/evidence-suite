@@ -1,0 +1,12 @@
+{
+  "id": "eval-source-011",
+  "dimension": "source_origin",
+  "kind": "script",
+  "expectation": "block",
+  "description": "来源 source_origin 标注非法枚举 → 语料自检 BLOCK",
+  "fixtures": {
+    "corpus.json": "{\n  \"sources\": [\n    {\"source_id\": \"S1\", \"title\": \"A\", \"url\": \"https://example.com/a\", \"access_status\": \"confirmed\", \"type\": \"report\", \"authority\": \"B1\", \"freshness\": \"recent\", \"source_origin\": \"hacker\"}\n  ]\n}\n"
+  },
+  "expect_rc": 1,
+  "expect_stdout_has": ["illegal source_origin"]
+}

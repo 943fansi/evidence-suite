@@ -1,0 +1,12 @@
+{
+  "id": "eval-source-013",
+  "dimension": "machine_auditability",
+  "kind": "script",
+  "expectation": "pass",
+  "description": "R3 规范 claim 的支撑来源带 locator（页/节号）→ 机器可审计，PASS",
+  "fixtures": {
+    "claims.json": "{\n  \"schema_version\": \"0.2.0\",\n  \"review_kind\": \"ai-internal\",\n  \"claims\": [\n    {\"claim_id\": \"C-001\", \"claim_class\": \"N\", \"risk\": \"R3\", \"claim_text\": \"某规范论断\", \"evidence\": [{\"source_id\": \"S1\", \"support_level\": \"direct\", \"relation\": \"supports\", \"locator\": {\"section\": \"5.2.3\", \"quote_hash\": \"sha256:abc\"}}]}\n  ]\n}\n"
+  },
+  "expect_rc": 0,
+  "expect_stdout_has": []
+}

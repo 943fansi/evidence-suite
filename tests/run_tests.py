@@ -19,6 +19,7 @@ Coverage:
   - select_sources.py: registry ranking (priority/authority/source_origin) + discovery.
   - build_evidence_brief.py: L1 brief rendering + Evidence Score.
   - export_provenance.py: five-piece provenance bundle + review verdict parsing.
+  - audit_provenance.py: machine-auditability gate (locator-backed high-risk claims).
   - probe_capabilities.py: runtime capability profile emission.
   - init_case.py: research_case workspace scaffold.
   - eval/run_eval.py: auto-scored golden cases stay green.
@@ -51,6 +52,7 @@ BRIEF = SCRIPTS / "build_evidence_brief.py"
 PROBE = SCRIPTS / "probe_capabilities.py"
 FRAMEWORK = SCRIPTS / "check_framework_depth.py"
 INIT_CASE = SCRIPTS / "init_case.py"
+AUDIT = SCRIPTS / "audit_provenance.py"
 
 
 def run(script: Path, *args: str) -> tuple[int, str, str]:
@@ -964,7 +966,7 @@ class EvalHarnessTests(unittest.TestCase):
         data = json.loads(out)
         self.assertEqual(data["failed"], 0)
         self.assertEqual(data["errors"], 0)
-        self.assertGreaterEqual(data["passed"], 12)
+        self.assertGreaterEqual(data["passed"], 15)
         self.assertGreaterEqual(data["manual"], 4, "agent-behavior golden cases should exist")
 
 
@@ -1205,6 +1207,47 @@ class InitCaseTests(unittest.TestCase):
         self.assertEqual(rc, 0)
         self.assertIn("skipped", o)
         self.assertIn("已有内容", (out / "00_topic.md").read_text(encoding="utf-8"))
+
+
+AUDIT_R3_NO_LOCATOR = """\
+{
+  "schema_version": "0.2.0",
+  "review_kind": "ai-internal",
+  "claims": [
+    {"claim_id": "C-001", "claim_class": "N", "risk": "R3", "claim_text": "某规范论断",
+     "evidence": [{"source_id": "S1", "support_level": "direct", "relation": "supports"}]}
+  ]
+}
+"""
+
+
+class AuditProvenanceTests(unittest.TestCase):
+    """audit_provenance.py: machine-auditability gate (locator-backed citations)."""
+
+    def setUp(self):
+        self._tmp = tempfile.TemporaryDirectory()
+        self.tmp = Path(self._tmp.name)
+
+    def tearDown(self):
+        self._tmp.cleanup()
+
+    def test_quickstart_provenance_auditable(self):
+        em = ROOT / "examples" / "quickstart" / "evidence_map.json"
+        vs = ROOT / "examples" / "quickstart" / "sources.json"
+        draft = ROOT / "examples" / "quickstart" / "input_draft.md"
+        prov = self.tmp / "provenance"
+        rc, o, e = run(PROVENANCE, "--draft", str(draft), "--sources", str(vs),
+                       "--evidence-map", str(em), "-o", str(prov))
+        self.assertEqual(rc, 0, f"rc={rc}\nstdout={o}\nstderr={e}")
+        rc, out, err = run(AUDIT, "--claims", str(prov / "report.claims.json"))
+        self.assertEqual(rc, 0, f"rc={rc}\nstdout={out}\nstderr={err}")
+        self.assertIn("100%", out)
+
+    def test_r3_without_locator_blocks(self):
+        claims = write(self.tmp, "claims.json", AUDIT_R3_NO_LOCATOR)
+        rc, out, err = run(AUDIT, "--claims", str(claims))
+        self.assertEqual(rc, 1)
+        self.assertIn("缺失 locator", out)
 
 
 if __name__ == "__main__":

@@ -99,6 +99,7 @@ shared/
 ├── scripts/                         # 14 Python utilities (bash-executed, never loaded)
 │   ├── build_references.py          # 机械生成参考文献节（year 空值省略、URL 逐字、--body 原位回填、--style gbt 类型感知 GB/T 条目、title/title_or_name 双字段兼容）
 │   ├── export_provenance.py         # 机器可审计五件套（claims/evidence/source-map/review.json + 判决解析）
+│   ├── audit_provenance.py          # 机器可审计性门禁（R3/R4/N claim 支撑证据须带 locator，auditability 比率报告）
 │   ├── probe_capabilities.py        # 运行时能力探测（python/工具库/pandoc/浏览器/网络/OCR → runtime/capability.local.json）
 │   ├── finalize_draft.py            # 定稿净化（[Sx]→[1]..[n] 顺序编码、[Gx]→研究局限、删脚手架/附录A/封面占位/内部路径、--check 校验、--style gbt 骨架+映射表）
 │   ├── validate_sources.py          # 语料自检（重复 URL/缺字段/可疑域名 bjjcyjy-antpedia-stm-publishing/access_status 空/中文期刊配额/authority-freshness 校验；--profile/--rules 读规则配置）

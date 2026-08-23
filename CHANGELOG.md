@@ -130,6 +130,11 @@
 - **Evidence Score 并入充分性门禁**：评分逻辑（`evidence_score`/`_grade`）移入 `check_evidence_sufficiency.py` 单一实现，`build_evidence_brief.py` 改 import 去重复；`check_evidence_sufficiency.py --score` 输出每条 claim 评分+等级（评分仍不替代硬门禁）
 - 回归测试 64→66 用例（illegal source_origin、--score 评分/等级）
 
+### V2 评审 P9 批次（机器可审计性门禁）
+- **audit_provenance.py**：provenance 五件套的配套门禁——`--claims report.claims.json`（或 `--provenance-dir`），逐 claim 判定支撑证据是否带 `locator`；**高险 claim（R3/R4/N）支撑证据缺 locator → rc 1**（"引用到某篇"对高险论断不够，机器无法对账）；输出 auditability 比率报告
+- **eval 扩充 12→15 script 级自动判分**：eval-source-011（illegal source_origin）、012（R3 无 locator 不可审计 BLOCK）、013（R3 带 locator PASS）；runner 增 `source_origin`/`machine_auditability`
+- 回归测试 66→68 用例（quickstart provenance 100% 可审计、R3 无 locator 阻断）
+
 ### 冻结（暂不实现，无消费者 / 过早）
 - `engine/` / `policies/` 三层目录重构
 - 评测基准的**实跑打分**（需接真实 agent，当前仅用例集定义）

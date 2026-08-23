@@ -1,0 +1,12 @@
+{
+  "id": "eval-source-012",
+  "dimension": "machine_auditability",
+  "kind": "script",
+  "expectation": "block",
+  "description": "R3 规范 claim 的支撑来源缺 locator → 机器不可审计，BLOCK",
+  "fixtures": {
+    "claims.json": "{\n  \"schema_version\": \"0.2.0\",\n  \"review_kind\": \"ai-internal\",\n  \"claims\": [\n    {\"claim_id\": \"C-001\", \"claim_class\": \"N\", \"risk\": \"R3\", \"claim_text\": \"某规范论断\", \"evidence\": [{\"source_id\": \"S1\", \"support_level\": \"direct\", \"relation\": \"supports\"}]}\n  ]\n}\n"
+  },
+  "expect_rc": 1,
+  "expect_stdout_has": ["缺失 locator"]
+}

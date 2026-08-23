@@ -39,6 +39,7 @@ CHECK = SCRIPTS / "check_citations.py"
 VALIDATE = SCRIPTS / "validate_sources.py"
 VALIDATE_MANIFEST = SCRIPTS / "validate_manifest.py"
 SUFFICIENCY = SCRIPTS / "check_evidence_sufficiency.py"
+AUDIT = SCRIPTS / "audit_provenance.py"
 DOWNLOADS = SCRIPTS / "download_reference_files.py"
 
 
@@ -108,12 +109,24 @@ def runner_ssrf(case: dict, paths: dict):
             [] if blocked == expected else [f"blocked={blocked} != expected {expected}"])
 
 
+def runner_source_origin(case: dict, paths: dict):
+    rc, out, _ = _run(VALIDATE, str(paths["corpus.json"]), "--json")
+    return _std_asserts(case, rc, out)
+
+
+def runner_audit(case: dict, paths: dict):
+    rc, out, _ = _run(AUDIT, "--claims", str(paths["claims.json"]))
+    return _std_asserts(case, rc, out)
+
+
 RUNNERS = {
     "citation_closure": runner_citation_closure,
     "source_suspect_domain": runner_suspect_domain,
+    "source_origin": runner_source_origin,
     "superseded_source": runner_superseded,
     "manifest_schema": runner_manifest_schema,
     "evidence_sufficiency": runner_sufficiency,
+    "machine_auditability": runner_audit,
     "ssrf_guard": runner_ssrf,
 }
 
