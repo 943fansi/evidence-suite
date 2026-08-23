@@ -119,6 +119,11 @@
 - **eval 扩充**：新增 eval-source-008（学术模式数字引文孤儿）、009（缺 URL）、010（学术双向闭合通过）→ script 级自动判分 9→12；runner 支持 `extra_args`（--academic）
 - 回归测试 62→64 用例（init_case 脚手架创建 / 已存在跳过）；README 目录树加 docs/
 
+### V2 评审 P7 批次（公共仓库可维护性）
+- **CONTRIBUTING.md**：贡献指南——如何扩展规则（块式 YAML）/契约（schema_version 递增 + expected 重生成）/golden 用例/脚本（stdlib-only、stderr 不污染 --json、安全约束）；提交规范与 PR 检查清单
+- **`.gitattributes`**：文本统一 LF、二进制 binary，消除 CRLF 告警与行尾噪音
+- **eval/README.md + `--manual-results`**：golden 用例 JSON 格式/维度映射/新增流程文档化；`run_eval.py --manual-results <json>` 回填 agent 行为级人工/第二模型打分，闭环计入 `eval/report.md`（有 fail 即 rc 1）
+
 ### 冻结（暂不实现，无消费者 / 过早）
 - `engine/` / `policies/` 三层目录重构
 - 评测基准的**实跑打分**（需接真实 agent，当前仅用例集定义）

@@ -147,6 +147,9 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--json", action="store_true")
     parser.add_argument("--verbose", action="store_true")
+    parser.add_argument("--manual-results", type=Path, default=None,
+                        help="JSON file mapping manual-case ids to 'pass'/'fail' "
+                             "(agent 跑完后由人工/第二模型填写，闭环计入报告)")
     args = parser.parse_args()
 
     cases = sorted(GOLDEN.glob("*.json"))
@@ -159,6 +162,22 @@ def main() -> int:
                             "problems": [f"unreadable: {exc}"]})
             continue
         results.append(run_case(case))
+
+    manual_scores: dict = {}
+    if args.manual_results:
+        if not args.manual_results.exists():
+            print(f"error: --manual-results not found: {args.manual_results}", file=sys.stderr)
+            return 2
+        try:
+            manual_scores = json.loads(args.manual_results.read_text(encoding="utf-8"))
+        except Exception as exc:
+            print(f"error: cannot read --manual-results: {exc}", file=sys.stderr)
+            return 2
+    for r in results:
+        if r["status"] == "manual" and r["id"] in manual_scores:
+            r["status"] = "pass" if manual_scores[r["id"]] == "pass" else "fail"
+            if r["status"] == "fail":
+                r["problems"] = [f"manual scoring: {manual_scores[r['id']]}"]
 
     passed = sum(1 for r in results if r["status"] == "pass")
     failed = sum(1 for r in results if r["status"] == "fail")

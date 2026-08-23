@@ -229,3 +229,7 @@ examples/quickstart/run_demo.sh
 ## 许可
 
 MIT（见 `LICENSE`）。
+
+## 贡献
+
+见 [CONTRIBUTING.md](CONTRIBUTING.md)——如何加规则 / 契约 / golden 用例 / 脚本，提交规范与 PR 检查清单。
