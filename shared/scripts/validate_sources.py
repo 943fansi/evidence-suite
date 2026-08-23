@@ -122,6 +122,11 @@ def _problems(corpus: dict, suspect_domains: tuple[str, ...], quota_cn_journal: 
             problems.append(f"[{sid}] freshness=superseded（已被替代/废止）——不得作 "
                             "R3/R4 现行性依据；作历史沿革引用请改标 historical")
 
+        origin = str(s.get("source_origin", "")).strip()
+        if origin and origin not in ("registry", "discovered", "user", "emergent"):
+            problems.append(f"[{sid}] illegal source_origin {origin!r} "
+                            "(allowed: registry/discovered/user/emergent)")
+
         if str(s.get("type", "")).strip() == "journal_paper":
             cn_journals += 1
 

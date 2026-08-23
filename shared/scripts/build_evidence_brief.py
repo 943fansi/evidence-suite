@@ -27,7 +27,8 @@ import json
 import sys
 from pathlib import Path
 
-from check_evidence_sufficiency import DEFAULT_TIER, _coverage_ok, check_claim
+from check_evidence_sufficiency import (DEFAULT_TIER, _coverage_ok, check_claim,
+                                        evidence_score)
 from rule_profile import load_rules
 
 PRIMARY_AUTHORITIES = ("A1", "A2", "A3", "B1", "B2")
@@ -35,56 +36,6 @@ RELATION_OF = {
     "direct": "supports", "strong_inference": "supports", "weak_inference": "supports",
     "contradictory": "contradicts", "context_only": "context_only", "unsupported": "unsupported",
 }
-AUTHORITY_POINTS = {"A1": 1.0, "A2": 0.9, "A3": 0.8, "B1": 0.7, "B2": 0.6,
-                    "C1": 0.5, "C2": 0.4, "D1": 0.3, "D2": 0.2}
-LEVEL_POINTS = {"direct": 1.0, "strong_inference": 0.8, "weak_inference": 0.5}
-FRESHNESS_POINTS = {"current": 1.0, "recent": 0.7, "historical": 0.4, "superseded": 0.1}
-
-
-def _grade(score: float) -> str:
-    if score >= 90:
-        return "Strong"
-    if score >= 75:
-        return "Good"
-    if score >= 60:
-        return "Moderate"
-    if score >= 40:
-        return "Weak"
-    return "Insufficient"
-
-
-def _score_claim(claim: dict, source_by_id: dict, levels: dict,
-                 relations: dict, locators: dict) -> tuple[float, str]:
-    """Weighted Evidence Score (0–100). Weights: authority 25 / directness 20 /
-    independence 15 / recency 10 / traceability 15 / contradiction 10 /
-    reproducibility 5. Scoring complements — never replaces — the hard gate."""
-    support = []
-    for sid, lvl in levels.items():
-        rel = str(relations.get(sid, "") or RELATION_OF.get(str(lvl), "supports"))
-        if rel == "contradicts":
-            continue
-        s = source_by_id.get(sid, {})
-        support.append({
-            "lvl": str(lvl),
-            "authority": str(s.get("authority", "")),
-            "freshness": str(s.get("freshness", "")),
-            "loc": locators.get(sid) if isinstance(locators.get(sid), dict) else None,
-            "url": bool(str(s.get("url", "")).strip()),
-        })
-    if not support:
-        return 0.0, _grade(0.0)
-    n = len(support)
-    authority = sum(AUTHORITY_POINTS.get(x["authority"], 0.4) for x in support) / n * 25
-    directness = sum(LEVEL_POINTS.get(x["lvl"], 0.3) for x in support) / n * 20
-    independence = min(1.0, n / 2) * 15
-    recency = sum(FRESHNESS_POINTS.get(x["freshness"], 0.3) for x in support) / n * 10
-    traceability = sum(1 for x in support if x["loc"] or x["url"]) / n * 15
-    contradiction = 10.0 if _coverage_ok(claim) else 0.0
-    reproducibility = min(5.0, (3.0 if claim.get("claim_class") in ("C", "M") else 5.0)
-                          + (2.0 if any(x["loc"] for x in support) else 0.0))
-    score = authority + directness + independence + recency + traceability \
-        + contradiction + reproducibility
-    return round(score, 1), _grade(score)
 
 
 def _ensure_utf8_streams() -> None:
@@ -169,7 +120,7 @@ def build_brief(em: dict, vs: dict, rules: dict, review_mode: str | None = None)
             else:
                 support.append(label)
         balance = _balance_mark(support, against, context)
-        score, grade = _score_claim(claim, source_by_id, levels, relations, locators)
+        score, grade = evidence_score(claim, source_by_id, levels, relations, locators)
 
         tier = dict(DEFAULT_TIER)
         tier.update(sufficiency.get(risk, {}) if isinstance(sufficiency.get(risk), dict) else {})

@@ -183,6 +183,15 @@ ILLEGAL_AUTHORITY_CORPUS = """\
 }
 """
 
+BAD_ORIGIN_CORPUS = """\
+{
+  "sources": [
+    {"source_id": "S1", "title": "A", "url": "https://example.com/a", "access_status": "confirmed",
+     "type": "report", "authority": "B1", "freshness": "recent", "source_origin": "hacker"}
+  ]
+}
+"""
+
 EVIDENCE_MAP = """\
 {
   "evidence_map": [
@@ -301,6 +310,11 @@ class ValidateSourcesTests(unittest.TestCase):
         rc, out, _ = run(VALIDATE, str(write(self.tmp, "iauth.json", ILLEGAL_AUTHORITY_CORPUS)), "--json")
         self.assertEqual(rc, 1)
         self.assertIn("illegal authority value", "\n".join(json.loads(out)["problems"]))
+
+    def test_illegal_source_origin_blocks(self):
+        rc, out, _ = run(VALIDATE, str(write(self.tmp, "oorig.json", BAD_ORIGIN_CORPUS)), "--json")
+        self.assertEqual(rc, 1)
+        self.assertIn("illegal source_origin 'hacker'", "\n".join(json.loads(out)["problems"]))
 
 
 class FinalizeManifestTests(unittest.TestCase):
@@ -926,6 +940,19 @@ class EvidenceSufficiencyTests(unittest.TestCase):
         self.assertEqual(data["incremental"]["skipped"], 1)
         ids = [r["claim_id"] for r in data["results"]]
         self.assertEqual(ids, ["C-001"])
+
+    def test_score_option_reports_grade(self):
+        em = ROOT / "examples" / "quickstart" / "evidence_map.json"
+        vs = ROOT / "examples" / "quickstart" / "sources.json"
+        rc, out, err = run(SUFFICIENCY, str(em), str(vs), "--score", "--json")
+        self.assertEqual(rc, 0, f"rc={rc}\nstdout={out}\nstderr={err}")
+        data = json.loads(out)
+        first = data["results"][0]
+        self.assertIn("score", first)
+        self.assertIn("grade", first)
+        self.assertGreaterEqual(first["score"], 0)
+        self.assertLessEqual(first["score"], 100)
+        self.assertIn(first["grade"], ("Strong", "Good", "Moderate", "Weak", "Insufficient"))
 
 
 class EvalHarnessTests(unittest.TestCase):

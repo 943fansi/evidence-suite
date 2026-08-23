@@ -124,6 +124,12 @@
 - **`.gitattributes`**：文本统一 LF、二进制 binary，消除 CRLF 告警与行尾噪音
 - **eval/README.md + `--manual-results`**：golden 用例 JSON 格式/维度映射/新增流程文档化；`run_eval.py --manual-results <json>` 回填 agent 行为级人工/第二模型打分，闭环计入 `eval/report.md`（有 fail 即 rc 1）
 
+### V2 评审 P8 批次（方法论文档 + source_origin 闭环 + 评分并入门禁）
+- **docs/methodology.md**：证据驱动方法论——直接度>数量、对抗优于自查、留白为诚、反证调和、停止规则、评分不替代门禁、诚实披露审查独立性
+- **source_origin 闭环**：`validate_sources.py` 校验 `source_origin ∈ {registry, discovered, user, emergent}`（w2 的发现型来源标记现在有门禁兜底）
+- **Evidence Score 并入充分性门禁**：评分逻辑（`evidence_score`/`_grade`）移入 `check_evidence_sufficiency.py` 单一实现，`build_evidence_brief.py` 改 import 去重复；`check_evidence_sufficiency.py --score` 输出每条 claim 评分+等级（评分仍不替代硬门禁）
+- 回归测试 64→66 用例（illegal source_origin、--score 评分/等级）
+
 ### 冻结（暂不实现，无消费者 / 过早）
 - `engine/` / `policies/` 三层目录重构
 - 评测基准的**实跑打分**（需接真实 agent，当前仅用例集定义）

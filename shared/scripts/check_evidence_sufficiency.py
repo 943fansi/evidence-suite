@@ -86,6 +86,67 @@ def _coverage_ok(claim: dict) -> bool:
     return False
 
 
+# Evidence Score weights: authority 25 / directness 20 / independence 15 /
+# recency 10 / traceability 15 / contradiction 10 / reproducibility 5.
+# Scoring describes quality tier — it never replaces the hard gate.
+AUTHORITY_POINTS = {"A1": 1.0, "A2": 0.9, "A3": 0.8, "B1": 0.7, "B2": 0.6,
+                    "C1": 0.5, "C2": 0.4, "D1": 0.3, "D2": 0.2}
+LEVEL_POINTS = {"direct": 1.0, "strong_inference": 0.8, "weak_inference": 0.5}
+FRESHNESS_POINTS = {"current": 1.0, "recent": 0.7, "historical": 0.4, "superseded": 0.1}
+
+
+def _grade(score: float) -> str:
+    if score >= 90:
+        return "Strong"
+    if score >= 75:
+        return "Good"
+    if score >= 60:
+        return "Moderate"
+    if score >= 40:
+        return "Weak"
+    return "Insufficient"
+
+
+def evidence_score(claim: dict, source_by_id: dict, levels: dict,
+                   relations: dict, locators: dict) -> tuple[float, str]:
+    """Weighted Evidence Score (0–100) + grade. Complements the hard gate."""
+    support = []
+    for sid, lvl in levels.items():
+        rel = str(relations.get(sid, "") or _relation_of(str(lvl)))
+        if rel == "contradicts":
+            continue
+        s = source_by_id.get(sid, {})
+        support.append({
+            "lvl": str(lvl),
+            "authority": str(s.get("authority", "")),
+            "freshness": str(s.get("freshness", "")),
+            "loc": locators.get(sid) if isinstance(locators.get(sid), dict) else None,
+            "url": bool(str(s.get("url", "")).strip()),
+        })
+    if not support:
+        return 0.0, _grade(0.0)
+    n = len(support)
+    authority = sum(AUTHORITY_POINTS.get(x["authority"], 0.4) for x in support) / n * 25
+    directness = sum(LEVEL_POINTS.get(x["lvl"], 0.3) for x in support) / n * 20
+    independence = min(1.0, n / 2) * 15
+    recency = sum(FRESHNESS_POINTS.get(x["freshness"], 0.3) for x in support) / n * 10
+    traceability = sum(1 for x in support if x["loc"] or x["url"]) / n * 15
+    contradiction = 10.0 if _coverage_ok(claim) else 0.0
+    reproducibility = min(5.0, (3.0 if claim.get("claim_class") in ("C", "M") else 5.0)
+                          + (2.0 if any(x["loc"] for x in support) else 0.0))
+    score = authority + directness + independence + recency + traceability \
+        + contradiction + reproducibility
+    return round(score, 1), _grade(score)
+
+
+def _relation_of(level: str) -> str:
+    if level == "contradictory":
+        return "contradicts"
+    if level == "context_only":
+        return "context_only"
+    return "supports"
+
+
 def check_claim(claim: dict, source_by_id: dict, tier: dict,
                 multiplier: float = 1.0, live_for_all: bool = False) -> dict:
     """Return {pass, reasons[], stats} for one claim against its tier.
@@ -157,6 +218,9 @@ def main() -> int:
                         help="incremental mode: comma-separated claim ids (C-001,C-003) to "
                              "re-check only; unchanged claims are skipped (assumed still valid). "
                              "Suitable for large-document iteration where only some claims changed.")
+    parser.add_argument("--score", action="store_true",
+                        help="also compute and report the Evidence Score (0–100 + grade) per "
+                             "claim — quality tier only, does not replace the gate")
     parser.add_argument("--json", action="store_true", help="machine-readable output")
     args = parser.parse_args()
 
@@ -203,13 +267,27 @@ def main() -> int:
         tier.update(sufficiency.get(risk, {}) if isinstance(sufficiency.get(risk), dict) else {})
         outcome = check_claim(claim, source_by_id, tier,
                               multiplier=multiplier, live_for_all=live_for_all)
-        results.append({"claim_id": claim_id,
+        result: dict = {"claim_id": claim_id,
                         "claim_class": str(claim.get("claim_class", "")).strip(),
                         "risk": risk,
                         "claim_text": str(claim.get("claim_to_write", "")).strip()[:80],
                         "pass": outcome["pass"],
                         "reasons": outcome["reasons"],
-                        "stats": outcome["stats"]})
+                        "stats": outcome["stats"]}
+        if args.score:
+            levels = claim.get("source_support_levels") or {}
+            relations = claim.get("source_relations") or {}
+            locators = claim.get("source_locators") or {}
+            if not isinstance(levels, dict):
+                levels = {}
+            if not isinstance(relations, dict):
+                relations = {}
+            if not isinstance(locators, dict):
+                locators = {}
+            sc, gr = evidence_score(claim, source_by_id, levels, relations, locators)
+            result["score"] = sc
+            result["grade"] = gr
+        results.append(result)
 
     passed = sum(1 for r in results if r["pass"])
     failed = len(results) - passed
@@ -223,7 +301,8 @@ def main() -> int:
     else:
         for r in results:
             mark = "✅" if r["pass"] else "❌"
-            print(f"{mark} {r['claim_id']} [{r['risk']}/{r['claim_class']}] {r['claim_text']}")
+            score_str = f" | score {r['score']} ({r['grade']})" if args.score else ""
+            print(f"{mark} {r['claim_id']} [{r['risk']}/{r['claim_class']}]{score_str} {r['claim_text']}")
             for reason in r["reasons"]:
                 print(f"      - {reason}")
         suffix = f"（增量：仅重审 {len(changed)} 条，跳过 {skipped} 条未变 claim）" if changed else ""
