@@ -65,6 +65,7 @@ evidence-suite —— Claim 提取 → 分类 → 证据映射 → static/live �
 - `freshness`（证据新鲜度 current / recent / historical / superseded / unknown）：政策/标准类 R3/R4 须 `current`，`superseded` 不得作现行依据。
 - **判定按「直接度」而非「来源数量」**：两条 `weak_inference` ≠ 一条 `direct`；**claim 级证据充分性**由 `check_evidence_sufficiency.py` 按 risk tier 判定（primary/独立来源/现行性/反证覆盖），文档级 `min_sources` 只是写作格式下限。
 - **审查模式（Risk-adaptive）**：`rules.yaml` 的 `review_mode` 控制证据充分性阈值乘数与默认立场——`conservative`（1.5×，核安全/法规）/ `balanced`（1.0×，默认）/ `exploratory`（0.7×）；`check_evidence_sufficiency.py --review-mode` 生效。
+- **增量校验**：大文档迭代时 `check_evidence_sufficiency.py --changed C-001,C-003` 只重审变更 claim，跳过未变部分，不必重跑全量。
 - **来源优先级清单**：`source_ranking.yaml` 给 Registry 来源标注 `authority/priority/role`，`select_sources.py --allow-discovery` 开放候选池（`source_origin` 四类来源可进入），Registry 是优先级清单而非白名单。
 - 交付时 `finalize_draft.py --manifest` 产出 `evidence_manifest.json`（`[n]→来源` 可回溯），保留证据 provenance。
 
@@ -97,7 +98,7 @@ evidence-suite —— Claim 提取 → 分类 → 证据映射 → static/live �
 }
 ```
 
-`review_kind` 取值：`ai-internal`（同模型角色隔离，内部红队）/ `ai-cross-model`（不同模型独立审查）/ `human-expert`（人类专家）。**默认 `ai-internal`，不等同独立评审。**
+`review_kind` 取值：`ai-internal`（同模型角色隔离，内部红队）/ `ai-cross-model`（不同模型独立审查）/ `human-expert`（人类专家）。**默认 `ai-internal`，不等同独立评审。** 附加 `review_independence` 字段记录审查独立性细节（`reviewer_model` / `writer_model` / `context_shared` / `evidence_shared` / `human_involvement`）——**跨模型 ≠ 独立**：若审查与写作共享相同上下文/证据，错误仍高度相关。`ai-internal` 默认如实标记 `{human_involvement: none, context_shared: true, evidence_shared: true}`。
 
 研究 Agent 只需产出 `claim → evidence → verdict` 结构即可被 Reviewer / 终审门消费；反之本套件产出的 verified manifest 也可回喂给研究 Agent 的 writer。
 

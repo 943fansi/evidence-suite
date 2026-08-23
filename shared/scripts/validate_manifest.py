@@ -101,7 +101,31 @@ def validate_manifest(data) -> list[str]:
         problems.extend(_validate_claims(data))
     if "mapping" not in data and "claims" not in data:
         problems.append("manifest must contain either a 'mapping' array (source-centric) or a 'claims' array (claim-centric)")
+    problems.extend(_validate_review_independence(data))
 
+    return problems
+
+
+def _validate_review_independence(data: dict) -> list[str]:
+    """review_independence: cross-model is NOT independence if context/evidence shared."""
+    problems: list[str] = []
+    ri = data.get("review_independence")
+    if ri is None:
+        return problems
+    if not isinstance(ri, dict):
+        problems.append("review_independence must be an object")
+        return problems
+    str_fields = ("reviewer_model", "writer_model", "model_family")
+    for key in str_fields:
+        if key in ri and not isinstance(ri[key], str):
+            problems.append(f"review_independence.{key} must be a string")
+    bool_fields = ("context_shared", "evidence_shared")
+    for key in bool_fields:
+        if key in ri and not isinstance(ri[key], bool):
+            problems.append(f"review_independence.{key} must be a boolean")
+    if "human_involvement" in ri and ri["human_involvement"] not in ("none", "partial", "full"):
+        problems.append(f"review_independence.human_involvement must be one of "
+                        f"none/partial/full (got {ri['human_involvement']!r})")
     return problems
 
 

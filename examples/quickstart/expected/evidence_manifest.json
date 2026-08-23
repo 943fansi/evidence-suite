@@ -26,5 +26,10 @@
       "title": "EPRI 设备老化管理技术报告",
       "url": "https://www.epri.com/example"
     }
-  ]
+  ],
+  "review_independence": {
+    "human_involvement": "none",
+    "context_shared": true,
+    "evidence_shared": true
+  }
 }

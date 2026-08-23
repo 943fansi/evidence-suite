@@ -425,9 +425,25 @@ def _change_summary(orig: str, out: str) -> str:
     return "\n".join(lines)
 
 
+def _load_review_independence(path: Path | None, review_kind: str) -> dict:
+    """Resolve review_independence: explicit JSON wins; else honest defaults for
+    ai-internal (same-model role isolation: shared context + evidence, no human)."""
+    if path is not None:
+        if not path.exists():
+            raise FileNotFoundError(f"review-independence file not found: {path}")
+        data = json.loads(path.read_text(encoding="utf-8"))
+        if not isinstance(data, dict):
+            raise ValueError("review-independence file must contain a JSON object")
+        return data
+    if review_kind == "ai-internal":
+        return {"human_involvement": "none", "context_shared": True, "evidence_shared": True}
+    return {}
+
+
 def build_source_manifest(text: str, sources_path: Path | None,
                           evidence_map_path: Path | None,
-                          review_kind: str, verification_mode: str) -> dict:
+                          review_kind: str, verification_mode: str,
+                          review_independence: dict | None = None) -> dict:
     """Build the source-centric interop manifest ([Sx]→[n]→source_id + claims[]).
 
     Extracted from the --manifest write path so export_provenance.py can reuse it.
@@ -450,7 +466,7 @@ def build_source_manifest(text: str, sources_path: Path | None,
         if cs:
             entry["claims"] = cs
         mapping.append(entry)
-    return {
+    manifest = {
         "schema_version": SCHEMA_VERSION,
         "review_kind": review_kind,
         "verification_mode": verification_mode,
@@ -458,6 +474,9 @@ def build_source_manifest(text: str, sources_path: Path | None,
         "note": "claim 级字段来自 06_evidence_map.json（--evidence-map 提供时自动合并）",
         "mapping": mapping,
     }
+    if review_independence:
+        manifest["review_independence"] = review_independence
+    return manifest
 
 
 def main() -> int:
@@ -485,6 +504,12 @@ def main() -> int:
                              "ai-internal = same-model role isolation (internal red team, NOT "
                              "independent review); switch to ai-cross-model or human-expert for "
                              "independent review of R4 / publication-critical output.")
+    parser.add_argument("--review-independence", type=Path, default=None,
+                        help="JSON file with review_independence details "
+                             "{reviewer_model, writer_model, model_family, context_shared, "
+                             "evidence_shared, human_involvement} — records that ai-cross-model "
+                             "is not independent if context/evidence are shared. Default for "
+                             "ai-internal: shared context+evidence, no human involvement.")
     parser.add_argument("--evidence-map", type=Path, default=None,
                         help="06_evidence_map.json → merge claim-level provenance (claim_text/claim_class/support_level/evidence_status) into the manifest")
     parser.add_argument("--claim-manifest", type=Path, default=None,
@@ -502,6 +527,13 @@ def main() -> int:
         for p in validate(text):
             print("problem:", p)
         return 3 if validate(text) else 0
+
+    try:
+        review_independence = _load_review_independence(args.review_independence,
+                                                        args.review_kind)
+    except (FileNotFoundError, ValueError, json.JSONDecodeError) as exc:
+        print(f"error: --review-independence: {exc}", file=sys.stderr)
+        return 2
 
     try:
         out = finalize(text, style=args.style)
@@ -542,7 +574,8 @@ def main() -> int:
 
     if args.manifest:
         manifest = build_source_manifest(text, args.sources, args.evidence_map,
-                                         args.review_kind, args.verification_mode)
+                                         args.review_kind, args.verification_mode,
+                                         review_independence)
         if not args.no_validate_manifest:
             problems = validate_manifest(manifest)
             if problems:
@@ -565,6 +598,8 @@ def main() -> int:
         cm["review_kind"] = args.review_kind
         cm["verification_mode"] = args.verification_mode
         cm["finalized_at"] = date.today().isoformat()
+        if review_independence:
+            cm["review_independence"] = review_independence
         if not args.no_validate_manifest:
             problems = validate_manifest(cm)
             if problems:

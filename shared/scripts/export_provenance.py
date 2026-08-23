@@ -83,6 +83,9 @@ def main() -> int:
                              "(verdicts parsed from `**判决**:` lines)")
     parser.add_argument("--review-kind", choices=["ai-internal", "ai-cross-model", "human-expert"],
                         default="ai-internal")
+    parser.add_argument("--review-independence", type=Path, default=None,
+                        help="JSON file with review_independence details (same as "
+                             "finalize_draft.py --review-independence)")
     parser.add_argument("--verification-mode", choices=["static", "live"], default="static")
     parser.add_argument("-o", "--output", type=Path, default=Path("provenance"),
                         help="output directory for the provenance bundle")
@@ -96,15 +99,25 @@ def main() -> int:
     args.output.mkdir(parents=True, exist_ok=True)
 
     text = args.draft.read_text(encoding="utf-8")
+    from finalize_draft import _load_review_independence
+    try:
+        review_independence = _load_review_independence(args.review_independence,
+                                                        args.review_kind)
+    except (FileNotFoundError, ValueError, json.JSONDecodeError) as exc:
+        print(f"error: --review-independence: {exc}", file=sys.stderr)
+        return 2
 
     evidence = build_source_manifest(text, args.sources, args.evidence_map,
-                                     args.review_kind, args.verification_mode)
+                                     args.review_kind, args.verification_mode,
+                                     review_independence)
 
     claims = build_claim_manifest(args.evidence_map, _meta_from_sources(args.sources))
     claims["schema_version"] = SCHEMA_VERSION
     claims["review_kind"] = args.review_kind
     claims["verification_mode"] = args.verification_mode
     claims["finalized_at"] = date.today().isoformat()
+    if review_independence:
+        claims["review_independence"] = review_independence
 
     source_map = {
         "schema_version": SCHEMA_VERSION,
@@ -118,9 +131,11 @@ def main() -> int:
         "review_kind": args.review_kind,
         "verification_mode": args.verification_mode,
         "finalized_at": date.today().isoformat(),
-        "note": "同模型自审（ai-internal）≠ 独立评审；R4/投稿/安全关键须 human-expert",
+        "note": "同模型自审（ai-internal）≠ 独立评审；跨模型（ai-cross-model）若共享上下文/证据也非独立。R4/投稿/安全关键须 human-expert",
         "stages": collect_review_verdicts(args.review_dir),
     }
+    if review_independence:
+        review["review_independence"] = review_independence
 
     problems = validate_manifest(claims)
     problems += validate_manifest(evidence)

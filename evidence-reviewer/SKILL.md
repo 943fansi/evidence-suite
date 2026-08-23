@@ -181,7 +181,7 @@ license: MIT
 ### 外部专家评审（r5，全局 8）
 - 按 `${SUITE_ROOT}/shared/references/expert_roles/` 选角色（领域/实践/方法论/标准/资源/转化）。
 - 评分表 + 主要问题分级 + 逐章节意见 + 证据链专项 + 量化指标专项 + 必须补充材料清单。
-- **评审独立性**：区分 Independent AI Review（同模型角色隔离，内部红队）与 External Expert Review（人类专家/不同模型·独立重建证据）；本地回退必须强制标注，禁止伪造专家署名。审查结论必须带 `review_kind`：`ai-internal`（同模型角色隔离）/ `ai-cross-model`（不同模型独立审查）/ `human-expert`（人类专家）；不得把 `ai-internal` 标注成其他类型。
+- **评审独立性**：区分 Independent AI Review（同模型角色隔离，内部红队）与 External Expert Review（人类专家/不同模型·独立重建证据）；本地回退必须强制标注，禁止伪造专家署名。审查结论必须带 `review_kind`：`ai-internal`（同模型角色隔离）/ `ai-cross-model`（不同模型独立审查）/ `human-expert`（人类专家）；不得把 `ai-internal` 标注成其他类型。**跨模型 ≠ 独立**：`ai-cross-model` 若与写作者共享相同检索结果/系统提示/reasoning prior，错误仍高度相关——须在 `review_independence` 中如实记录 `context_shared` / `evidence_shared` / `reviewer_model` / `writer_model`。
 
 ### 终审门（Final Gate）
 - 净化合规、`[n]` 数字引文闭合、来源/深度下限、forbidSources、导出物视觉抽检结论。

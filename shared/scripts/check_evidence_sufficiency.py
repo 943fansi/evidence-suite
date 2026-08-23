@@ -23,6 +23,7 @@ Usage:
   python scripts/check_evidence_sufficiency.py 06_evidence_map.json 04_validated_sources.json
   python scripts/check_evidence_sufficiency.py em.json vs.json --profile medical
   python scripts/check_evidence_sufficiency.py em.json vs.json --review-mode conservative
+  python scripts/check_evidence_sufficiency.py em.json vs.json --changed C-001,C-003
   python scripts/check_evidence_sufficiency.py em.json vs.json --json
 
 Exit codes: 0 all claims sufficient; 1 any claim fails; 2 usage/input error.
@@ -152,6 +153,10 @@ def main() -> int:
     parser.add_argument("--review-mode", choices=list(REVIEW_MODES), default=None,
                         help="override review mode (conservative/balanced/exploratory); "
                              "default from rules.yaml review_mode")
+    parser.add_argument("--changed", type=str, default="",
+                        help="incremental mode: comma-separated claim ids (C-001,C-003) to "
+                             "re-check only; unchanged claims are skipped (assumed still valid). "
+                             "Suitable for large-document iteration where only some claims changed.")
     parser.add_argument("--json", action="store_true", help="machine-readable output")
     args = parser.parse_args()
 
@@ -175,19 +180,29 @@ def main() -> int:
     multiplier = float(mode_cfg.get("evidence_multiplier", 1.0))
     live_for_all = bool(mode_cfg.get("live_for_all", False))
 
+    changed = {c.strip() for c in args.changed.split(",") if c.strip()}
+    if changed and not all(c.startswith("C-") for c in changed):
+        print("error: --changed must be comma-separated claim ids like C-001,C-003",
+              file=sys.stderr)
+        return 2
+
     sufficiency = rules.get("evidence_sufficiency") or {}
     source_by_id = {str(s.get("source_id", "")).strip(): s for s in vs.get("sources", [])}
 
     results: list[dict] = []
+    skipped = 0
     for i, claim in enumerate(em.get("evidence_map", []), 1):
         if not isinstance(claim, dict):
+            continue
+        claim_id = f"C-{i:03d}"
+        if changed and claim_id not in changed:
+            skipped += 1
             continue
         risk = str(claim.get("risk", "R1")).strip()
         tier = dict(DEFAULT_TIER)
         tier.update(sufficiency.get(risk, {}) if isinstance(sufficiency.get(risk), dict) else {})
         outcome = check_claim(claim, source_by_id, tier,
                               multiplier=multiplier, live_for_all=live_for_all)
-        claim_id = f"C-{i:03d}"
         results.append({"claim_id": claim_id,
                         "claim_class": str(claim.get("claim_class", "")).strip(),
                         "risk": risk,
@@ -202,6 +217,7 @@ def main() -> int:
         print(json.dumps({"profile": rules.get("active_profile"),
                           "review_mode": mode,
                           "evidence_multiplier": multiplier,
+                          "incremental": {"changed": sorted(changed) or None, "skipped": skipped},
                           "results": results, "passed": passed, "failed": failed},
                          ensure_ascii=False, indent=2))
     else:
@@ -210,9 +226,10 @@ def main() -> int:
             print(f"{mark} {r['claim_id']} [{r['risk']}/{r['claim_class']}] {r['claim_text']}")
             for reason in r["reasons"]:
                 print(f"      - {reason}")
+        suffix = f"（增量：仅重审 {len(changed)} 条，跳过 {skipped} 条未变 claim）" if changed else ""
         print(f"\nEvidence sufficiency: {passed}/{len(results)} claims sufficient "
               f"(mode={mode}, multiplier={multiplier:g}, "
-              f"profile={rules.get('active_profile') or 'default'})")
+              f"profile={rules.get('active_profile') or 'default'}){suffix}")
     return 1 if failed else 0
 
 

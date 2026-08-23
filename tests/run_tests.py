@@ -388,6 +388,38 @@ class FinalizeManifestTests(unittest.TestCase):
         self.assertEqual(second["evidence"][0]["relation"], "contradicts")
         self.assertNotIn("confidence", second)
 
+    def test_manifest_embeds_review_independence_default(self):
+        """ai-internal default records honest independence: shared context/evidence, no human."""
+        draft = write(self.tmp, "draft.md", CLEAN_DRAFT)
+        sources = write(self.tmp, "sources.json", CLEAN_CORPUS)
+        out = self.tmp / "clean.md"
+        man = self.tmp / "manifest.json"
+        rc, o, e = run(FINALIZE, str(draft), "-o", str(out), "--manifest", str(man),
+                       "--sources", str(sources))
+        self.assertEqual(rc, 0, f"rc={rc}\nstdout={o}\nstderr={e}")
+        data = json.loads(man.read_text(encoding="utf-8"))
+        ri = data["review_independence"]
+        self.assertEqual(ri["human_involvement"], "none")
+        self.assertTrue(ri["context_shared"])
+        self.assertTrue(ri["evidence_shared"])
+
+    def test_manifest_review_independence_override_file(self):
+        draft = write(self.tmp, "draft.md", CLEAN_DRAFT)
+        sources = write(self.tmp, "sources.json", CLEAN_CORPUS)
+        ri = write(self.tmp, "ri.json",
+                   '{"reviewer_model": "modelB", "writer_model": "modelA", '
+                   '"model_family": "familyX", "context_shared": false, '
+                   '"evidence_shared": true, "human_involvement": "partial"}')
+        out = self.tmp / "clean.md"
+        man = self.tmp / "manifest.json"
+        rc, o, e = run(FINALIZE, str(draft), "-o", str(out), "--manifest", str(man),
+                       "--sources", str(sources), "--review-kind", "ai-cross-model",
+                       "--review-independence", str(ri))
+        self.assertEqual(rc, 0, f"rc={rc}\nstdout={o}\nstderr={e}")
+        data = json.loads(man.read_text(encoding="utf-8"))
+        self.assertEqual(data["review_independence"]["reviewer_model"], "modelB")
+        self.assertFalse(data["review_independence"]["context_shared"])
+
 
 class ManifestSchemaTests(unittest.TestCase):
     """validate_manifest.py enforces the interop contract (shared/schemas/*.json)."""
@@ -488,6 +520,22 @@ class ManifestSchemaTests(unittest.TestCase):
         self.assertIn("relation has illegal value 'rejects'", out)
         self.assertIn("locator.page must be an integer", out)
         self.assertIn("confidence has illegal value 'certain'", out)
+
+    def test_illegal_review_independence_blocks(self):
+        bad = write(self.tmp, "badri.json", """\
+{
+  "schema_version": "0.2.0",
+  "review_kind": "ai-internal",
+  "verification_mode": "static",
+  "finalized_at": "2026-08-22",
+  "review_independence": {"human_involvement": "maybe", "context_shared": "yes"},
+  "claims": []
+}
+""")
+        rc, out, err = run(VALIDATE_MANIFEST, str(bad))
+        self.assertEqual(rc, 1)
+        self.assertIn("human_involvement must be one of", out)
+        self.assertIn("context_shared must be a boolean", out)
 
 
 class SsrfGuardTests(unittest.TestCase):
@@ -864,6 +912,17 @@ class EvidenceSufficiencyTests(unittest.TestCase):
         rc, out, err = run(SUFFICIENCY, str(em), str(vs), "--json")
         self.assertEqual(rc, 0, f"rc={rc}\nstdout={out}\nstderr={err}")
         self.assertEqual(json.loads(out)["passed"], 2)
+
+    def test_incremental_changed_only(self):
+        em = ROOT / "examples" / "quickstart" / "evidence_map.json"
+        vs = ROOT / "examples" / "quickstart" / "sources.json"
+        rc, out, err = run(SUFFICIENCY, str(em), str(vs), "--changed", "C-001", "--json")
+        self.assertEqual(rc, 0, f"rc={rc}\nstdout={out}\nstderr={err}")
+        data = json.loads(out)
+        self.assertEqual(data["passed"], 1)
+        self.assertEqual(data["incremental"]["skipped"], 1)
+        ids = [r["claim_id"] for r in data["results"]]
+        self.assertEqual(ids, ["C-001"])
 
 
 class EvalHarnessTests(unittest.TestCase):

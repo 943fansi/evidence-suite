@@ -100,6 +100,12 @@
 - **quickstart demo 完整化**：run_demo 增加 Evidence Brief + Provenance 步骤，展示净化→manifest→充分性→Brief→Provenance→校验全闭环
 - 回归测试 55→56 用例（能力探测 profile）
 
+### V2 评审 P4 批次（review_independence + 增量校验）
+- **review_independence 字段（评审 §九）**：`evidence_manifest` / `claim_manifest` schema 增顶层可选 `review_independence`（reviewer_model/writer_model/model_family/context_shared/evidence_shared/human_involvement）；`validate_manifest.py` 校验结构；`finalize_draft.py --review-independence <json>` 显式传入，`ai-internal` 默认如实标记 `{human_involvement:none, context_shared:true, evidence_shared:true}`；`export_provenance.py` 透传到 claims/evidence/review——**跨模型 ≠ 独立**，共享上下文/证据时 correlated failure 风险被如实记录
+- **增量校验（首批审核 §七-②）**：`check_evidence_sufficiency.py --changed C-001,C-003` 只重审变更 claim，跳过未变部分（大文档迭代不必全量重跑），JSON 输出 `incremental.{changed,skipped}`
+- 审查方 SKILL / README 同步 review_independence 与增量说明；quickstart expected 重生成（manifest 含 review_independence）
+- 回归测试 56→60 用例（review_independence 默认/覆盖文件/非法值、增量 `--changed`）
+
 ### 冻结（暂不实现，无消费者 / 过早）
 - `engine/` / `policies/` 三层目录重构
 - 评测基准的**实跑打分**（需接真实 agent，当前仅用例集定义）

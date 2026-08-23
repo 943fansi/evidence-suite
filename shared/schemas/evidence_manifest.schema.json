@@ -17,6 +17,18 @@
       "enum": ["ai-internal", "ai-cross-model", "human-expert"],
       "description": "审查类型：ai-internal=同模型角色隔离（内部红队，不等同独立评审）；ai-cross-model=不同模型独立审查；human-expert=人类专家评审。"
     },
+    "review_independence": {
+      "type": "object",
+      "description": "审查独立性细节：跨模型（ai-cross-model）也不等于独立——若两者共享相同检索结果/系统提示/reasoning prior，错误仍高度相关。如实记录以便下游判断 correlated failure 风险。",
+      "properties": {
+        "reviewer_model": { "type": "string" },
+        "writer_model": { "type": "string" },
+        "model_family": { "type": "string" },
+        "context_shared": { "type": "boolean" },
+        "evidence_shared": { "type": "boolean" },
+        "human_involvement": { "type": "string", "enum": ["none", "partial", "full"] }
+      }
+    },
     "verification_mode": {
       "type": "string",
       "enum": ["static", "live"]

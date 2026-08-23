@@ -72,5 +72,10 @@
   "schema_version": "0.2.0",
   "review_kind": "ai-internal",
   "verification_mode": "static",
-  "finalized_at": "2026-08-23"
+  "finalized_at": "2026-08-23",
+  "review_independence": {
+    "human_involvement": "none",
+    "context_shared": true,
+    "evidence_shared": true
+  }
 }
