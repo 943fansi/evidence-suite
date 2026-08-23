@@ -1,0 +1,12 @@
+{
+  "id": "eval-source-009",
+  "dimension": "citation_closure",
+  "kind": "script",
+  "expectation": "block",
+  "description": "参考文献条目缺 URL → 无法回溯，BLOCK",
+  "fixtures": {
+    "draft.md": "# 正文\n\n这是一个论断 [S1]。\n\n## 参考文献\n\n[S1] 某来源标题一. (无 URL)\n"
+  },
+  "expect_rc": 1,
+  "expect_stdout_has": ["missing_urls"]
+}

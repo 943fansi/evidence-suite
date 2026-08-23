@@ -122,7 +122,8 @@ evidence-suite/
 ├── eval/                # Eval/Golden 套件（run_eval.py 自动判分 + golden 用例）
 ├── runtime/             # 运行时能力配置（capability.yaml 模板 + probe_capabilities.py 探测结果）
 ├── docker/              # Docker 沙箱（隔离脚本执行，可断网）
-├── tests/               # 回归测试（run_tests.py，56 用例）
+├── docs/                # 架构文档（architecture.md）
+├── tests/               # 回归测试（run_tests.py，64 用例）
 ├── README.md
 ├── SECURITY.md
 ├── THREAT_MODEL.md      # 威胁模型与信任边界
@@ -186,7 +187,7 @@ python eval/run_eval.py        # Eval/Golden：自动判分 + 人工打分表
 ```
 
 - **回归**（`tests/run_tests.py`）：引用闭合 / 缺 URL / 来源与深度下限 / 数字引文 / 语料自检（含 authority/freshness/superseded）/ manifest 契约校验 / SSRF 守卫 / 规则配置 / 证据充分性 / DOCX 排版与 Mermaid 嵌入 / PDF CSS。
-- **Eval/Golden**（`eval/`）：14 个 golden 用例，9 个 script 级**自动判分**（引用闭合、可疑域名、废止标准、契约非法枚举、证据充分性、SSRF 拦截），5 个 agent 行为级（prompt injection、摘要≠原文、矛盾处理、论断对齐、幻觉）需真实 agent 运行 + 人工/第二模型回填打分；结果写入 `eval/report.md`。
+- **Eval/Golden**（`eval/`）：17 个 golden 用例，12 个 script 级**自动判分**（引用闭合含学术模式、缺 URL、可疑域名、废止标准、契约非法枚举、证据充分性、SSRF 拦截），5 个 agent 行为级（prompt injection、摘要≠原文、矛盾处理、论断对齐、幻觉）需真实 agent 运行 + 人工/第二模型回填打分；结果写入 `eval/report.md`。
 - 脚本层覆盖明细见 `benchmarks/README.md`（18 个 agent 行为场景定义 + 量化指标）。
 
 ## 最小演示（Quickstart）

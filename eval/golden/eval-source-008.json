@@ -1,0 +1,13 @@
+{
+  "id": "eval-source-008",
+  "dimension": "citation_closure",
+  "kind": "script",
+  "expectation": "block",
+  "description": "学术模式：正文 [3] 在参考文献表不存在 → 数字引文未闭合，BLOCK",
+  "fixtures": {
+    "draft.md": "# 正文\n\n一个论断 [1]，另一个孤儿 [3]。\n\n## 参考文献\n\n[1] A. http://example.com/a\n[2] B. http://example.com/b\n"
+  },
+  "extra_args": ["--academic"],
+  "expect_rc": 1,
+  "expect_stdout_has": ["orphaned_nums"]
+}

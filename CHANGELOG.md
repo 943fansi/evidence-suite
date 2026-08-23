@@ -113,6 +113,12 @@
 - 写作者 SKILL 使用建议增「运行时能力」读取 `runtime/capability.local.json` 选路径
 - 回归测试 60→62 用例（框架深度默认下限告警 / 显式放宽通过）
 
+### V2 评审 P6 批次（Research-case 脚手架 + 架构文档 + eval 扩充）
+- **init_case.py**：一键脚手架 `research_case/`（README 文件契约 + .gitignore + 00_topic.md Topic Card 模板 + 02/04/06 三个 JSON 空骨格），把 Research-case 模式变成可运行约定；SKILL 引用 `init_case.py` 建工作区
+- **docs/architecture.md**：总览文档——核心数据模型（Claim→Evidence→Source→Locator→Relation→Confidence）、流水线、组件地图、信任边界、Risk-adaptive 审查深度、扩展点、演进原则
+- **eval 扩充**：新增 eval-source-008（学术模式数字引文孤儿）、009（缺 URL）、010（学术双向闭合通过）→ script 级自动判分 9→12；runner 支持 `extra_args`（--academic）
+- 回归测试 62→64 用例（init_case 脚手架创建 / 已存在跳过）；README 目录树加 docs/
+
 ### 冻结（暂不实现，无消费者 / 过早）
 - `engine/` / `policies/` 三层目录重构
 - 评测基准的**实跑打分**（需接真实 agent，当前仅用例集定义）

@@ -1,0 +1,13 @@
+{
+  "id": "eval-source-010",
+  "dimension": "citation_closure",
+  "kind": "script",
+  "expectation": "pass",
+  "description": "学术模式：数字引文双向闭合且连续 → PASS",
+  "fixtures": {
+    "draft.md": "# 正文\n\n一个论断 [1]，另一个 [2]。\n\n## 参考文献\n\n[1] A. http://example.com/a\n[2] B. http://example.com/b\n"
+  },
+  "extra_args": ["--academic"],
+  "expect_rc": 0,
+  "expect_stdout_has": []
+}

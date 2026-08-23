@@ -74,7 +74,7 @@ def _std_asserts(case: dict, rc: int, out: str) -> tuple[bool, list[str]]:
 
 
 def runner_citation_closure(case: dict, paths: dict):
-    rc, out, _ = _run(CHECK, str(paths["draft.md"]), "--json")
+    rc, out, _ = _run(CHECK, str(paths["draft.md"]), *case.get("extra_args", []), "--json")
     return _std_asserts(case, rc, out)
 
 

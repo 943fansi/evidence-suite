@@ -20,6 +20,7 @@ Coverage:
   - build_evidence_brief.py: L1 brief rendering + Evidence Score.
   - export_provenance.py: five-piece provenance bundle + review verdict parsing.
   - probe_capabilities.py: runtime capability profile emission.
+  - init_case.py: research_case workspace scaffold.
   - eval/run_eval.py: auto-scored golden cases stay green.
   - export_docx.py: 2-char first-line indent, Mermaid PNG embedding + failure
     placeholder. export_pdf.py: print CSS first-line indent (on/off).
@@ -49,6 +50,7 @@ SELECT = SCRIPTS / "select_sources.py"
 BRIEF = SCRIPTS / "build_evidence_brief.py"
 PROBE = SCRIPTS / "probe_capabilities.py"
 FRAMEWORK = SCRIPTS / "check_framework_depth.py"
+INIT_CASE = SCRIPTS / "init_case.py"
 
 
 def run(script: Path, *args: str) -> tuple[int, str, str]:
@@ -935,7 +937,7 @@ class EvalHarnessTests(unittest.TestCase):
         data = json.loads(out)
         self.assertEqual(data["failed"], 0)
         self.assertEqual(data["errors"], 0)
-        self.assertGreaterEqual(data["passed"], 9)
+        self.assertGreaterEqual(data["passed"], 12)
         self.assertGreaterEqual(data["manual"], 4, "agent-behavior golden cases should exist")
 
 
@@ -1144,6 +1146,38 @@ class FrameworkDepthRulesTests(unittest.TestCase):
         rc, out, err = run(FRAMEWORK, str(draft), "--min-chars-per-chapter", "10", "--json")
         self.assertEqual(rc, 0, f"rc={rc}\nstdout={out}\nstderr={err}")
         self.assertFalse(json.loads(out)["chapters"][0]["thin"])
+
+
+class InitCaseTests(unittest.TestCase):
+    """init_case.py scaffolds a research_case workspace."""
+
+    def setUp(self):
+        self._tmp = tempfile.TemporaryDirectory()
+        self.tmp = Path(self._tmp.name)
+
+    def tearDown(self):
+        self._tmp.cleanup()
+
+    def test_scaffold_created(self):
+        out = self.tmp / "research_case"
+        rc, o, e = run(INIT_CASE, "-o", str(out))
+        self.assertEqual(rc, 0, f"rc={rc}\nstdout={o}\nstderr={e}")
+        for name in ("README.md", ".gitignore", "00_topic.md",
+                     "02_raw_sources.json", "04_validated_sources.json",
+                     "06_evidence_map.json"):
+            self.assertTrue((out / name).exists(), f"missing {name}")
+        emap = json.loads((out / "06_evidence_map.json").read_text(encoding="utf-8"))
+        self.assertEqual(emap["evidence_map"], [])
+        self.assertIn("Topic Card", (out / "00_topic.md").read_text(encoding="utf-8"))
+
+    def test_scaffold_skips_existing_without_force(self):
+        out = self.tmp / "case"
+        run(INIT_CASE, "-o", str(out))
+        (out / "00_topic.md").write_text("# 已有内容\n", encoding="utf-8")
+        rc, o, e = run(INIT_CASE, "-o", str(out))
+        self.assertEqual(rc, 0)
+        self.assertIn("skipped", o)
+        self.assertIn("已有内容", (out / "00_topic.md").read_text(encoding="utf-8"))
 
 
 if __name__ == "__main__":
