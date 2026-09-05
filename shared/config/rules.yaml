@@ -235,6 +235,14 @@ suspect_domains:
   - 163.com
   - toutiao
 
+# 可疑域名后缀（download_reference_files.py 网络层拦截用；下载 URL 的 host 命中任一
+# 后缀即拒绝，独立于 suspect_domains 的语料自检。可被 config/rules.user.yaml 扩展。）
+suspect_domain_suffixes:
+  - .test
+  - .localhost
+  - .example
+  - .invalid
+
 # Evidence Stop Rule（证据停止规则参数）
 stop_rule:
   max_extra_before_diminishing: 5

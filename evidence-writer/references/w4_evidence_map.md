@@ -1,6 +1,6 @@
 # w4: Evidence Map（证据图谱，写作者侧 · 全局阶段 4）
 
-> 生成论点↔来源映射，供起草使用。**4b 诚实性自评属审核方**（`evidence-reviewer/prompts/r2_honest_assessment.md`）——作者完成本图谱后必须提交审核方评估，不得自评自放。
+> 生成论点↔来源映射，供起草使用。**4b 诚实性自评属审核方**（`evidence-reviewer/references/r2_honest_assessment.md`）——作者完成本图谱后必须提交审核方评估，不得自评自放。
 
 **Agent**: 本地执行（当前 assistant）· 本 skill（evidence-writer）
 **Input**: `04_validated_sources.json`（已含 3a/3b/3c 产物）

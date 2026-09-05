@@ -40,7 +40,11 @@ runtime/ 能力配置                    docker/ 沙箱        docs/ 架构文�
 ### 2. 改 manifest 契约（`shared/schemas/*.schema.json`）
 
 - **必须递增 `schema_version`**（`shared/scripts/validate_manifest.py` 顶部的
-  `SCHEMA_VERSION`），旧版解析器据此拒绝而非静默误读。
+  `SCHEMA_VERSION`）。
+- 旧版本**不再直接拒绝**：把旧版本登记进 `validate_manifest.py` 的
+  `LEGACY_VERSIONS`，并在 `migrate_manifest.py` 的 `MIGRATIONS` 注册幂等的向上迁移函数
+  （迁移必须可重复运行、不丢数据），`validate_manifest.py` 对旧版本只告警。
+- 新增的枚举/字段同步 `shared/references/glossary.md` 术语速查表。
 - 同步 `validate_manifest.py` 的校验逻辑 + `tests/` 的正/负例 +
   `examples/quickstart/expected/`（`run_demo.ps1` 重生成）。
 
@@ -71,8 +75,13 @@ agent 行为级用例标 `kind: "manual"` 并写清核验点。
 
 ## PR 检查清单
 
+> 提交 PR 时自动套用 `.github/PULL_REQUEST_TEMPLATE.md`；issue 请用
+> `.github/ISSUE_TEMPLATE/`（Bug 报告 / Feature 请求 / 评测用例提交）。
+
 - [ ] `tests/run_tests.py` 全绿（含新用例）
 - [ ] `eval/run_eval.py` script 级 0 fail
 - [ ] 未引入非白名单脚本执行 / 未放宽安全约束
-- [ ] 契约变更已升 `schema_version` 并更新 expected
+- [ ] 契约变更已升 `schema_version`、登记 `LEGACY_VERSIONS` + `MIGRATIONS` 迁移、更新 expected
+- [ ] 涉及网络/写盘的新脚本已登记 `SECURITY.md` 白名单表与 `THREAT_MODEL.md`
+- [ ] 新增枚举/字段已同步 `shared/references/glossary.md`
 - [ ] CHANGELOG 已记录

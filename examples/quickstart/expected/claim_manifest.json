@@ -72,7 +72,8 @@
   "schema_version": "0.2.0",
   "review_kind": "ai-internal",
   "verification_mode": "static",
-  "finalized_at": "2026-08-23",
+  "finalized_at": "2026-08-24",
+  "boundary_notice": "边界声明：本报告由 evidence-suite 校验「引用原文是否支持论断」，不保证来源网页/论文内容本身真实；quote_hash/页码等 locator 可能因 PDF 版本、扫描件或网页改版失效；未找到反证不等于论断正确。",
   "review_independence": {
     "human_involvement": "none",
     "context_shared": true,

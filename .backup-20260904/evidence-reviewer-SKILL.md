@@ -16,15 +16,12 @@ disallowed_tools: []  # live r1 模式允许 WebSearch/WebFetch；其余默认 s
 
 # Skill: evidence-reviewer
 
-# 证据驱动红队审查方 · Evidence-Driven Reviewer（v0.2.1）
-
 ## 跳过条件（When NOT to Use，命中任意一条即不激活流水线）
-
 - 普通语法纠错、纯润色、拼写检查、非事实性文案点评——不涉及来源真实性，直接拒绝。
 - 要求审查者"帮忙改写 / 补来源 / 替作者圆场"——本 skill 只审不写，不新增证据。
 - 用户显式禁用：请求附带 `--evidence-suite-disable` 标记时，本 skill **不得激活**，不产出判决文件。
 
-> 版本 0.2.1，要求 evidence-suite ≥ 0.2.0（与 evidence-writer 同版本号同步）。本 skill 必须与套件根目录（含 `shared/`）整套安装。运行需 Python 3.10+、Bash、Read/Write/Edit；WebSearch/WebFetch 仅 live r1 模式需要，其余默认 static。
+# 证据驱动红队审查方 · Evidence-Driven Reviewer
 
 原 `evidence-proposal` 单一流水线按「编写 / 审核」职责拆分为两个**相互对抗**的 skill：
 
@@ -82,7 +79,7 @@ disallowed_tools: []  # live r1 模式允许 WebSearch/WebFetch；其余默认 s
 | 入口 | 触发 | 执行 |
 |------|------|------|
 | **提交审查（对抗循环内）** | 写作者在 Document Production 中按阶段提交工件 | 按「阶段编译器」表逐门执行（r1→r2→r3→r4→r5→终审门） |
-| **Review Only（只审不写）** | 用户已有文档、只要审查意见，无写作者参与 | r4 红队审查 + 脚本门禁 + 终审门（审查对象以用户提交的文档路径为准，不限于 `11_定稿.md`/`14_专家修订稿.md`）；若文档附带语料/证据图谱，则先补 r1（来源审计）/ r2（诚实性自评） |
+| **Review Only（只审不写）** | 用户已有文档、只要审查意见，无写作者参与 | r4 红队审查 + 脚本门禁 + 终审门；若文档附带语料/证据图谱，则先补 r1（来源审计）/ r2（诚实性自评） |
 
 - Review Only 下不写正文、不新增证据、不改作者文件，只输出判决文件与分级问题清单。
 - 用户提交的文档若缺语料（`04_validated_sources.json`）或缺来源标记，r4 按"未挂 `[Sx]` 的事实性论断"规则处理（可判定为证据缺失，不得替作者补来源）。
@@ -93,14 +90,14 @@ disallowed_tools: []  # live r1 模式允许 WebSearch/WebFetch；其余默认 s
 
 | 审查门 | 全局阶段 | 审查对象 | 动作 | 加载 prompt | 判决产物 |
 |--------|---------|---------|------|-------------|---------|
-| r1 来源审计 | 2 | `02_raw_sources.json` | 逐条审计可信度/偏倚/过度推断/字段缺失 | `references/r1_source_audit.md` | `03_audit_report.md`（判决：进入3 / 退回补搜） |
-| r2 诚实性自评 | 4b | `06_evidence_map.json` | 识别过度宣称、反方证据、缺口分级 | `references/r2_honest_assessment.md` | `07_honest_assessment.md`（判决：✅/⚠️/🔄/⛔） |
-| r3 框架深度门 | 5b | `08_初稿.md` | 校验四要素展开 + 篇幅（脚本） | `references/r3_framework_depth.md` | `check_framework_depth.py` 报告（判决：通过/退回展开） |
-| r4 初稿审查 | 6 | `08_初稿.md` | 红队全面审查 + 脚本门禁 | `references/r4_draft_review.md` | `10_review.md`（判决：通过/小修/大修/退回补搜/阻断） |
-| r5 外部专家评审 | 8 | `11_定稿.md` | 多角色专家评审 | `references/r5_external_review.md` | `12_外部专家意见.md`（判决：通过/修改后通过/大幅修改/暂缓/不建议） |
-| 终审门 | 终审 | `14_专家修订稿.md` 或 `11_定稿.md` | 净化合规 + 引用闭合 + 残留检查 | `references/final_gate.md` | 终审门判决（✅ 可导出 / ⛔ 退回） |
+| r1 来源审计 | 2 | `02_raw_sources.json` | 逐条审计可信度/偏倚/过度推断/字段缺失 | `prompts/r1_source_audit.md` | `03_audit_report.md`（判决：进入3 / 退回补搜） |
+| r2 诚实性自评 | 4b | `06_evidence_map.json` | 识别过度宣称、反方证据、缺口分级 | `prompts/r2_honest_assessment.md` | `07_honest_assessment.md`（判决：✅/⚠️/🔄/⛔） |
+| r3 框架深度门 | 5b | `08_初稿.md` | 校验四要素展开 + 篇幅（脚本） | `prompts/r3_framework_depth.md` | `check_framework_depth.py` 报告（判决：通过/退回展开） |
+| r4 初稿审查 | 6 | `08_初稿.md` | 红队全面审查 + 脚本门禁 | `prompts/r4_draft_review.md` | `10_review.md`（判决：通过/小修/大修/退回补搜/阻断） |
+| r5 外部专家评审 | 8 | `11_定稿.md` | 多角色专家评审 | `prompts/r5_external_review.md` | `12_外部专家意见.md`（判决：通过/修改后通过/大幅修改/暂缓/不建议） |
+| 终审门 | 终审 | `14_专家修订稿.md` 或 `11_定稿.md` | 净化合规 + 引用闭合 + 残留检查 | `prompts/final_gate.md` | 终审门判决（✅ 可导出 / ⛔ 退回） |
 
-**终审门**是交付前最后一道闸：作者声称已完成时，审查者按 `references/final_gate.md` 核对（残留标记、`[n]` 闭合、引用下限、深度下限、forbidSources、净化痕迹），任一不通过即退回，不放行"带病交付"。终审门须人工核对参考文献节唯一性——`build_references.py` 对「编号标题 vs 裸标题」存在脚本盲区，可能追加重复参考文献节；另外 `finalize_draft.py` 残留扫描会把正文对「附录A/证据缺口清单」的正常引用误报为脚手架残留，审查时注意区分。
+**终审门**是交付前最后一道闸：作者声称已完成时，审查者按 `prompts/final_gate.md` 核对（残留标记、`[n]` 闭合、引用下限、深度下限、forbidSources、净化痕迹），任一不通过即退回，不放行"带病交付"。终审门须人工核对参考文献节唯一性——`build_references.py` 对「编号标题 vs 裸标题」存在脚本盲区，可能追加重复参考文献节；另外 `finalize_draft.py` 残留扫描会把正文对「附录A/证据缺口清单」的正常引用误报为脚手架残留，审查时注意区分。
 
 ## 判决的阻断规则（Blockers）
 
@@ -187,8 +184,8 @@ disallowed_tools: []  # live r1 模式允许 WebSearch/WebFetch；其余默认 s
 全部脚本位于 `${SUITE_ROOT}/shared/scripts/`：
 
 - **引用闭合**：`python ${SUITE_ROOT}/shared/scripts/check_citations.py 11_定稿.md --sources 04_validated_sources.json`
-- **来源数量下限**：`python ${SUITE_ROOT}/shared/scripts/check_citations.py 11_定稿.md --min-sources 15`（按文档类型取值，见 `${SUITE_ROOT}/shared/references/doc_minimums.md`）
-- **正文深度下限**：`python ${SUITE_ROOT}/shared/scripts/check_citations.py 11_定稿.md --min-chars 20000`（按文档类型取值，同上）
+- **来源数量下限**：`python ${SUITE_ROOT}/shared/scripts/check_citations.py 11_定稿.md --min-sources 15`（按文档类型取值）
+- **正文深度下限**：`python ${SUITE_ROOT}/shared/scripts/check_citations.py 11_定稿.md --min-chars 20000`（按文档类型取值）
 - **终稿数字引文闭合**（净化版）：`python ${SUITE_ROOT}/shared/scripts/check_citations.py 11_定稿_clean.md --academic --min-sources 40 --min-chars 30000`
 - **语料自检**：`python ${SUITE_ROOT}/shared/scripts/validate_sources.py 04_validated_sources.json`（学位类加 `--quota-cn-journal 10`）
 - **框架深度门**：`python ${SUITE_ROOT}/shared/scripts/check_framework_depth.py 11_定稿.md`
@@ -196,7 +193,6 @@ disallowed_tools: []  # live r1 模式允许 WebSearch/WebFetch；其余默认 s
 - **净化校验**（净化版）：`python ${SUITE_ROOT}/shared/scripts/finalize_draft.py 11_定稿_clean.md --check --sources 04_validated_sources.json`（若终稿为 `14_专家修订稿.md`，改用 `14_专家修订稿_clean.md`；净化合规只对净化版检查，对工作稿会误报脚手架残留）
 - **阶段门禁**：`python ${SUITE_ROOT}/shared/scripts/inspect_pipeline.py --gates ./research_case`
 - **Provenance 五件套（终审门后）**：`python ${SUITE_ROOT}/shared/scripts/export_provenance.py --draft 11_定稿_clean.md --sources 04_validated_sources.json --evidence-map 06_evidence_map.json --review-dir ./research_case --review-kind <kind> -o research_case/provenance`——产出 `report.{claims,evidence,source-map,review}.json` 供机器审计
-- **机器可审计性门禁（终审门后，推荐）**：`python ${SUITE_ROOT}/shared/scripts/audit_provenance.py --claims research_case/provenance/report.claims.json`（或 `--provenance-dir research_case/provenance`）——校验每条 claim 的支撑证据带 `locator`（页码/段落/quote_hash）；R3/R4/N 类高危 claim 缺 locator 即 exit 1。"引用到某篇"不等于"引用到某处"。
 - **残留扫描**：Grep 搜索 `[Sx]`、`[Gx]`、`[假设]`、`[待内部确认]`、`图例`、`附录A`、封面占位（`编号：2023xxxx`）等。
 
 脚本通过是**必要条件**，但不是充分条件——审查者的判断（过度宣称、叙事模式、深层缺口）脚本覆盖不到，必须人工审查。
@@ -245,7 +241,7 @@ disallowed_tools: []  # live r1 模式允许 WebSearch/WebFetch；其余默认 s
 1. 确认所需依赖文件存在（语料/图谱/Topic Card），缺失即要求补齐，不评审缺件。
 2. 按对应阶段 prompt 执行审查 + 运行脚本门禁。
 3. 落盘判决文件，给出判决词表中的取值与问题清单。
-4. 若是复审，先核对作者在 `research_case/13_审查意见响应说明.md` 中声称"已修改"的项是否真实修改且无回归，再决定是否通过。
+4. 若是复审，先核对"响应说明表"中声称已修改的项是否真实修改且无回归，再决定是否通过。
 
 ## 按需加载的参考指南（审查者相关，仅相关阶段 Read）
 

@@ -4,7 +4,7 @@
 
 **Agent**: 本地执行（当前 assistant）· 本 skill（evidence-reviewer）
 **Input**: `08_初稿.md`
-**Output**: `check_framework_depth.py` 报告 + 并入 `10_review.md` 的判决
+**Output**: `check_framework_depth.py` 报告；通过则并入 `10_review.md`（r4）"脚本门禁结果"表，阻断则单独落盘 `03_framework_depth.md`（或直接在对抗交接中退回），无需等待 r4
 
 ## 执行步骤
 
@@ -24,4 +24,6 @@
 
 ## 输出
 
-将门禁结果（每章四要素矩阵 + 篇幅 + 判定）并入 `10_review.md` 的"脚本门禁结果"表，并在总体判决中体现。学位类若缺实证算例，按 high 优先级问题列出。
+- **通过**：将门禁结果（每章四要素矩阵 + 篇幅 + 判定）并入 `10_review.md`（r4 初稿审查）的"脚本门禁结果"表，并在总体判决中体现。
+- **阻断**：本门在 r4 之前运行，此时 `10_review.md` 尚未生成——单独落盘 `03_framework_depth.md`（或直接在对抗交接中给出 ⛔ 退回判决），要求作者把缺失要素写成独立 `###` 小节后重新提交，无需等待 r4。
+- 学位类若缺实证算例，按 high 优先级问题列出。

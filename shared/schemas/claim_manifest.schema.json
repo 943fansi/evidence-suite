@@ -9,8 +9,16 @@
   "properties": {
     "schema_version": {
       "type": "string",
-      "const": "0.1.0",
-      "description": "manifest 契约版本；字段变更时必须递增，旧版解析器据此拒绝而非静默误读。"
+      "enum": ["0.1.0", "0.2.0"],
+      "description": "manifest 契约版本；字段变更时必须递增。当前 0.2.0；旧版 0.1.0 由 migrate_manifest.py 向上迁移，validate_manifest.py 对旧版本仅告警不拒绝。"
+    },
+    "compatibility_notes": {
+      "type": "string",
+      "description": "本 manifest 兼容的 suite 版本区间 / 迁移说明（可选项，由 migrate_manifest.py 或作者填写）。"
+    },
+    "boundary_notice": {
+      "type": "string",
+      "description": "能力边界声明：套件只校验「引用原文是否支持论断」，不保证来源本身真实；locator 可能因 PDF 版本/扫描件/网页改版失效；未找到反证 ≠ 论断正确。"
     },
     "review_kind": {
       "type": "string",
@@ -69,12 +77,13 @@
                 },
                 "locator": {
                   "type": "object",
-                  "description": "来源原文定位：页码/节号/段落/引用片段哈希（quote_hash 可用 sha256(原文片段) 便于机器对账）",
+                  "description": "来源原文定位：页码/节号/段落/引用片段哈希（quote_hash 可用 sha256(原文片段) 便于机器对账）。locator_quality 标注定位精度；扫描件/排版漂移时可降级为章节级 locator_quality: low 且 quote_hash 置 null。",
                   "properties": {
                     "page": { "type": "integer" },
                     "section": { "type": "string" },
                     "paragraph": { "type": "integer" },
-                    "quote_hash": { "type": "string" }
+                    "quote_hash": { "type": ["string", "null"] },
+                    "locator_quality": { "type": "string", "enum": ["high", "medium", "low"] }
                   }
                 }
               }

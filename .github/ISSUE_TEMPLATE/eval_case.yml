@@ -1,0 +1,34 @@
+name: 评测用例提交（golden / benchmark）
+description: 新增 eval/golden 或 benchmarks 行为场景用例
+title: "[eval] 用例名"
+labels: [eval]
+body:
+  - type: input
+    id: kind
+    attributes:
+      label: 用例类型
+      description: script（离线自动判分） / manual（agent 行为，需人工/第二模型打分）
+      placeholder: script
+    validations:
+      required: true
+  - type: input
+    id: dimension
+    attributes:
+      label: 评测维度
+      description: 与 eval/README.md 的 dimension 枚举对应（citation_closure / source_suspect_domain / manifest_schema / evidence_sufficiency / ssrf_guard / …）
+    validations:
+      required: true
+  - type: textarea
+    id: fixture
+    attributes:
+      label: fixtures / 期望（可贴 JSON）
+      description: script 用例贴最小 fixtures 与 expect_rc/expect_stdout_has；manual 用例写清核验点
+    validations:
+      required: true
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: 前置检查
+      options:
+        - label: 已本地验证：加入 eval/golden 后 `python eval/run_eval.py` script 级 0 fail
+        - label: 用例不含网络依赖（script 类）或已标注离线判分方式

@@ -72,6 +72,7 @@ import sys
 from datetime import date
 from pathlib import Path
 
+from evidence_boundary import BOUNDARY_NOTICE
 from validate_manifest import SCHEMA_VERSION, validate_manifest
 
 # matches "## 参考文献", "## 参考文献 References", "## References", "## 文献"
@@ -472,6 +473,7 @@ def build_source_manifest(text: str, sources_path: Path | None,
         "verification_mode": verification_mode,
         "finalized_at": date.today().isoformat(),
         "note": "claim 级字段来自 06_evidence_map.json（--evidence-map 提供时自动合并）",
+        "boundary_notice": BOUNDARY_NOTICE,
         "mapping": mapping,
     }
     if review_independence:
@@ -572,6 +574,17 @@ def main() -> int:
     else:
         sys.stdout.write(out)
 
+    # B8 (P0): post-finalize body validation must NOT be silently dropped by the
+    # downstream manifest stage (which reuses the name `problems` and would clobber
+    # the body-validation result at line 582). final_gate.md 承诺 finalize 不可逆、
+    # 校验失败必须阻断 CI；--check 已经在更早处返回 3，--dry-run 也在更早处返回 0，
+    # 走到本分支意味着正式写盘，必须非零退出。
+    if problems:
+        print("error: finalization output failed validate() (output was written "
+              "for inspection but is NOT trusted — final_gate contract is '不可逆')",
+              file=sys.stderr)
+        return 3
+
     if args.manifest:
         manifest = build_source_manifest(text, args.sources, args.evidence_map,
                                          args.review_kind, args.verification_mode,
@@ -598,6 +611,7 @@ def main() -> int:
         cm["review_kind"] = args.review_kind
         cm["verification_mode"] = args.verification_mode
         cm["finalized_at"] = date.today().isoformat()
+        cm["boundary_notice"] = BOUNDARY_NOTICE
         if review_independence:
             cm["review_independence"] = review_independence
         if not args.no_validate_manifest:

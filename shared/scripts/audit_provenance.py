@@ -28,7 +28,9 @@ from pathlib import Path
 
 HIGH_RISK = {"R3", "R4"}
 HIGH_RISK_CLASSES = {"N"}
-LOCATOR_KEYS = ("page", "section", "paragraph", "quote_hash")
+# locator_quality 允许扫描件/排版漂移场景降级为章节级定位（quote_hash: null），
+# 此时只要仍有 section 等定位键即可通过机器可审计性门禁。
+LOCATOR_KEYS = ("page", "section", "paragraph", "quote_hash", "locator_quality")
 
 
 def _ensure_utf8_streams() -> None:
@@ -44,7 +46,8 @@ def _evidence_has_locator(ev: dict) -> bool:
     loc = ev.get("locator")
     if not isinstance(loc, dict):
         return False
-    return any(loc.get(k) for k in LOCATOR_KEYS)
+    # locator_quality 是精度标注，本身不算定位；真正的定位键是 page/section/paragraph/quote_hash
+    return any(loc.get(k) for k in ("page", "section", "paragraph", "quote_hash"))
 
 
 def audit(claims: list[dict]) -> dict:

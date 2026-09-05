@@ -20,7 +20,8 @@ Agent 与用户**只能执行下表内列出的脚本**，不得用动态生成�
 | `download_reference_files.py` | 是（下载公开 PDF） | 是（`reference_files/`） | 否 | 按语料 URL 下载；内置 SSRF 拦截与大小上限 |
 | `fetch_nsfc_report.py` | 是 | 是（输出目录） | 是（逆向 NSFC 门户 API） | 见下方专项说明 |
 | `extract_pdf_text.py` | 否 | 是（`pdf_text/`） | 否 | 本地 PDF 抽文本 |
-| `build_references.py` / `check_citations.py` / `validate_sources.py` / `check_framework_depth.py` / `finalize_draft.py` / `inspect_pipeline.py` / `validate_manifest.py` | 否 | 可选写 | 否 | 确定性校验 / 生成 |
+| `build_references.py` / `check_citations.py` / `validate_sources.py` / `check_framework_depth.py` / `finalize_draft.py` / `inspect_pipeline.py` / `validate_manifest.py` / `migrate_manifest.py` | 否 | 可选写 | 否 | 确定性校验 / 生成 |
+| `evidence_suite.py` | 透传子命令（不新增能力） | 透传 | 透传 | 统一 CLI 入口；仅代理白名单内脚本 |
 | `export_pdf.py` / `export_docx.py` | 部分（mermaid 图远程渲染时，默认 local-first） | 是（导出物） | 是（mermaid.ink 回退） | 导出 PDF/DOCX；`--mermaid-engine local` 禁止联网 |
 | `visual_qa.py` | 否 | 是（`qa/`） | 否 | 本地浏览器截图 |
 
@@ -36,10 +37,12 @@ Agent 与用户**只能执行下表内列出的脚本**，不得用动态生成�
 ### 网络行为约束（SSRF / 下载防护）
 
 - `download_reference_files.py` / `fetch_nsfc_report.py` 在发起请求前拦截以下目标，禁止访问：`localhost` / `127.0.0.0/8`、`::1`、私有地址段（`10/8`、`172.16/12`、`192.168/16`）、链路本地（`169.254/16`、`fe80::/10`）、保留段（`0.0.0.0`、`100.64/10`）、内网域名后缀。拦截即拒绝下载并在 manifest 记 `status=blocked_ssrf`。
+- **域名后缀黑名单**：`shared/config/rules.yaml` 的 `suspect_domain_suffixes` 在 **DNS 解析前** 拦截（可用 `config/rules.user.yaml` 扩展）；重定向逐跳复用同一策略校验（302/301 跳到内网 IP 或黑名单域名同样被拦）。
 - 仅允许 `https://`（`download_reference_files.py` 也允许 `http://` 用于明确公开站点的重定向链，但地址拦截规则同样生效）。
 - 下载大小上限默认 200 MB（`--max-bytes` 可调），超限即截断拒绝，防止整盘写爆 / 内存耗尽。
 - 网络请求须有超时（默认 `--timeout 30`）与重试退避（`fetch_nsfc_report.py` 已内置 sleep + backoff）。
 - 建议保留下载清单（`reference_files/manifest.json` / `manifest.csv`）作为网络访问审计日志：含 URL、状态、字节数、原因，便于事后溯源。
+- **审计日志（推荐）**：`download_reference_files.py --audit-log <path>` 输出机器可读 `audit_log.json`，记录全部 HTTP 请求、下载来源、被拒请求（blocked/failed/not_pdf 均保留），恶意来源可复盘回放。
 
 ### Prompt Injection（来源内容注入）
 

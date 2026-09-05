@@ -8,7 +8,7 @@
 >
 > **路径约定**：文中路径示例以 `${SUITE_ROOT}` 开头，即**套件根目录**（`shared/` 的上一级），由 agent 加载 skill 时解析；脚本以 `Path(__file__).resolve().parents[2]` 自行定位，无需手工替换。
 >
-> ⚠️ **字段名冲突警示**：本文档 `Stage 4` 的旧 schema 用 `sections[]`（含 `needed_gap` 等字段）；现行权威 schema 见 `${SUITE_ROOT}/evidence-writer/prompts/w4_evidence_map.md`，用 `evidence_map[]`（含 `claim_decomposition`、`counter_evidence`、`claim_type`、`confidence_assessment`）。**生成/校验 `06_evidence_map.json` 一律以现行 prompt 的字段为准**，勿按本文档写 `sections[]`。
+> ⚠️ **字段名冲突警示**：本文档 `Stage 4` 的旧 schema 用 `sections[]`（含 `needed_gap` 等字段）；现行权威 schema 见 `${SUITE_ROOT}/evidence-writer/references/w4_evidence_map.md`，用 `evidence_map[]`（含 `claim_decomposition`、`counter_evidence`、`claim_type`、`confidence_assessment`）。**生成/校验 `06_evidence_map.json` 一律以现行 prompt 的字段为准**，勿按本文档写 `sections[]`。
 
 ### 旧编号 → 现行编号对照（仅概念参考）
 
@@ -102,7 +102,7 @@ Rules:
 - Preserve the `url` field from raw sources
 - Add per-source: `role`, `access_status` (confirmed/web_accessible/unavailable), `url_verified`, `use_for[]`, `claim_strength[]`
 
-> `access_status` 词表以 `${SUITE_ROOT}/evidence-writer/prompts/w3_corpus.md` 为准（证据用途取向）：`confirmed`（PDF 已下载）/ `web_accessible`（URL 存在未下载）/ `unavailable`（下载失败或非 PDF）。旧语料中可能出现的 `full_text/abstract_only/landing_page_only`、`open_full_text/open_page/metadata_only/transcription` 等值为历史遗留，新产出一律使用三值词表。
+> `access_status` 词表以 `${SUITE_ROOT}/evidence-writer/references/w3_corpus.md` 为准（证据用途取向）：`confirmed`（PDF 已下载）/ `web_accessible`（URL 存在未下载）/ `unavailable`（下载失败或非 PDF）。旧语料中可能出现的 `full_text/abstract_only/landing_page_only`、`open_full_text/open_page/metadata_only/transcription` 等值为历史遗留，新产出一律使用三值词表。
 - Add top-level: `validated_source_count`, `sources_by_role` summary
 
 ## Stage 4: Evidence Map

@@ -19,4 +19,4 @@ Choose the closest match to `{target_document}` and keep the section order stabl
 | 可行 / 可行性 / 可研 / 论证 / feasibility | `report_feasibility.md` |
 | 白皮书 / 技术白皮书 / 技术报告 / whitepaper | `whitepaper.md` |
 
-> **裸"论文"路由约定**：`{target_document}` 含"论文/学位论文/学位/thesis"但**未指明层级**（无 本科/学士/硕士/博士/ug/master/phd）时，视为**学位论文**，默认落到 `thesis_ug.md`（本科）；若上下文明确是"开题/立项申报等方案类文档"，落到 `proposal.md`。两个默认值不冲突——`proposal.md` 只在既非论文类也非其余类型时兜底。关键词集合与 `${SUITE_ROOT}/evidence-writer/prompts/w1_doc_adapter.md` 保持一致。
+> **裸"论文"路由约定**：`{target_document}` 含"论文/学位论文/学位/thesis"但**未指明层级**（无 本科/学士/硕士/博士/ug/master/phd）时，视为**学位论文**，默认落到 `thesis_ug.md`（本科）；若上下文明确是"开题/立项申报等方案类文档"，落到 `proposal.md`。两个默认值不冲突——`proposal.md` 只在既非论文类也非其余类型时兜底。关键词集合与 `${SUITE_ROOT}/evidence-writer/references/w1_doc_adapter.md` 保持一致。

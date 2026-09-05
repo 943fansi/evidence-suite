@@ -2,7 +2,8 @@
 """Minimal regression suite for evidence-suite deterministic gates.
 
 Runs the gate scripts as subprocesses against inline fixtures and asserts exit
-codes / JSON output. No third-party deps (Python stdlib only).
+codes / JSON output. Core gates use only the stdlib; DOCX typography tests
+need python-docx and are skipped when it is absent.
 
 Coverage:
   - check_citations.py: citation closure (orphaned/unused), missing URL,
@@ -45,6 +46,8 @@ CHECK = SCRIPTS / "check_citations.py"
 VALIDATE = SCRIPTS / "validate_sources.py"
 FINALIZE = SCRIPTS / "finalize_draft.py"
 VALIDATE_MANIFEST = SCRIPTS / "validate_manifest.py"
+MIGRATE_MANIFEST = SCRIPTS / "migrate_manifest.py"
+CLI = SCRIPTS / "evidence_suite.py"
 SUFFICIENCY = SCRIPTS / "check_evidence_sufficiency.py"
 EVAL = ROOT / "eval" / "run_eval.py"
 SELECT = SCRIPTS / "select_sources.py"
@@ -733,6 +736,8 @@ class ExportDocxTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         import importlib.util
+        if importlib.util.find_spec("docx") is None:
+            raise unittest.SkipTest("python-docx not installed — pip install python-docx")
         sys.path.insert(0, str(SCRIPTS))
         spec = importlib.util.spec_from_file_location(
             "export_docx", SCRIPTS / "export_docx.py")
@@ -968,6 +973,11 @@ class EvalHarnessTests(unittest.TestCase):
         self.assertEqual(data["errors"], 0)
         self.assertGreaterEqual(data["passed"], 15)
         self.assertGreaterEqual(data["manual"], 4, "agent-behavior golden cases should exist")
+        report_json = ROOT / "eval" / "report.json"
+        self.assertTrue(report_json.exists(), "PR-11: eval/report.json must be written")
+        rj = json.loads(report_json.read_text(encoding="utf-8"))
+        self.assertEqual(rj["summary"]["passed"], data["passed"])
+        self.assertEqual(len(rj["results"]), data["total"])
 
 
 class P1RegistryRankingTests(unittest.TestCase):
@@ -1248,6 +1258,249 @@ class AuditProvenanceTests(unittest.TestCase):
         rc, out, err = run(AUDIT, "--claims", str(claims))
         self.assertEqual(rc, 1)
         self.assertIn("缺失 locator", out)
+
+
+LEGACY_CLAIM_MANIFEST = """\
+{
+  "schema_version": "0.1.0",
+  "review_kind": "ai-internal",
+  "verification_mode": "static",
+  "finalized_at": "2026-08-22",
+  "claims": [
+    {"claim_id": "C-001", "claim_class": "N", "claim_text": "某规范论断",
+     "evidence": [{"source_id": "S1", "support_level": "direct"}]},
+    {"claim_id": "C-002", "claim_class": "M", "claim_text": "某实证论断",
+     "evidence": [{"source_id": "S2", "support_level": "contradictory"}]}
+  ]
+}
+"""
+
+LOCATOR_QUALITY_MANIFEST = """\
+{
+  "schema_version": "0.2.0",
+  "review_kind": "ai-internal",
+  "verification_mode": "static",
+  "finalized_at": "2026-08-22",
+  "claims": [
+    {"claim_id": "C-001", "claim_class": "N", "claim_text": "扫描件降级定位",
+     "evidence": [{"source_id": "S1", "support_level": "direct",
+                   "relation": "supports",
+                   "locator": {"section": "2.1", "locator_quality": "low", "quote_hash": null}}]}
+  ]
+}
+"""
+
+BAD_LOCATOR_QUALITY_MANIFEST = """\
+{
+  "schema_version": "0.2.0",
+  "review_kind": "ai-internal",
+  "verification_mode": "static",
+  "finalized_at": "2026-08-22",
+  "claims": [
+    {"claim_id": "C-001", "claim_class": "N", "claim_text": "t",
+     "evidence": [{"source_id": "S1", "support_level": "direct",
+                   "locator": {"locator_quality": "bogus"}}]}
+  ]
+}
+"""
+
+
+class ManifestVersionCompatTests(unittest.TestCase):
+    """PR-09: legacy schema_version warns (not blocks) + migrate_manifest.py migrates."""
+
+    def setUp(self):
+        self._tmp = tempfile.TemporaryDirectory()
+        self.tmp = Path(self._tmp.name)
+
+    def tearDown(self):
+        self._tmp.cleanup()
+
+    def test_legacy_version_warns_but_validates(self):
+        legacy = write(self.tmp, "legacy.json", LEGACY_CLAIM_MANIFEST)
+        rc, out, err = run(VALIDATE_MANIFEST, str(legacy))
+        self.assertEqual(rc, 0, f"legacy manifest must not be hard-rejected\nstdout={out}\nstderr={err}")
+        self.assertIn("manifest warning:", out)
+        self.assertIn("migrate_manifest.py", out)
+
+    def test_unknown_version_still_rejected(self):
+        bad = write(self.tmp, "unknown.json", LEGACY_CLAIM_MANIFEST.replace("0.1.0", "9.9.9"))
+        rc, out, _ = run(VALIDATE_MANIFEST, str(bad))
+        self.assertEqual(rc, 1)
+        self.assertIn("schema_version must be", out)
+
+    def test_migrate_upgrades_and_is_idempotent(self):
+        legacy = write(self.tmp, "legacy.json", LEGACY_CLAIM_MANIFEST)
+        migrated = self.tmp / "migrated.json"
+        rc, out, err = run(MIGRATE_MANIFEST, str(legacy), "-o", str(migrated))
+        self.assertEqual(rc, 0, f"rc={rc}\nstdout={out}\nstderr={err}")
+        data = json.loads(migrated.read_text(encoding="utf-8"))
+        self.assertEqual(data["schema_version"], "0.2.0")
+        self.assertEqual(data["review_independence"]["human_involvement"], "none")
+        by_id = {c["claim_id"]: c for c in data["claims"]}
+        self.assertEqual(by_id["C-001"]["evidence"][0]["relation"], "supports")
+        self.assertEqual(by_id["C-002"]["evidence"][0]["relation"], "contradicts")
+        rc, out, _ = run(VALIDATE_MANIFEST, str(migrated))
+        self.assertEqual(rc, 0)
+        self.assertNotIn("manifest warning:", out)
+        # idempotent: re-running is a no-op
+        rc, out, _ = run(MIGRATE_MANIFEST, str(migrated), "-o", str(self.tmp / "again.json"))
+        self.assertEqual(rc, 0)
+        self.assertIn("no migration needed", out)
+
+    def test_migrate_dry_run_writes_nothing(self):
+        legacy = write(self.tmp, "legacy.json", LEGACY_CLAIM_MANIFEST)
+        rc, out, _ = run(MIGRATE_MANIFEST, str(legacy), "--dry-run")
+        self.assertEqual(rc, 0)
+        self.assertIn("migrated:", out)
+        data = json.loads(legacy.read_text(encoding="utf-8"))
+        self.assertEqual(data["schema_version"], "0.1.0", "dry-run must not rewrite the source")
+
+
+class LocatorQualityTests(unittest.TestCase):
+    """PR-10: locator_quality enum + quote_hash null (scan-degraded locators)."""
+
+    def setUp(self):
+        self._tmp = tempfile.TemporaryDirectory()
+        self.tmp = Path(self._tmp.name)
+
+    def tearDown(self):
+        self._tmp.cleanup()
+
+    def test_low_quality_section_locator_validates(self):
+        good = write(self.tmp, "lq.json", LOCATOR_QUALITY_MANIFEST)
+        rc, out, err = run(VALIDATE_MANIFEST, str(good))
+        self.assertEqual(rc, 0, f"rc={rc}\nstdout={out}\nstderr={err}")
+
+    def test_illegal_quality_rejected(self):
+        bad = write(self.tmp, "bq.json", BAD_LOCATOR_QUALITY_MANIFEST)
+        rc, out, err = run(VALIDATE_MANIFEST, str(bad))
+        self.assertEqual(rc, 1)
+        self.assertIn("locator.locator_quality", out)
+
+    def test_normalized_quote_hash_stable_across_layout(self):
+        import importlib.util
+        spec = importlib.util.spec_from_file_location(
+            "evidence_boundary", SCRIPTS / "evidence_boundary.py")
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        self.assertEqual(mod.normalize_quote("A  B\n\tC"), "A B C")
+        self.assertEqual(
+            mod.quote_sha256("条款一\n  段落二"),
+            mod.quote_sha256("条款一 段落二"),
+        )
+        self.assertTrue(mod.quote_sha256("x").startswith("sha256:"))
+
+
+class BoundaryNoticeTests(unittest.TestCase):
+    """PR-01: manifests carry boundary_notice; validate --json includes warnings key."""
+
+    def setUp(self):
+        self._tmp = tempfile.TemporaryDirectory()
+        self.tmp = Path(self._tmp.name)
+
+    def tearDown(self):
+        self._tmp.cleanup()
+
+    def test_finalized_manifest_embeds_boundary_notice(self):
+        draft = write(self.tmp, "draft.md", CLEAN_DRAFT)
+        sources = write(self.tmp, "sources.json", CLEAN_CORPUS)
+        man = self.tmp / "manifest.json"
+        rc, o, e = run(FINALIZE, str(draft), "--manifest", str(man), "--sources", str(sources))
+        self.assertEqual(rc, 0, f"rc={rc}\nstdout={o}\nstderr={e}")
+        data = json.loads(man.read_text(encoding="utf-8"))
+        self.assertIn("boundary_notice", data)
+        self.assertIn("不保证来源", data["boundary_notice"])
+
+    def test_validate_json_has_warnings_key(self):
+        legacy = write(self.tmp, "legacy.json", LEGACY_CLAIM_MANIFEST)
+        rc, out, err = run(VALIDATE_MANIFEST, str(legacy), "--json")
+        self.assertEqual(rc, 0)
+        data = json.loads(out)
+        self.assertIn("warnings", data)
+        self.assertEqual(data["errors"], [])
+
+
+class EvidenceSuiteCliTests(unittest.TestCase):
+    """PR-02: unified CLI entry dispatches to the underlying scripts."""
+
+    def setUp(self):
+        self._tmp = tempfile.TemporaryDirectory()
+        self.tmp = Path(self._tmp.name)
+
+    def tearDown(self):
+        self._tmp.cleanup()
+
+    def test_list_and_version(self):
+        rc, out, err = run(CLI, "--list")
+        self.assertEqual(rc, 0, f"rc={rc}\nstdout={out}\nstderr={err}")
+        for name in ("validate", "finalize", "sufficiency", "export", "probe"):
+            self.assertIn(name, out)
+        rc, out, _ = run(CLI, "--version")
+        self.assertEqual(rc, 0)
+        self.assertIn("evidence-suite", out)
+
+    def test_unknown_subcommand_usage_error(self):
+        rc, out, err = run(CLI, "no-such-cmd")
+        self.assertEqual(rc, 2)
+        self.assertIn("unknown subcommand", err)
+
+    def test_validate_subcommand_dispatches(self):
+        draft = write(self.tmp, "draft.md", CLEAN_DRAFT)
+        sources = write(self.tmp, "sources.json", CLEAN_CORPUS)
+        man = self.tmp / "manifest.json"
+        rc, o, e = run(FINALIZE, str(draft), "--manifest", str(man), "--sources", str(sources))
+        self.assertEqual(rc, 0, f"finalize failed:\n{o}\n{e}")
+        rc, out, err = run(CLI, "validate", str(man))
+        self.assertEqual(rc, 0, f"rc={rc}\nstdout={out}\nstderr={err}")
+        self.assertIn("manifest: valid", out)
+
+
+class DownloadPolicyAuditTests(unittest.TestCase):
+    """PR-04: suspect domain suffix blacklist + --audit-log (no network)."""
+
+    @classmethod
+    def setUpClass(cls):
+        import importlib.util
+        sys.path.insert(0, str(SCRIPTS))
+        spec = importlib.util.spec_from_file_location(
+            "download_reference_files", SCRIPTS / "download_reference_files.py")
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        cls.mod = mod
+
+    def setUp(self):
+        self._tmp = tempfile.TemporaryDirectory()
+        self.tmp = Path(self._tmp.name)
+
+    def tearDown(self):
+        self._tmp.cleanup()
+
+    def test_check_suspect_suffix_pure(self):
+        self.assertIsNotNone(self.mod.check_suspect_suffix("evil.example", (".example",)))
+        self.assertIsNotNone(self.mod.check_suspect_suffix("www.example", (".example",)))
+        self.assertIsNone(self.mod.check_suspect_suffix("public.com", (".example",)))
+        self.assertIsNone(self.mod.check_suspect_suffix("public.com", ()))
+
+    def test_check_url_policy_blocks_suffix_before_dns(self):
+        reason = self.mod.check_url_policy("http://host.example/x.pdf")
+        self.assertIsNotNone(reason)
+        self.assertIn("suspect domain suffix", reason)
+
+    def test_audit_log_records_blocked_download(self):
+        corpus = write(self.tmp, "corpus.json",
+                       '{"sources":[{"id":"S1","title":"A","url":"http://host.example/a.pdf"}]}')
+        out = self.tmp / "dl"
+        audit = self.tmp / "audit.json"
+        rc, o, e = run(SCRIPTS / "download_reference_files.py", str(corpus),
+                       "-o", str(out), "--audit-log", str(audit), "--timeout", "5")
+        self.assertEqual(rc, 1, f"blocked downloads should exit 1\nstdout={o}\nstderr={e}")
+        manifest = json.loads((out / "manifest.json").read_text(encoding="utf-8"))
+        self.assertEqual(manifest[0]["status"], "blocked_ssrf")
+        self.assertIn("suspect domain suffix", manifest[0]["reason"])
+        audit_data = json.loads(audit.read_text(encoding="utf-8"))
+        self.assertEqual(audit_data["entries"][0]["status"], "blocked_ssrf")
+        self.assertEqual(audit_data["entries"][0]["url"], "http://host.example/a.pdf")
+        self.assertIn(".example", " ".join(audit_data["policy"]["domain_suffixes"]))
 
 
 if __name__ == "__main__":

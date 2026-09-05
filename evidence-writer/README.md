@@ -25,4 +25,4 @@
 ## 共享资产
 
 - 脚本 / 参考指南 / 模板：`${SUITE_ROOT}/shared/`（原 SKILL.md 已停用，仅作共享库）。
-- 工作区契约与审核方共用 `./proposal_workspace/` 目录。
+- 工作区契约与审核方共用 `./research_case/` 目录。

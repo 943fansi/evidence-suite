@@ -34,11 +34,14 @@ Exit codes: 0 ok; 1 missing python-docx / conversion failure; 2 usage error.
 from __future__ import annotations
 
 import argparse
+import json
 import re
 import sys
 from pathlib import Path
 
 from mermaid_render import render_mermaid
+
+from evidence_boundary import BOUNDARY_NOTICE, review_kind_label
 
 MD_TABLE_SEP = re.compile(r"^\s*\|?[\s:|-]+\|?\s*$")
 
@@ -106,7 +109,7 @@ def _pt(v: float):
 
 def convert(md_path: Path, out_path: Path, *, body_size: float, line_spacing: float,
             indent: bool, heiti: str, songti: str, kaiti: str, western: str,
-            mermaid_engine: str = "auto") -> int:
+            mermaid_engine: str = "auto", manifest_path: Path | None = None) -> int:
     try:
         from docx import Document
         from docx.enum.text import WD_ALIGN_PARAGRAPH
@@ -278,6 +281,20 @@ def convert(md_path: Path, out_path: Path, *, body_size: float, line_spacing: fl
         add_para(line.strip(), first_indent=True)
         i += 1
 
+    # review-kind footer + capability boundary disclosure (PR-01)
+    review_kind = None
+    if manifest_path is not None:
+        try:
+            mdata = json.loads(manifest_path.read_text(encoding="utf-8"))
+            review_kind = mdata.get("review_kind")
+        except Exception:
+            review_kind = None
+    label = review_kind_label(review_kind) if review_kind else "未声明（--manifest 提供时自动标注）"
+    footer = add_para(f"评审类型：{label}　{BOUNDARY_NOTICE}",
+                      eastasia=kaiti, size=body_size - 3,
+                      align=WD_ALIGN_PARAGRAPH.LEFT)
+    footer.paragraph_format.space_before = _pt(18)
+
     doc.save(str(out_path))
     print(f"Done: {out_path} ({out_path.stat().st_size:,} bytes, "
           f"body {body_size}pt/{line_spacing}x, indent {'2字符' if indent else 'off'})")
@@ -303,6 +320,9 @@ def main() -> int:
     parser.add_argument("--mermaid-engine", choices=["auto", "local", "remote"], default="auto",
                         help="Mermaid renderer: auto (local mmdc first, mermaid.ink /img/ "
                              "fallback), local (mmdc only, no network), remote (mermaid.ink only)")
+    parser.add_argument("--manifest", type=Path, default=None,
+                        help="evidence_manifest.json → 文末标注 review_kind（评审类型）"
+                             "与能力边界声明")
     args = parser.parse_args()
 
     if not args.input.exists():
@@ -314,7 +334,8 @@ def main() -> int:
     return convert(args.input, out, body_size=args.body_size,
                    line_spacing=args.line_spacing, indent=not args.no_indent,
                    heiti=args.heiti, songti=args.songti, kaiti=args.kaiti,
-                   western=args.western, mermaid_engine=args.mermaid_engine)
+                   western=args.western, mermaid_engine=args.mermaid_engine,
+                   manifest_path=args.manifest)
 
 
 if __name__ == "__main__":

@@ -12,6 +12,7 @@
 | File | Lines | 加载阶段（w 写作 / r 审查） | 用途 |
 |------|-------|-----------------|------|
 | `gap_adjacent_strategy.md` | ~47 | w5 | 核心论断即研究空白时的邻接证据拼接 |
+| `doc_minimums.md` | ~70 | w2 / w5 / w6（r4 门禁） | 文档类型下限表（来源数量/正文深度），rules.yaml `doc_minimums` 的快照 |
 | `domain_routing.md` | ~36 | w1 / w2（r1 复核） | 题目域 → category → 权威源路由表 |
 | `source_registry.json` | ~642 | w2（脚本） | 权威来源清单快照；scripts 读取，勿直接进上下文 |
 | `significance_writing_guide.md` | ~43 | w5 | 研究意义写作、防空洞 |

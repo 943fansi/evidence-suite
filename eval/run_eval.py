@@ -34,6 +34,7 @@ ROOT = Path(__file__).resolve().parents[1]
 SCRIPTS = ROOT / "shared" / "scripts"
 GOLDEN = ROOT / "eval" / "golden"
 REPORT = ROOT / "eval" / "report.md"
+REPORT_JSON = ROOT / "eval" / "report.json"
 
 CHECK = SCRIPTS / "check_citations.py"
 VALIDATE = SCRIPTS / "validate_sources.py"
@@ -233,6 +234,14 @@ def main() -> int:
     lines += ["", "> manual 用例为 agent 行为层（prompt injection / 来源不符 / 矛盾处理 / 论断对齐 / 幻觉），",
               "> 需真实 agent 运行 + 人工/第二模型核对期望行为后回填。"]
     REPORT.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    # machine-readable report (PR-11): per-case status + problems for batch experiments
+    json_report = {
+        "generated_at": __import__("datetime").date.today().isoformat(),
+        "summary": {"total": len(results), "passed": passed, "failed": failed,
+                    "manual": manual, "errors": errors},
+        "results": results,
+    }
+    REPORT_JSON.write_text(json.dumps(json_report, ensure_ascii=False, indent=2), encoding="utf-8")
     if not args.json:
         print(f"\nreport → {REPORT}")
     return 1 if (failed or errors) else 0

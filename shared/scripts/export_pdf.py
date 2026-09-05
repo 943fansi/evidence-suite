@@ -44,6 +44,8 @@ from pathlib import Path
 
 from mermaid_render import render_mermaid_blocks
 
+from evidence_boundary import BOUNDARY_NOTICE, review_kind_label
+
 
 def _ensure_utf8_streams() -> None:
     for stream in (sys.stdout, sys.stderr):
@@ -192,6 +194,35 @@ def _linkify_html(html: str) -> str:
 _REFS_H2_RE = re.compile(r"(<h2[^>]*>[^<]*参考文献[^<]*</h2>)")
 
 
+def _inject_review_footer(html: str, review_kind: str | None) -> str:
+    """Append a small footer disclosing the review type + capability boundary.
+
+    The review type must be visible on the delivered PDF itself, not only in the
+    JSON manifest, so a reader can immediately tell an ai-internal (same-model,
+    not independent) audit from a human-expert one.
+    """
+    label = review_kind_label(review_kind) if review_kind else "未声明（--manifest 提供时自动标注）"
+    footer = (
+        "<div style='margin-top:3em;padding-top:0.6em;border-top:0.5pt solid #999;"
+        "font-size:8pt;color:#666;line-height:1.6'>"
+        f"评审类型：{label}<br/>{BOUNDARY_NOTICE}</div>"
+    )
+    return html.replace("</body>", footer + "</body>")
+
+
+def _read_manifest_review_kind(manifest: Path | None) -> str | None:
+    """Read review_kind from an evidence manifest, or None if absent/unreadable."""
+    if manifest is None:
+        return None
+    try:
+        import json
+        data = json.loads(manifest.read_text(encoding="utf-8"))
+    except Exception:
+        return None
+    kind = data.get("review_kind") if isinstance(data, dict) else None
+    return kind if isinstance(kind, str) and kind else None
+
+
 def _wrap_refs_section(html: str) -> str:
     """Wrap the 参考文献 section (h2 → next h2/end) in <section class="refs">.
 
@@ -283,6 +314,9 @@ def main(argv: list[str]) -> int:
     parser.add_argument("--no-indent", action="store_true",
                         help="Disable 2-char first-line indent for body paragraphs "
                              "(Chinese thesis convention; on by default, like export_docx.py)")
+    parser.add_argument("--manifest", type=Path, default=None,
+                        help="evidence_manifest.json → footer 标注 review_kind（评审类型）"
+                             "与能力边界声明")
     args = parser.parse_args(argv)
 
     if not args.input.exists():
@@ -351,6 +385,12 @@ def _run_pipeline(args, base_dir: Path, figures_dir: Path, text: str,
     # Step 4b: post-process — linkify bare URLs, wrap 参考文献 for hanging indent
     html = _linkify_html(html)
     html = _wrap_refs_section(html)
+
+    # Step 4c: review-kind footer + capability boundary disclosure (PR-01)
+    review_kind = _read_manifest_review_kind(args.manifest)
+    if review_kind:
+        print(f"Step 4c: review footer — {review_kind_label(review_kind)}")
+    html = _inject_review_footer(html, review_kind)
 
     # Step 5: Convert HTML to PDF
     pdf_ok = False

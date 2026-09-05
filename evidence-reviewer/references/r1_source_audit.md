@@ -112,5 +112,5 @@ Use this prompt to instruct an external agent to audit the raw sources JSON.
 2. **落盘 `03_audit_report.md`（硬门禁产物，勿跳过）**：内容为外部审计 JSON 全文 + 一段"总体评估"（evidence_points 成熟度级别、需补验证项）+ 结论（可进入 w3 / 需退回 w2 补检索）。
 3. 把审计结论结构化交接给写作者 w3：
 - 每条来源的处置（`suspicious_sources[].suggested_action`：delete / downgrade / verify / replace）、role 建议、需补字段（`missing_fields`）全部保留在 `03_audit_report.md` 的 JSON 结构内。
-- w3 依据 `03_audit_report.md` + `02_raw_sources.json` 生成 `04_validated_sources.json`（见 `evidence-writer/prompts/w3_corpus.md`）：删除 `suggested_action="delete"` 来源、按审计建议降级 role、保留 URL、补 `role`/`access_status`/`url_verified`/`registry_id`/`allow_full_text`/`authority`/`freshness` 字段、证据缺口保留为一级条目。
+- w3 依据 `03_audit_report.md` + `02_raw_sources.json` 生成 `04_validated_sources.json`（见 `evidence-writer/references/w3_corpus.md`）：删除 `suggested_action="delete"` 来源、按审计建议降级 role、保留 URL、补 `role`/`access_status`/`url_verified`/`registry_id`/`allow_full_text`/`authority`/`freshness` 字段、证据缺口保留为一级条目。
 - 若审计结论为"退回补搜"，不进入 w3，写作者回 w2 补检索后重走本门。

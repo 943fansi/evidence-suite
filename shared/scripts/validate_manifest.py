@@ -33,6 +33,14 @@ from pathlib import Path
 
 SCHEMA_VERSION = "0.2.0"
 
+# 版本兼容（PR-09）：LEGACY_VERSIONS 中的旧版本可以迁移到当前版本。
+# 命中旧版本 → 仅告警（提示运行 migrate_manifest.py），不当作非法拒绝；
+# 完全未知的版本 → 仍报错。废弃字段命中 → 告警而非硬报错。
+LEGACY_VERSIONS = {
+    "0.1.0": "0.2.0",
+}
+DEPRECATED_FIELDS = ()  # 迁移时在此登记：字段名 → 替代说明
+
 REVIEW_KINDS = ("ai-internal", "ai-cross-model", "human-expert")
 VERIFICATION_MODES = ("static", "live")
 CLAIM_CLASSES = ("E", "M", "N", "L", "D", "C", "U", "J")
@@ -49,7 +57,8 @@ AUTHORITIES = ("A1", "A2", "A3", "B1", "B2", "C1", "C2", "D1", "D2")
 FRESHNESSES = ("current", "recent", "historical", "superseded", "unknown")
 RELATIONS = ("supports", "contradicts", "context_only")
 CONFIDENCES = ("high", "medium", "low")
-LOCATOR_KEYS = ("page", "section", "paragraph", "quote_hash")
+LOCATOR_KEYS = ("page", "section", "paragraph", "quote_hash", "locator_quality")
+LOCATOR_QUALITIES = ("high", "medium", "low")
 
 SOURCE_ID_RE = re.compile(r"^S\d+$")
 CLAIM_ID_RE = re.compile(r"^C-\d+$")
@@ -74,16 +83,39 @@ def _check_enum(problems: list[str], obj: dict, key: str, allowed: tuple[str, ..
 
 def validate_manifest(data) -> list[str]:
     """Return a list of contract violations (empty list = valid)."""
+    problems, _ = validate_manifest_full(data)
+    return problems
+
+
+def validate_manifest_full(data) -> tuple[list[str], list[str]]:
+    """Validate and return (problems, warnings).
+
+    Warnings are non-fatal: legacy schema_version (→ run migrate_manifest.py) and
+    deprecated fields. Problems are hard contract violations.
+    """
     problems: list[str] = []
+    warnings: list[str] = []
     if not isinstance(data, dict):
         problems.append("root must be a JSON object")
-        return problems
+        return problems, warnings
 
-    if data.get("schema_version") != SCHEMA_VERSION:
+    version = data.get("schema_version")
+    if version == SCHEMA_VERSION:
+        pass
+    elif version in LEGACY_VERSIONS:
+        warnings.append(
+            f"schema_version {version!r} is legacy — run "
+            "`python shared/scripts/migrate_manifest.py <manifest>` to upgrade "
+            f"to {LEGACY_VERSIONS[version]!r}; validating against the legacy shape"
+        )
+    else:
         problems.append(
-            f"schema_version must be {SCHEMA_VERSION!r} (got {data.get('schema_version')!r}); "
+            f"schema_version must be {SCHEMA_VERSION!r} (got {version!r}); "
             "re-run finalize_draft.py with the matching version"
         )
+    for field, note in DEPRECATED_FIELDS:
+        if field in data:
+            warnings.append(f"deprecated field {field!r}: {note}")
     _check_enum(problems, data, "review_kind", REVIEW_KINDS)
     if "review_kind" not in data:
         problems.append("missing required field: review_kind")
@@ -103,7 +135,7 @@ def validate_manifest(data) -> list[str]:
         problems.append("manifest must contain either a 'mapping' array (source-centric) or a 'claims' array (claim-centric)")
     problems.extend(_validate_review_independence(data))
 
-    return problems
+    return problems, warnings
 
 
 def _validate_review_independence(data: dict) -> list[str]:
@@ -222,6 +254,10 @@ def _validate_claims(data: dict) -> list[str]:
                         if k not in LOCATOR_KEYS:
                             problems.append(f"{eprefix}.locator has unknown key {k!r} "
                                             f"(allowed: {', '.join(LOCATOR_KEYS)})")
+                        elif k == "locator_quality":
+                            if locator[k] not in LOCATOR_QUALITIES:
+                                problems.append(f"{eprefix}.locator.locator_quality must be one of "
+                                                f"high/medium/low (got {locator[k]!r})")
                         elif k == "page" and not isinstance(locator[k], int):
                             problems.append(f"{eprefix}.locator.page must be an integer")
                         elif k == "paragraph" and not isinstance(locator[k], int):
@@ -254,16 +290,19 @@ def main() -> int:
         print(f"error: invalid JSON in {args.manifest}: {exc}", file=sys.stderr)
         return 2
 
-    problems = validate_manifest(data)
+    problems, warnings = validate_manifest_full(data)
     valid = not problems
     if args.json:
-        print(json.dumps({"valid": valid, "errors": problems}, ensure_ascii=False, indent=2))
+        print(json.dumps({"valid": valid, "warnings": warnings, "errors": problems},
+                         ensure_ascii=False, indent=2))
     else:
         if valid:
             print("manifest: valid")
         else:
             for p in problems:
                 print("manifest problem:", p)
+        for w in warnings:
+            print("manifest warning:", w)
     return 0 if valid else 1
 
 

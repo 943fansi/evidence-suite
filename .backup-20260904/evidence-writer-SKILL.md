@@ -11,21 +11,12 @@ allowed_tools:
   - Bash
   - WebSearch
   - WebFetch
-  - Skill
 disallowed_tools: []
 ---
 
 # Skill: evidence-writer
 
-# 证据驱动写作方 · Evidence-Driven Writer（v0.2.1）
-
-## 跳过条件（When NOT to Use，命中任意一条即不激活流水线、不执行检索与脚本）
-
-- 纯润色、拼写检查、普通摘要、简单改写、非事实性创作、PPT 文案——这些不涉及事实性论断的来源真实性核验，跑流水线是昂贵误用。
-- 无事实性论断的纯观点 / 散文 / 小说类写作。
-- 用户显式禁用：请求附带 `--evidence-suite-disable` 标记时，本 skill **不得激活**，任何阶段产物不得落盘。
-
-> 版本 0.2.1，要求 evidence-suite ≥ 0.2.0（与 evidence-reviewer 同版本号同步）。本 skill 必须与套件根目录（含 `shared/`）整套安装，单独安装会断链。运行需 Python 3.10+、Bash、Read/Write/Edit 与联网检索（WebSearch/WebFetch）能力。
+# 证据驱动写作方 · Evidence-Driven Writer
 
 原 `evidence-proposal` 单一流水线按「编写 / 审核」拆分为两个**相互对抗**的 skill：
 
@@ -37,6 +28,11 @@ disallowed_tools: []
 核心不变：**证据类论断**（外部事实 E / 实证 M / 规范 N / 文献 L）**挂载 `[Sx]` 来源标记**；**非证据类论断**（作者定义 D / 计算 C / 用户提供 U / 判断 J）不走外部来源真实性审查，按自身方式检查（一致性 / 可复现 / 标注来源）。证据不足的 E/M/N/L 论断显式降级为 `[假设]` / `[待内部确认]`。分类与审查路径见 `claim_evidence_layer.md` 的 Claim Class。
 
 > **路径常量（SUITE_ROOT）**：本套件所有共享资产（scripts/、references/、templates/）与跨 skill 引用统一以 `${SUITE_ROOT}` 开头。`${SUITE_ROOT}` 即**套件根目录**（本 SKILL.md 所在 `evidence-writer/` 的上一级），由 agent 在加载本 skill 时解析，**不要写死为绝对路径**；`shared/scripts/` 内的脚本也以 `Path(__file__).resolve().parents[2]` 自行定位套件根，无需手工替换。
+
+## 跳过条件（When NOT to Use，命中任意一条即不激活流水线、不执行检索与脚本）
+- 纯润色、拼写检查、普通摘要、简单改写、非事实性创作、PPT 文案——这些不涉及事实性论断的来源真实性核验，跑流水线是昂贵误用。
+- 无事实性论断的纯观点 / 散文 / 小说类写作。
+- 用户显式禁用：请求附带 `--evidence-suite-disable` 标记时，本 skill **不得激活**，任何阶段产物不得落盘。
 
 ## 签名原则（Signature）
 
@@ -63,7 +59,7 @@ disallowed_tools: []
 
 **写作者只做生产，不做自我审判。**
 
-- 负责：w1 文档适配（全局0）、w2 来源检索（全局1）、w3 验证语料（全局3）、w4 证据图谱（全局4）、w5 起草（全局5）、w6 修订（全局7）、w7 humanizer（全局7b，可选）、w8 专家修订（全局9）、w9 导出（全局10），以及交付前的定稿净化。
+- 负责：w1 文档适配（全局0）、w2 来源检索（全局1）、w3 验证语料（全局3）、w4 证据图谱（全局4）、w5 起草（全局5）、w6 修订（全局7）、w8 专家修订（全局9）、w9 导出（全局10），以及交付前的定稿净化。
 - **不负责**：来源审计（审核方 r1）、诚实性自评（r2）、框架深度门（r3）、初稿审查（r4）、外部专家评审（r5）、终审门——这些属于审核方 evidence-reviewer。
 - 引用仅来自经过**审核方 r1 来源审计**的语料（`04_validated_sources.json`）；w2 检索但未核验的内容，必须标注 `[待内部确认]`。
 - 外部检索结果须可回溯 URL；缺 URL 的来源在评审中标记为"薄弱证据"。
@@ -77,9 +73,9 @@ disallowed_tools: []
 1. **强制提交**：每个交给下游生产的工件（`02_raw_sources.json`、`06_evidence_map.json`、`08_初稿.md`、`11_定稿.md`）在进入下一阶段前，**必须**提交给审核方 evidence-reviewer 审查；不得以"自认为没问题"跳过。
 2. **判决即门禁**：审核方输出的判决文件（`03_audit_report.md` / `07_honest_assessment.md` / `10_review.md` / `12_外部专家意见.md`）是能否进入下一阶段的**唯一依据**。判决词表见审核方 SKILL.md。
 3. **只修观察到的失败**：修订只能逐条响应审查意见清单，不得顺手重写无关段落，不得借修订引入新事实。
-4. **响应表证明闭合**：w6 / w8 修订必须输出"审查意见响应说明"表，逐条填写处理方式（已修改 / 已降级表达 / 已移入补充调研清单 / 资料不足暂不写入 / 保留原表述并说明理由），**统一落盘到 `research_case/13_审查意见响应说明.md`**（w6 与 w8 各自追加一节，不混入交付稿正文），证明对抗闭环。
+4. **响应表证明闭合**：w6 / w8 修订必须输出"审查意见响应说明"表，逐条填写处理方式（已修改 / 已降级表达 / 已移入补充调研清单 / 资料不足暂不写入 / 保留原表述并说明理由），证明对抗闭环。
 5. **不自我放行**：任何阶段结论标"通过"必须来自审核方，不是作者自评。作者可运行机械脚本自查格式完整性（如 `build_references.py`），但**不得**据此替代审核方的审查判决。
-6. **有限轮次**：对抗默认最多 2 轮——第一轮「初稿审查（r4）→ 修订（w6）→ 复审」，第二轮「外部专家评审（r5）→ 专家修订（w8）→ 终审门」。超过仍无法通过，按审核方"终止意见"诚实上报，不无限返工。
+6. **有限轮次**：对抗默认最多 2 轮（6→7→复审，8→9→终审门）。超过仍无法通过，按审核方"终止意见"诚实上报，不无限返工。
 
 ## 运行模式（Intent Router）
 
@@ -131,7 +127,7 @@ disallowed_tools: []
 - **证据缺口预期**：哪些论点大概率缺来源 → 预先埋 `[Gx]`。
 - **语义最小集**：最少需要哪几个来源，核心论点才站得住。
 
-把 Topic Card 落到 `00_topic.md`。执行细节见 `references/w1_doc_adapter.md`。
+把 Topic Card 落到 `00_topic.md`。执行细节见 `prompts/w1_doc_adapter.md`。
 
 ## 阶段编译器（Stage Compiler，写作者侧）
 
@@ -141,17 +137,17 @@ disallowed_tools: []
 
 | 生产阶段 | 全局阶段 | 动作 | 加载 prompt | 产物 | 提交给审核方 |
 |---------|---------|------|-------------|------|------------|
-| w1 文档适配 | 0 | 定类型/结构/约束 | `references/w1_doc_adapter.md` | `00_topic.md` | — |
-| w2 来源检索 | 1 | 联网检索 + 结构化；先跑 `select_sources.py --domain` | `references/w2_source_search.md` | `02_raw_sources.json` | **r1 来源审计（全局2）** |
-| w3 验证语料 | 3 | 依次执行 3 个强制子步骤：**3a** 批量下载 PDF → **3b** 下载校验 → **3c** PDF 文本抽取；任一缺失本阶段视为未完成 | `references/w3_corpus.md` | `04_validated_sources.json` / `reference_files/*.pdf` / `pdf_text/*.txt` | — |
-| w4 证据图谱 | 4 | 论点↔来源映射（不含诚实性自评，那是审核方职责） | `references/w4_evidence_map.md` | `06_evidence_map.json` | **r2 诚实性自评（全局4b）** |
-| w5 起草 | 5 | 生成初稿（只写、不审） | `references/w5_draft.md` | `08_初稿.md` | **r3 框架深度门（全局5b）+ r4 初稿审查（全局6）** |
-| w6 修订 | 7 | 仅按审查意见定向修订 | `references/w6_revision.md` | `11_定稿.md` | **r5 外部专家评审（全局8）** |
-| w7 humanizer | 7b | 可选文风修复（写 `.w7_humanizer.DONE/.SKIPPED` 供门禁识别） | `references/w7_humanizer.md` | `11_定稿.md` | — |
-| w8 专家修订 | 9 | 仅按外部专家意见定向修订 | `references/w8_expert_revision.md` | `14_专家修订稿.md` | **终审门（审核方）** |
-| w9 导出 | 10 | 运行脚本 + 视觉抽检 | `references/w9_export.md` | `{filename}.pdf` / `{filename}.docx` + `qa/*.png` | — |
+| w1 文档适配 | 0 | 定类型/结构/约束 | `prompts/w1_doc_adapter.md` | `00_topic.md` | — |
+| w2 来源检索 | 1 | 联网检索 + 结构化；先跑 `select_sources.py --domain` | `prompts/w2_source_search.md` | `02_raw_sources.json` | **r1 来源审计（全局2）** |
+| w3 验证语料 | 3 | 依次执行 3 个强制子步骤：**3a** 批量下载 PDF → **3b** 下载校验 → **3c** PDF 文本抽取；任一缺失本阶段视为未完成 | `prompts/w3_corpus.md` | `04_validated_sources.json` / `reference_files/*.pdf` / `pdf_text/*.txt` | — |
+| w4 证据图谱 | 4 | 论点↔来源映射（不含诚实性自评，那是审核方职责） | `prompts/w4_evidence_map.md` | `06_evidence_map.json` | **r2 诚实性自评（全局4b）** |
+| w5 起草 | 5 | 生成初稿（只写、不审） | `prompts/w5_draft.md` | `08_初稿.md` | **r3 框架深度门（全局5b）+ r4 初稿审查（全局6）** |
+| w6 修订 | 7 | 仅按审查意见定向修订 | `prompts/w6_revision.md` | `11_定稿.md` | **r5 外部专家评审（全局8）** |
+| w7 humanizer | 7b | 可选文风修复（写 `.w7_humanizer.DONE/.SKIPPED` 供门禁识别） | `prompts/w7_humanizer.md` | `11_定稿.md` | — |
+| w8 专家修订 | 9 | 仅按外部专家意见定向修订 | `prompts/w8_expert_revision.md` | `14_专家修订稿.md` | **终审门（审核方）** |
+| w9 导出 | 10 | 运行脚本 + 视觉抽检 | `prompts/w9_export.md` | `{filename}.pdf` / `{filename}.docx` + `qa/*.png` | — |
 
-> **提交动作**：本表格"提交给审核方"列即对抗协议的触发点。用 `Skill` 工具加载 `evidence-reviewer`，把产物路径作为输入，等待其判决文件落盘后再继续。若运行环境支持子代理（Agent 工具），优先在**独立子代理上下文**中运行 evidence-reviewer——同上下文内角色切换无法真正隔离近因偏差，审查结论只能记 `review_kind=ai-internal`。
+> **提交动作**：本表格"提交给审核方"列即对抗协议的触发点。用 `skill` 工具加载 `evidence-reviewer`，把产物路径作为输入，等待其判决文件落盘后再继续。
 
 > **定稿净化（Finalize）**：任何**正式交付物**（学位论文、期刊投稿、专利交底书/申请草案、GF 报告）在阶段 9→10 之间必须运行一次 `finalize_draft.py`，把工作稿的 `[Sx]`/`[Gx]`/`[假设]`/`[待内部确认]` 脚手架、附录 A"证据缺口清单"、`references/*.md` 内部路径、封面占位（`编号：2023xxxx`、`资助项目`）等**内部痕迹**转换为标准顺序编码 `[1]..[n]` 的干净交付版。净化清单见 `${SUITE_ROOT}/shared/references/finalize_checklist.md`。**净化不可逆**：仅对"最终导出"的文件运行，工作稿（11_定稿.md 等）保留脚手架以便回退与审计。
 
@@ -169,9 +165,8 @@ research_case/
 ├── 07_honest_assessment.md     # 阶段4b（审核方）
 ├── 08_初稿.md                  # 阶段5（写作者）
 ├── 10_review.md                # 阶段6（审核方）
-├── 11_定稿.md                  # 阶段7（写作者，含 7b 可选；7b 完成后另见 .w7_humanizer.DONE/.SKIPPED 标记）
+├── 11_定稿.md                  # 阶段7（写作者，含 7b 可选）
 ├── 12_外部专家意见.md          # 阶段8（审核方）
-├── 13_审查意见响应说明.md      # 阶段7/9（写作者）— w6/w8 各追加一节响应表
 ├── 14_专家修订稿.md            # 阶段9（写作者）
 ├── 11_定稿_clean.md            # 定稿净化产物（交付版，[1]..[n] 顺序编码）
 ├── provenance/                 # 机器可审计五件套（export_provenance.py）
@@ -190,16 +185,41 @@ research_case/
 
 - **默认要求**：证据类论断（E/M/N/L）必须带 `[Sx]`，来源须经审核方 r1 审计；严谨度按 `risk` 分级（R0–R4，见 `claim_evidence_layer.md` 的 Risk Tier）。
 - **证据充分性（claim 级）**：每个证据类论断由 `check_evidence_sufficiency.py` 按 `rules.yaml` 的 `evidence_sufficiency[risk]` 判定——primary 来源数、独立来源数、现行性（N 类须 `current`）、反证覆盖；不足即标注缺口，**与文档级来源数量下限解耦**。
-- **规则可配置**：`risk_tiers` / `evidence_sufficiency` / `doc_minimums` / 可疑域名等规则的权威取值在 `${SUITE_ROOT}/shared/config/rules.yaml`（`claim_evidence_layer.md` 与 `doc_minimums.md` 的表格是其默认档文档化快照）。场景覆盖用 `--profile <scenario>`（如 `medical` 提高 R2/R3 权威要求、`general_tech` 放宽 R3 至 B1）或仓库级 `config/rules.user.yaml`；脚本（`validate_sources.py`、`check_citations.py`、`check_evidence_sufficiency.py`）经 `--profile`/`--doc-type`/`--rules` 读取同一份规则。
+- **规则可配置**：`risk_tiers` / `evidence_sufficiency` / `doc_minimums` / 可疑域名等规则的权威取值在 `${SUITE_ROOT}/shared/config/rules.yaml`（本 SKILL 与 `claim_evidence_layer.md` 的表格是其默认档文档化快照）。场景覆盖用 `--profile <scenario>`（如 `medical` 提高 R2/R3 权威要求、`general_tech` 放宽 R3 至 B1）或仓库级 `config/rules.user.yaml`；脚本（`validate_sources.py`、`check_citations.py`、`check_evidence_sufficiency.py`）经 `--profile`/`--doc-type`/`--rules` 读取同一份规则。
 - 未经审计的 w2 检索内容 → 标注 `[待内部确认]`，不得用作支撑性证据。
 - **Risk Tier 决定约束**：R1 静态单源即可；R2 需 ≥2 独立来源交叉；R3（监管/安全/财务）需 primary source + 现行性 + live 回源；R4（安全关键/法律/投稿关键）需独立复现或人工签核。
 - 默认大多数普通事实为 R1/R2；**方法论、核心贡献、结论、安全/监管/财务类段落标 R3/R4**，勿把全套重约束用在每个论断上。
 
-### 文档类型下限（来源数量 / 正文深度）
+### 参考文献数量下限（Minimum Source Count = 写作格式下限，非证据质量代理）
 
-- 参考文献数量与正文深度按**文档类型下限表**执行，完整表格与配套规则（P·T 独立来源、综述占比 ≥40%、学位类中文期刊配额、registry_id 配额）见 `${SUITE_ROOT}/shared/references/doc_minimums.md`（w2/w5/w6 必读；权威取值在 `rules.yaml` 的 `doc_minimums`）。
-- 定位不变：下限是**写作格式门槛，不是证据质量门**——**不要为了凑数量而灌无关来源**，三条强原始证据可能胜过 20 篇弱相关论文；claim 级证据是否足够由 `check_evidence_sufficiency.py` 判定，与文档级下限解耦。
-- 作者在 w2 检索阶段就要按下限规模检索，否则必被审核方退回；w5 起草时正文目标直接定为真实篇幅（如硕士 ≥3 万），不按门禁值写。
+> **重要**：下表是**写作格式下限**（院校/期刊/机构的篇幅与文献格式要求），**不是证据质量门**。证据是否足够由 `check_evidence_sufficiency.py` 按 claim 逐条判定（primary / 独立来源 / 现行性 / 反证覆盖，见 `rules.yaml` 的 `evidence_sufficiency`）。**不要为了凑数量而灌无关来源**——三条强原始证据（如 IAEA + NRC + EPRI）可能胜过 20 篇弱相关论文。
+
+正文参考文献（`[Sx]` 条目）数量不得低于文档类型对应的下限，否则视为**调研不充分**，审核方会退回 w2 补检索：
+
+| 文档类型 | 最低来源数 | 正文深度下限（非空白字符） |
+|---------|-----------|------------------------|
+| 开题报告 / 立项方案（proposal） | 15 | 6,000 |
+| 本科论文（thesis_ug） | 20 | 10,000 |
+| 调研报告 / 综述（report_survey） | 25 | 10,000 |
+| 可行性报告（report_feasibility） | 15 | 6,000 |
+| 白皮书（whitepaper） | 12 | 5,000 |
+| 国防科技报告 / GF报告（report_gf） | 12 | 10,000 |
+| 项目实施方案（plan_implementation） | 12 | 8,000 |
+| 期刊论文（paper_journal） | 15 | 4,000 |
+| 专利申请技术交底书/申请草案（patent_disclosure / patent_application） | 8 | 5,000 |
+| 硕士论文（thesis_ms） | 40 | 20,000 |
+| 博士论文（thesis_phd） | 60 | 35,000 |
+
+- 上述为**下限**（不能更低），不是目标。研究现状/文献综述章节通常需显著超过下限。
+- 每个关键问题（P1–P3）与每项关键技术（T1–T3）至少各有 **1 个独立来源**；核心论断至少 **2 个独立来源**交叉支撑。
+- **来源密度检查**：文献综述章来源数 < 正文总来源数的 40% 时，标记为「综述薄弱」。
+- **中文期刊配额（学位类）**：硕士论文语料中 `type=journal_paper` 且为中文期刊的条目**至少 ≥10 条**（`validate_sources.py --quota-cn-journal 10`）。
+- **registry_id 配额**：w2 给每个 `registry_id` 设定配额度，避免单一机构来源占比失衡。
+- 下限校验脚本由审核方运行，但**作者在 w2 检索阶段就要按此规模检索**，否则必被退回。
+
+### 正文深度下限（Minimum Body Depth）
+
+正文字符数（不含参考文献与附录、不含空白）不得低于上表"正文深度下限"列，否则视为**内容单薄**。下限按**非空白字符**计（`check_citations.py --min-chars N`）；为**可机检的最低门槛，不是目标值**——学位论文真实篇幅要求通常数倍于此（本科 2–3 万字、硕士 3–5 万字、博士 5–10 万字）。**w5 起草时正文目标直接定为真实篇幅（如硕士 ≥3 万）**，不要按门禁值写。
 
 ### 实证算例建议（Empirical Case，学位类）
 
@@ -238,7 +258,7 @@ research_case/
 8. **反方证据可见性**：`counter_evidence.evidence_against` 非空的 claim 必须引用反方证据，不得只呈现支持性证据。
 9. 参考文献条目不得由 LLM 从训练记忆生成；**推荐直接运行 `build_references.py`** 机械生成并回填。
 10. 学术散文语体，禁止标题下要点罗列；理论选用须给叙事理由；研究意义禁止"拓展边界/丰富场景/可为Z提供参考/填补空白"模板（除非有确切来源证明空白存在）。
-11. 文档类型专项规则（专利 / GF / 实施方案 / 期刊 / 学位）见 `references/w5_draft.md` 第 8a–8e 条。
+11. 文档类型专项规则（专利 / GF / 实施方案 / 期刊 / 学位）见 `prompts/w5_draft.md` 第 8a–8e 条。
 
 ## 修订协议（Targeted Correction，只修观察到的失败）
 
@@ -248,7 +268,7 @@ w6 / w8 修订规则：
 - **只修审查指出的问题**，不新增未经 JSON 支撑的外部事实，保持引用闭环。
 - 对证据不足的地方：降级表达（"证明"→"提示"、"表明"→"在一定程度上支持"）或移入"需补充调研清单"。
 - 所有 `[Sx]` 引用保持编号一致；删/增引用须同步重建参考文献清单（`build_references.py --body`）。
-- 输出**审查意见响应说明**表（处理方式：已修改 / 已降级表达 / 已移入补充调研清单 / 资料不足暂不写入正文 / 保留原表述并说明理由），追加到 `research_case/13_审查意见响应说明.md`。
+- 输出**审查意见响应说明**表（处理方式：已修改 / 已降级表达 / 已移入补充调研清单 / 资料不足暂不写入正文 / 保留原表述并说明理由）。
 - 修订后**重新提交审核方复审**，直至判决为"通过/小修后通过"（最多 2 轮对抗）。
 - 审核方标记为"阻断"的 high-severity 问题未清零前，不得进入下一阶段或导出。
 
@@ -279,7 +299,6 @@ w6 / w8 修订规则：
 
 ## 使用建议（Quick Start）
 
-0. **初始化工作区**（Document Production / Evidence Research 模式首次必做）：运行 `python ${SUITE_ROOT}/shared/scripts/init_case.py` 创建 `research_case/` 骨架（`--force` 覆盖已存在文件）。Quick Evidence / Evidence Brief / Review Only 模式不建工作区，可跳过。
 1. Document Production / Evidence Research 模式下：先读题目 → 建立 Topic Card（不可跳过，锁定后续所有阶段锚点）。Quick Evidence 模式可跳过 Topic Card。
 2. 每个阶段开始前回看 Topic Card，确认论断未漂移。
 3. 本 skill 产出的 `[Gx]` 研究空白统一汇总到附录 A，不散落、不隐藏。
@@ -323,10 +342,8 @@ w6 / w8 修订规则：
 
 ## 脚本用法（写作者侧，Bash 执行，勿直接 Read 进上下文）
 
-全部脚本位于共享资产库 `${SUITE_ROOT}/shared/scripts/`。优先使用系统 Python 执行；依赖按需装入隔离 venv，避免污染全局环境。也可经统一 CLI 入口 `python ${SUITE_ROOT}/shared/scripts/evidence_suite.py <subcommand>`（安装后 `evidence-suite <subcommand>`）逐字透传参数，子命令映射见 `evidence_suite.py` 头部注释。
+全部脚本位于共享资产库 `${SUITE_ROOT}/shared/scripts/`。优先使用系统 Python 执行；依赖按需装入隔离 venv，避免污染全局环境。
 
-- **初始化工作区（首次必做）**：`python ${SUITE_ROOT}/shared/scripts/init_case.py [-o research_case] [--force]`——创建 `research_case/` 骨架（`00_topic.md` / `02_raw_sources.json` / `04_validated_sources.json` / `06_evidence_map.json` 空模板 + `.gitignore` + `README.md` 文件契约）。Document Production / Evidence Research 模式动手前先跑，保证两侧 skill 写入一致的目录契约，而非临场自造文件。
-- **运行时能力探测（加载本 skill 时）**：`python ${SUITE_ROOT}/shared/scripts/probe_capabilities.py --human`（首次生成 `runtime/capability.local.json`，之后 agent 直接读取，不必每次重跑）。
 - **生成参考文献节**（w5/w6 推荐）：`python ${SUITE_ROOT}/shared/scripts/build_references.py 04_validated_sources.json --body 08_初稿.md`（`--style gbt` 输出 GB/T 7714-2015 类型感知条目；`--body` 原位替换正文参考文献节——节标题带编号（如 `## 13. 参考文献`）也能原位替换并保留原标题，不会追加重复节）
 - **来源路由选源**（w2 前）：`python ${SUITE_ROOT}/shared/scripts/select_sources.py --domain nuclear [--registry <path>]`
 - **阶段3 子步骤 3a 批量下载 PDF**：`python ${SUITE_ROOT}/shared/scripts/download_reference_files.py 04_validated_sources.json -o reference_files/ --update-sources`（`--dry-run` 预览）

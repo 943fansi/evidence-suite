@@ -16,6 +16,15 @@
 
 本套件把「证据类论断（E/M/N/L）必须挂 `[Sx]` 来源标记」作为硬约束，并用独立红队审查强制闭合。
 
+## 能力边界（先读）
+
+> ⚠️ evidence-suite **只校验「引用的原文是否支持当前 Claim」**，这是本套件唯一的承诺：
+> - ❌ **不检测来源本身真伪**——虚假网页、伪造论文套件无法识别，只能保证「拿到的来源文本与论断对得上」。
+> - ⚠️ `quote_hash` / 页码等 `locator` 会因 PDF 版本、扫描件、网页改版而失效（扫描件降级为章节级 `locator_quality: low`）。
+> - ⚠️ **反证检索找不到 ≠ 论断正确**——互联网上未必存在反证资料。
+>
+> 该声明同时写入 `evidence_manifest.json` 的 `boundary_notice` 字段、PDF/DOCX 导出页脚，与 README 三处保持一致。
+
 ## 它做什么
 
 ```
@@ -72,7 +81,7 @@ evidence-suite —— Claim 提取 → 分类 → 证据映射 → static/live �
 - **来源优先级清单**：`source_ranking.yaml` 给 Registry 来源标注 `authority/priority/role`，`select_sources.py --allow-discovery` 开放候选池（`source_origin` 四类来源可进入），Registry 是优先级清单而非白名单。
 - 交付时 `finalize_draft.py --manifest` 产出 `evidence_manifest.json`（`[n]→来源` 可回溯），保留证据 provenance。
 
-详见 `shared/references/claim_evidence_layer.md`。
+详见 `shared/references/claim_evidence_layer.md`。术语速查表（`claim_class` / `support_level` / `evidence_status` / Risk Tier / Authority 分级）见 [shared/references/glossary.md](shared/references/glossary.md)。
 
 ## 互操作契约（Evidence Manifest）
 
@@ -103,6 +112,8 @@ evidence-suite —— Claim 提取 → 分类 → 证据映射 → static/live �
 
 `review_kind` 取值：`ai-internal`（同模型角色隔离，内部红队）/ `ai-cross-model`（不同模型独立审查）/ `human-expert`（人类专家）。**默认 `ai-internal`，不等同独立评审。** 附加 `review_independence` 字段记录审查独立性细节（`reviewer_model` / `writer_model` / `context_shared` / `evidence_shared` / `human_involvement`）——**跨模型 ≠ 独立**：若审查与写作共享相同上下文/证据，错误仍高度相关。`ai-internal` 默认如实标记 `{human_involvement: none, context_shared: true, evidence_shared: true}`。
 
+manifest 携带 `schema_version` 与 `boundary_notice`（能力边界声明）。旧版本 manifest 不会报错拒绝，`validate_manifest.py` 给出迁移提示，`migrate_manifest.py` 负责向上迁移（见 `docs/roadmap.md` PR-09）。
+
 研究 Agent 只需产出 `claim → evidence → verdict` 结构即可被 Reviewer / 终审门消费；反之本套件产出的 verified manifest 也可回喂给研究 Agent 的 writer。
 
 **Provenance 五件套（`export_provenance.py`）**：终审门通过后，把交付物与其审计档案一起落地到 `research_case/provenance/`——`report.claims.json` / `report.evidence.json` / `report.source-map.json`（正文 `[n]` 引文 → source_id + locator 对账表）/ `report.review.json`（各阶段判决 + `review_kind`）。**PDF/DOCX 给人看，evidence JSON 给机器审计**，正文引文与证据图谱不再因净化而失去对应关系。
@@ -111,20 +122,20 @@ evidence-suite —— Claim 提取 → 分类 → 证据映射 → static/live �
 
 ```
 evidence-suite/
-├── evidence-writer/     # 写作方 SKILL.md + prompts/w1–w9
-├── evidence-reviewer/   # 审查方 SKILL.md + prompts/r1–r5 + final_gate
+├── evidence-writer/     # 写作方 SKILL.md + references/w1–w9
+├── evidence-reviewer/   # 审查方 SKILL.md + references/r1–r5 + final_gate
 ├── shared/
-│   ├── scripts/         # 16 个确定性工具（Bash 执行）
+│   ├── scripts/         # 26 个 Python 脚本（确定性工具，Bash 执行）
 │   ├── schemas/         # manifest 互操作契约 JSON Schema（evidence_manifest / claim_manifest）
 │   ├── config/          # 规则配置（rules.yaml：risk_tiers / evidence_sufficiency / doc_minimums / …）
 │   ├── references/      # 按需加载的参考指南
-│   └── templates/       # 13 类文档模板
+│   └── templates/       # 12 类文档模板
 ├── examples/            # 最小示例（quickstart：净化→manifest→充分性→Brief→Provenance→校验 一键复现）
 ├── eval/                # Eval/Golden 套件（run_eval.py 自动判分 + golden 用例）
 ├── runtime/             # 运行时能力配置（capability.yaml 模板 + probe_capabilities.py 探测结果）
 ├── docker/              # Docker 沙箱（隔离脚本执行，可断网）
 ├── docs/                # 架构与方法论文档（architecture.md / methodology.md）
-├── tests/               # 回归测试（run_tests.py，66 用例）
+├── tests/               # 回归测试（run_tests.py，83 用例）
 ├── README.md
 ├── SECURITY.md
 ├── THREAT_MODEL.md      # 威胁模型与信任边界
@@ -142,10 +153,12 @@ evidence-suite/
 | A4 中文排版（宋体/黑体/楷体、1.5 倍行距） | ✅ | ✅ |
 | Markdown 表格 | ✅ | ✅（Word 原生表格，跨页防断） |
 | 参考文献悬挂缩进 | ✅ | ✅（普通段落） |
+| 评审类型 + 能力边界页脚 | ✅ `--manifest` 标注 | ✅ `--manifest` 标注 |
 
 - PDF：pandoc/python-markdown → HTML → weasyprint / Chrome headless；Mermaid 渲染为 SVG 后内嵌。
 - DOCX：python-docx 直接排版；Mermaid 渲染为 PNG 后以图片嵌入正文，渲染失败时落可见占位说明。
 - 两者均支持 `--mermaid-engine local`（禁止联网渲染，敏感内容断网使用）。
+- 传 `--manifest <evidence_manifest.json>` 时，PDF 页脚 / DOCX 文末自动标注 `review_kind`（评审类型）与能力边界声明，阅读者一眼可知评审性质，不必翻 JSON。
 
 ## 规则配置（Rules）
 
@@ -163,6 +176,15 @@ evidence-suite/
 3. **能力探测**：`python shared/scripts/probe_capabilities.py --human` 生成 `runtime/capability.local.json`，Agent 据此自动选择最佳路径（pandoc 缺失→python-markdown 回退、mmdc 缺失→mermaid.ink 远程、pdfplumber 缺失→告警而非静默失败）。
 4. 写文档 → 触发写作方；审文档 → 触发审查方。
 5. **沙箱**（可选）：`docker build -t evidence-suite -f docker/Dockerfile .`，容器内断网跑校验脚本（见 `docker/README.md`）。
+
+统一入口 `evidence-suite`（`shared/scripts/evidence_suite.py`）把分散脚本封装为子命令，例如：
+
+```bash
+python shared/scripts/evidence_suite.py validate examples/quickstart/output/evidence_manifest.json
+python shared/scripts/evidence_suite.py export pdf 11_定稿.md --manifest out/manifest.json
+python shared/scripts/evidence_suite.py sufficiency examples/quickstart/evidence_map.json examples/quickstart/sources.json
+python shared/scripts/evidence_suite.py --list   # 全部子命令
+```
 
 路径约定：所有共享资产以 `${SUITE_ROOT}`（套件根目录）开头，由 agent 加载 skill 时解析，无需写死绝对路径。
 
@@ -183,12 +205,12 @@ evidence-suite/
 ## 测试与评测
 
 ```bash
-python tests/run_tests.py      # 回归：50 用例，仅 Python 标准库
+python tests/run_tests.py      # 回归：83 用例，核心门禁仅标准库（DOCX 排版 3 例需 python-docx）
 python eval/run_eval.py        # Eval/Golden：自动判分 + 人工打分表
 ```
 
 - **回归**（`tests/run_tests.py`）：引用闭合 / 缺 URL / 来源与深度下限 / 数字引文 / 语料自检（含 authority/freshness/superseded）/ manifest 契约校验 / SSRF 守卫 / 规则配置 / 证据充分性 / DOCX 排版与 Mermaid 嵌入 / PDF CSS。
-- **Eval/Golden**（`eval/`）：20 个 golden 用例，15 个 script 级**自动判分**（引用闭合含学术模式、缺 URL、可疑域名、source_origin、废止标准、契约非法枚举、证据充分性、机器可审计性、SSRF 拦截），5 个 agent 行为级（prompt injection、摘要≠原文、矛盾处理、论断对齐、幻觉）需真实 agent 运行 + 人工/第二模型回填打分；结果写入 `eval/report.md`。
+- **Eval/Golden**（`eval/`）：20 个 golden 用例，15 个 script 级**自动判分**（引用闭合含学术模式、缺 URL、可疑域名、source_origin、废止标准、契约非法枚举、证据充分性、机器可审计性、SSRF 拦截），5 个 agent 行为级（prompt injection、摘要≠原文、矛盾处理、论断对齐、幻觉）需真实 agent 运行 + 人工/第二模型回填打分；结果写入 `eval/report.md` 与机器可读 `eval/report.json`。
 - 脚本层覆盖明细见 `benchmarks/README.md`（18 个 agent 行为场景定义 + 量化指标）。
 
 ## 最小演示（Quickstart）
@@ -206,12 +228,20 @@ examples/quickstart/run_demo.sh
 
 ## 限制
 
-> ⚠️ **同模型自审 ≠ 独立评审（先读）**：单一 Agent 内「写作者 / 审查者」是同模型角色隔离，属**内部红队**。**模型幻觉会自我包庇**，同模型内红队只能作为第一道过滤——高可信度产出（R4 / 终审门通过 / 投稿或安全关键结论）**必须切换不同模型做 review 或接入人类专家**。所有审查结论在 `evidence_manifest.json` 的 `review_kind` 字段明确标记（`ai-internal` / `ai-cross-model` / `human-expert`），**禁止把 `ai-internal` 包装成独立专家评审**。
+> ⚠️ **同模型自审 ≠ 独立评审（先读）**：单一 Agent 内「写作者 / 审查者」是同模型角色隔离，属**内部红队**。**模型幻觉会自我包庇**，同模型内红队只能作为第一道过滤——高可信度产出（R4 / 终审门通过 / 投稿或安全关键结论）**必须切换不同模型做 review 或接入人类专家**。所有审查结论在 `evidence_manifest.json` 的 `review_kind` 字段明确标记（`ai-internal` / `ai-cross-model` / `human-expert`），**禁止把 `ai-internal` 包装成独立专家评审**；PDF/DOCX 导出时 `--manifest` 会把 `review_kind` 印到页脚。
 
 - 来源数量下限是「地板」不是目标；防 citation padding 靠审查方的闭合检查与「直接度」判定。
-- 安全边界与脚本权限见 `SECURITY.md`；网络类脚本内置 SSRF 拦截（拒绝回环/私网/保留地址）与下载大小上限。
+- 安全边界与脚本权限见 `SECURITY.md`；网络类脚本内置 SSRF 拦截（拒绝回环/私网/保留地址、域名后缀黑名单）与下载大小上限，`--audit-log` 可输出全量 HTTP 审计日志。
 
 ## 路线图
+
+完整版本计划、里程碑与 PR 提纲见 **[docs/roadmap.md](docs/roadmap.md)**。当前已落地：
+统一 CLI（`evidence-suite`）、manifest 版本迁移（`migrate_manifest.py`）、locator 质量分级、
+域名后缀黑名单 + `--audit-log` 网络审计、eval 机器可读 `report.json`、术语速查表、
+issue/PR 模板。
+
+<details>
+<summary>历史路线图</summary>
 
 - [x] 去除路径硬编码、收紧触发词
 - [x] 引入 `support_level` / `evidence_status` 证据语义
@@ -226,6 +256,8 @@ examples/quickstart/run_demo.sh
 - [x] 反证 reconciliation 正式阶段
 - [x] 最小回归测试套件（`tests/run_tests.py`）
 - [x] 评测基准用例定义（`benchmarks/`，打分需实跑 agent）
+
+</details>
 
 ## 许可
 

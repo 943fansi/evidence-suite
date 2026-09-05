@@ -33,6 +33,20 @@ ROLE_KEYS = ("validated_role", "evidence_role", "source_role", "role")
 DEFAULT_MAX_BYTES = 200 * 1024 * 1024
 BLOCKED_HOST_SUFFIXES = (".local", "localhost", "intranet", "internal")
 
+# 域名后缀黑名单：从 shared/config/rules.yaml 的 suspect_domain_suffixes 加载
+# （可在 rules.user.yaml 扩展），匹配在 DNS 解析之前，避免无谓解析。
+def _load_suspect_suffixes() -> tuple[str, ...]:
+    """Load suspect_domain_suffixes from rules.yaml (stdlib-only; empty on failure)."""
+    try:
+        from rule_profile import load_rules
+        suffixes = load_rules().get("suspect_domain_suffixes") or []
+    except Exception:
+        suffixes = []
+    return tuple(str(s) for s in suffixes if s)
+
+
+SUSPECT_SUFFIXES: tuple[str, ...] = _load_suspect_suffixes()
+
 
 class BlockedURLError(Exception):
     """Raised when a URL fails the SSRF guard (blocked host / private IP / scheme)."""
@@ -52,6 +66,25 @@ def _is_blocked_host(host: str) -> bool:
         if host == suffix.lstrip(".") or host.endswith(suffix):
             return True
     return False
+
+
+def check_suspect_suffix(host: str, suffixes: tuple[str, ...] | None = None) -> str | None:
+    """Return a reason if the hostname ends with a configured suspect domain suffix.
+
+    Pure function (no DNS, no global state) so tests can pass an explicit suffix
+    list; defaults to the module-global SUSPECT_SUFFIXES loaded from rules.yaml.
+    """
+    suffixes = SUSPECT_SUFFIXES if suffixes is None else suffixes
+    host = (host or "").strip().lower().rstrip(".")
+    if not host or not suffixes:
+        return None
+    for suffix in suffixes:
+        s = str(suffix).strip().lower().lstrip(".")
+        if not s:
+            continue
+        if host == s or host.endswith("." + s):
+            return f"suspect domain suffix: .{s}"
+    return None
 
 
 def _is_private_ip(ip_text: str) -> bool:
@@ -97,11 +130,27 @@ def check_url_blocked(url: str) -> str | None:
     return None
 
 
+def check_url_policy(url: str) -> str | None:
+    """Full download policy gate: suspect domain suffix first (no DNS), then SSRF.
+
+    Domain-suffix blacklisting (rules.yaml suspect_domain_suffixes) runs before
+    DNS resolution so a blocked host never triggers a lookup. Keeps
+    check_url_blocked pure (tests import it directly); policy gate is what the
+    download paths actually enforce.
+    """
+    parts = urlparse(url)
+    host = (parts.hostname or "").strip()
+    reason = check_suspect_suffix(host)
+    if reason:
+        return reason
+    return check_url_blocked(url)
+
+
 class BlockingRedirectHandler(urllib.request.HTTPRedirectHandler):
     """Re-check every redirect hop against the SSRF guard before following."""
 
     def redirect_request(self, req, fp, code, msg, headers, newurl):
-        reason = check_url_blocked(newurl)
+        reason = check_url_policy(newurl)
         if reason:
             raise BlockedURLError(f"redirect blocked: {newurl} ({reason})")
         return super().redirect_request(req, fp, code, msg, headers, newurl)
@@ -228,7 +277,7 @@ def download(url: str, timeout: int, max_bytes: int) -> tuple[bytes, str]:
     last_error = None
     opener = urllib.request.build_opener(BlockingRedirectHandler)
     for attempt_url in urls_to_try:
-        reason = check_url_blocked(attempt_url)
+        reason = check_url_policy(attempt_url)
         if reason:
             last_error = BlockedURLError(f"blocked: {attempt_url} ({reason})")
             continue
@@ -281,7 +330,7 @@ def download_with_curl(url: str, timeout: int, max_bytes: int) -> tuple[bytes, s
     last_error = None
     for attempt in range(2):  # retry once on network errors
         for attempt_url in urls_to_try:
-            reason = check_url_blocked(attempt_url)
+            reason = check_url_policy(attempt_url)
             if reason:
                 last_error = BlockedURLError(f"blocked: {attempt_url} ({reason})")
                 continue
@@ -408,6 +457,39 @@ def write_manifest(out_dir: Path, rows: list[dict[str, Any]]) -> None:
             writer.writerow({name: row.get(name, "") for name in fieldnames})
 
 
+def write_audit_log(path: Path, rows: list[dict[str, Any]], max_bytes: int | None = None) -> None:
+    """Write a machine-readable network audit log (PR-04).
+
+    Records every HTTP outcome (download / exists / blocked / failed) with the
+    URL, status, reason and byte count so a malicious or broken source can be
+    replayed and audited after the fact. Blocked / rejected requests are kept,
+    not dropped.
+    """
+    from datetime import datetime, timezone
+    audit = {
+        "generated_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+        "tool": "download_reference_files.py",
+        "policy": {
+            "ssrf": "block loopback/private/link-local/reserved + blocked host suffixes",
+            "domain_suffixes": list(SUSPECT_SUFFIXES),
+            "max_bytes": max_bytes,
+        },
+        "entries": [
+            {
+                "source_id": row.get("id", ""),
+                "url": row.get("url", ""),
+                "status": row.get("status", ""),
+                "bytes": row.get("bytes", 0),
+                "content_type": row.get("content_type", ""),
+                "reason": row.get("reason", ""),
+                "input_file": row.get("input_file", ""),
+            }
+            for row in rows
+        ],
+    }
+    path.write_text(json.dumps(audit, ensure_ascii=False, indent=2), encoding="utf-8")
+
+
 def _update_sources_corpus(rows: list[dict[str, Any]]) -> None:
     """Write access_status back into each input corpus JSON based on download outcome.
 
@@ -482,6 +564,13 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
     )
     parser.add_argument("--sleep", type=float, default=0.2, help="Delay between downloads in seconds.")
     parser.add_argument(
+        "--audit-log",
+        type=Path,
+        default=None,
+        help="Write a machine-readable network audit log (audit_log.json) recording "
+        "every download / blocked / failed HTTP outcome for post-hoc review.",
+    )
+    parser.add_argument(
         "--update-sources",
         action="store_true",
         help="Write access_status back into the input corpus JSON(s): "
@@ -546,8 +635,8 @@ def main(argv: list[str]) -> int:
             except OSError:
                 pass
 
-        # SSRF guard: block loopback / private / reserved targets before any network I/O.
-        blocked_reason = check_url_blocked(url)
+        # SSRF guard + domain-suffix guard: block before any network I/O.
+        blocked_reason = check_url_policy(url)
         if blocked_reason:
             row["status"] = "blocked_ssrf"
             row["reason"] = blocked_reason
@@ -591,6 +680,8 @@ def main(argv: list[str]) -> int:
             time.sleep(args.sleep)
 
     write_manifest(out_dir, rows)
+    if args.audit_log:
+        write_audit_log(args.audit_log, rows, max_bytes=args.max_bytes)
     if args.update_sources:
         _update_sources_corpus(rows)
     downloaded = sum(1 for row in rows if row["status"] == "downloaded")

@@ -32,6 +32,7 @@
 - 语料自检：`validate_sources.py 04_validated_sources.json`（学位类加 `--quota-cn-journal 10`）
 - 框架深度门（框架类）：`check_framework_depth.py 11_定稿.md`
 - 阶段门禁：`inspect_pipeline.py --gates ./research_case`
+- 机器可审计性（provenance 已生成时）：`audit_provenance.py --claims research_case/provenance/report.claims.json`——R3/R4/N 高危 claim 的支撑证据须带 locator，缺 locator 判 ⛔ 退回补 locator。
 
 ### D. 人工核查项（脚本无法覆盖，见 `${SUITE_ROOT}/shared/references/finalize_checklist.md`）
 - **参考文献节唯一性（脚本盲区，必查）**：全文 H2 标题仅出现一个参考文献节（`## 参考文献` 或 `## N. 参考文献` 只允许其一）。`build_references.py` 曾因标题带编号（`## 13. 参考文献`）不匹配裸标题而追加第二节，产生两份不一致题录——脚本闭合检查测不出（合计条目数不变），须人工核对 S-ID 唯一。重复即退回。

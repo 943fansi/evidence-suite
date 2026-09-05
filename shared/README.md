@@ -1,4 +1,4 @@
-# Evidence-Driven Proposal Writer Pro (Shared Asset Library)
+# evidence-suite · 共享资产库（Shared Asset Library）
 
 > **路径常量（SUITE_ROOT）**：本库与两侧 skill（evidence-writer / evidence-reviewer）的脚本、参考指南、模板引用统一以 `${SUITE_ROOT}` 开头。`${SUITE_ROOT}` 即**套件根目录**（本 `shared/` 的上一级），由 agent 加载 skill 时解析，**不要写死为绝对路径**；`shared/scripts/` 内的脚本也以 `Path(__file__).resolve().parents[2]` 自行定位套件根，无需手工替换。
 
@@ -18,7 +18,7 @@ Multi-agent evidence-driven pipeline for drafting, reviewing, and revising sourc
 | 3. Validated Corpus | opencode | `04_validated_sources.json` + mandatory sub-steps 3a (PDF download → `reference_files/*.pdf`), 3b (access_status validation), 3c (text extraction → `pdf_text/*.txt`) |
 | 4. Evidence Map | opencode | `06_evidence_map.json` + mandatory sub-step 4b (Honest Assessment → `07_honest_assessment.md`) |
 | 5. Draft | opencode | `08_初稿.md` |
-| 6. Self-Review | opencode | `10_review.md` |
+| 6. Draft Review (red-team) | opencode | `10_review.md` |
 | 7. Revision | opencode | `11_定稿.md` + optional sub-step 7b (humanizer prose polish) |
 | 8. External Expert Review | External (≥2 parallel) | `12_外部专家意见.md` |
 | 9. Expert-Response Revision | opencode | `14_专家修订稿.md` |
@@ -40,7 +40,7 @@ Multi-agent evidence-driven pipeline for drafting, reviewing, and revising sourc
 
 ## Structure
 
-> 本结构树描述当前**共享库 `shared/`** 的布局（`templates/`、`references/`、`scripts/`）。现行已拆分为 `evidence-writer` / `evidence-reviewer` 两个 skill（各含自己的 `prompts/`），执行以各 skill 的 SKILL.md 为准。
+> 本结构树描述当前**共享库 `shared/`** 的布局（`templates/`、`references/`、`scripts/`）。现行已拆分为 `evidence-writer` / `evidence-reviewer` 两个 skill（各含自己的 `references/`），执行以各 skill 的 SKILL.md 为准。
 
 ```
 shared/
@@ -96,7 +96,7 @@ shared/
 │       ├── medical.md
 │       └── social_science.md
 │
-├── scripts/                         # 14 Python utilities (bash-executed, never loaded)
+├── scripts/                         # Python utilities (bash-executed, never loaded)
 │   ├── build_references.py          # 机械生成参考文献节（year 空值省略、URL 逐字、--body 原位回填、--style gbt 类型感知 GB/T 条目、title/title_or_name 双字段兼容）
 │   ├── export_provenance.py         # 机器可审计五件套（claims/evidence/source-map/review.json + 判决解析）
 │   ├── audit_provenance.py          # 机器可审计性门禁（R3/R4/N claim 支撑证据须带 locator，auditability 比率报告）
@@ -118,6 +118,11 @@ shared/
 │   ├── mermaid_render.py             # 共享 Mermaid 渲染（export_pdf 用 SVG / export_docx 用 PNG；本地 mmdc 优先 + mermaid.ink 回退，失败显式占位）
 │   ├── visual_qa.py                 # Stage 10 视觉抽检（Chrome 截图首页/指定章节，交付前目检）
 │   ├── generate_charts.py           # Optional: statistical chart generation
+│   ├── init_case.py                 # 初始化 research_case 工作区骨架（文件契约 + 空模板 + .gitignore）
+│   ├── evidence_suite.py            # 统一 CLI 入口（validate/finalize/check/sufficiency/framework/audit/brief/download/… 子命令代理）
+│   ├── evidence_boundary.py         # 能力边界常量 + locator 归一化哈希
+│   ├── validate_manifest.py         # Manifest 契约校验（evidence/claim 两 schema，含 legacy 版本迁移提示）
+│   ├── migrate_manifest.py          # 旧 manifest 升级到当前 schema（幂等）
 │   └── inspect_pipeline.py          # Pipeline diagnostics
 ```
 

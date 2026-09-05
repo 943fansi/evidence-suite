@@ -9,8 +9,16 @@
   "properties": {
     "schema_version": {
       "type": "string",
-      "const": "0.1.0",
-      "description": "manifest 契约版本；字段变更时必须递增，旧版解析器据此拒绝而非静默误读。"
+      "enum": ["0.1.0", "0.2.0"],
+      "description": "manifest 契约版本；字段变更时必须递增。当前 0.2.0；旧版 0.1.0 由 migrate_manifest.py 向上迁移，validate_manifest.py 对旧版本仅告警不拒绝。"
+    },
+    "compatibility_notes": {
+      "type": "string",
+      "description": "本 manifest 兼容的 suite 版本区间 / 迁移说明（可选项）。"
+    },
+    "boundary_notice": {
+      "type": "string",
+      "description": "能力边界声明：套件只校验「引用原文是否支持论断」，不保证来源本身真实；locator 可能因 PDF 版本/扫描件/网页改版失效；未找到反证 ≠ 论断正确。"
     },
     "review_kind": {
       "type": "string",

@@ -42,8 +42,8 @@
 
 ### T2 · SSRF
 - **攻击面**：`download_reference_files.py` / `fetch_nsfc_report.py` 按语料 URL 下载；`WebFetch` 任意 URL。
-- **缓解**：仅 `http(s)`；拒绝回环/私网/链路本地/保留地址（DNS 解析后逐 A/AAAA 记录检查）；重定向逐跳复检；超时 + 大小上限；`fetch_nsfc_report.py` 固定官方门户。
-- **落地**：`download_reference_files.py · check_url_blocked / BlockingRedirectHandler`；`--max-bytes`。
+- **缓解**：仅 `http(s)`；拒绝回环/私网/链路本地/保留地址（DNS 解析后逐 A/AAAA 记录检查）；**域名后缀黑名单在 DNS 解析前拦截**（`rules.yaml suspect_domain_suffixes`，可扩展）；重定向逐跳复检；超时 + 大小上限；`fetch_nsfc_report.py` 固定官方门户；`--audit-log` 输出全量 HTTP 审计日志便于事后复盘恶意来源。
+- **落地**：`download_reference_files.py · check_url_policy / BlockingRedirectHandler`；`--max-bytes`；`--audit-log`。
 
 ### T3 · Prompt Injection（网页/PDF/引文内容劫持 Agent）
 - **攻击面**：来源正文含 `ignore previous instructions` / 伪指令 / 伪系统消息。

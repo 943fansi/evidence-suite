@@ -1,0 +1,50 @@
+name: Bug 报告
+description: 脚本行为 / 校验门禁 / 导出物与预期不符
+title: "[bug] 简述"
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        > 安全相关漏洞（路径逃逸 / SSRF 绕过 / 注入 / 越权执行）请直接联系维护者，
+        > 不要公开披露未修复细节，见 SECURITY.md。
+  - type: input
+    id: os
+    attributes:
+      label: 平台与 Python 版本
+      placeholder: Windows 10 / Python 3.11
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: 最小复现（命令 + 输入）
+      description: 给出触发问题的命令、输入片段（draft/语料/manifest 最小化）与观察到的输出/退出码
+      placeholder: |
+        python shared/scripts/validate_manifest.py bad.json
+        预期 rc=0，实际 rc=1，stderr 见下…
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: 期望行为 vs 实际行为
+    validations:
+      required: true
+  - type: dropdown
+    id: impact
+    attributes:
+      label: 影响范围
+      options:
+        - 校验门禁误判（误放行 / 误阻断）
+        - 导出物错误（PDF/DOCX/manifest）
+        - 网络/安全行为异常
+        - 文档/提示不符
+        - 其他
+  - type: checkboxes
+    id: prechecks
+    attributes:
+      label: 已自查
+      options:
+        - label: 已确认 `python tests/run_tests.py` 与 `eval/run_eval.py` 在 main 分支全绿（非环境问题）
+        - label: 已给出最小化输入（去掉业务敏感内容）

@@ -2,9 +2,41 @@
 
 本文件记录 `evidence-suite` 自首次公开以来的变更，按主题归类（时间从近到远，当前无版本号发布）。
 
+## 0.2.1 — P0 热修批次（2026-09-04）
+
+> 修复 `evidence-suite` v0.2.0 落地后由外部审计发现的高优先级回归 / 契约漏洞，**不引入新功能**。CLI 版本号 `--version` 已 bump 到 `evidence-suite 0.2.1`。
+
+### 修复
+- **B8（P0）**：`finalize_draft.py` 写盘后 body 校验失败会被 manifest 阶段（line 582 后 `problems = validate_manifest(...)`）**覆盖**而静默返回 0，与 `final_gate.md`「finalize 不可逆、校验失败必须阻断 CI」契约相悖。现已在写盘后立即拦截，**broken validate → exit 3**，但仍写文件供人工检查（`--check` 仍 exit 3、`--dry-run` 仍 exit 0 不污染产出）；错误消息显式标注「output NOT trusted — final_gate contract is '不可逆'」便于审计。回归 + 新场景测试通过。
+- **F4（P0）**：`evidence-suite audit` 子命令名歧义（r1 来源审计 vs `audit_provenance.py` 机器可审计性门）。现新增规范名 **`audit-provenance`**，旧名 `audit` 改为带 deprecation warning 的向后兼容别名（stderr 提示「0.3.0 移除」），脚本映射与 docstring 一并同步。
+- **A1+A2（P0）**：`evidence-writer/SKILL.md` 与 `evidence-reviewer/SKILL.md` frontmatter 补齐 4 字段（`version: "0.2.1"` / `compatibility` / `allowed_tools: [Read, Write, Edit, Bash, WebSearch, WebFetch]` / `disallowed_tools: []`），与 `docs/PR-improvement-plan.md` 承诺对齐；`--evidence-suite-disable` 显式禁用标记在两个 SKILL 的 `NOT_TRIGGER` 段均已挂出。
+
+### 文档 / 卫生
+- 此前 `evidence-writer/SKILL.md` frontmatter 4 字段缺失、`finalize_draft.py` 写盘后不阻断、`evidence-suite audit` 子命令名歧义 3 项均被 `CHANGELOG.md` 旧条目以「已落地」口吻登记但实际未合入——本批次作为对账补登。
+
+### 不变项
+- manifest schema 版本仍是 `0.2.0`（未触及）；回归测试（`tests/run_tests.py`，83 用例）+ eval golden（20 用例 / 15 自动判分）未增删。依赖齐全环境全绿；缺 `python-docx` / `PyYAML` 时，DOCX 排版 3 例与 pyyaml 等价性 1 例按预期**跳过**（`OK (skipped=2)`），不误报失败。
+- 说明：此前 CHANGELOG 自 P9 批次（66→68 用例）后用例数断更，实际已增至 83；本条目一并校正。
+
 ## 未发布（Unreleased）
 
 > 定位已从「证据驱动写作 skill」收敛为「**研究 Agent 的证据校验与溯源层（Evidence Integrity Layer）**」。
+
+### Skill 对抗契约修正（2026-09-05 评审批次）
+- **响应说明表落点固定**：w6/w8 的「审查意见响应说明」表此前在 `w6_revision.md` 中写为「追加在文档末尾或单独交付」、在 `w8_expert_revision.md` 中「追加在修订版方案末尾」，落点不固定且会污染交付稿正文。现统一落盘 `research_case/13_审查意见响应说明.md`（w6/w8 各追加一节），`evidence-writer/SKILL.md` 工作目录契约树、对抗协议第 4 条、修订协议、`w6_revision.md`、`w8_expert_revision.md`、`evidence-reviewer/SKILL.md` 对抗交接第 4 条同步；w8 不再把响应表混入 `14_专家修订稿.md` 正文（终审门残留检查不再受其干扰）。
+- **evidence-writer `allowed_tools` 补 `Skill`**：对抗协议「提交动作」要求用 Skill 工具加载 evidence-reviewer，但 frontmatter `allowed_tools` 未声明该工具，存在契约自相矛盾；并补充「优先在独立子代理上下文中运行审查方」的隔离建议（同上下文角色切换只能记 `review_kind=ai-internal`）。
+- **Review Only 审查对象澄清**：`evidence-reviewer/SKILL.md` 入口模式表中 Review Only 的终审门对象以用户提交的文档路径为准，不限于 `11_定稿.md`/`14_专家修订稿.md`。
+
+### 审查意见落地批次（docs/PR-improvement-plan.md）
+- **PR-01 风险披露（P0）**：新增 `shared/scripts/evidence_boundary.py` 集中能力边界声明（只校验引用是否支持论断、不保证来源本身真实 / locator 可能失效 / 反证找不到≠正确）；`finalize_draft.py` 两个 manifest 输出 `boundary_notice`；`export_pdf.py` / `export_docx.py` 新增 `--manifest`，PDF 页脚 / DOCX 文末标注 `review_kind` 与边界声明；README 顶部新增「能力边界（先读）」横幅
+- **PR-02 统一 CLI（P0）**：新增 `shared/scripts/evidence_suite.py` 子命令入口（validate/finalize/check/sufficiency/framework/audit/brief/download/extract/validate-src/select/export pdf|docx/provenance/probe/init-case），经 subprocess 透传不重复实现逻辑；新增 `pyproject.toml` 注册 console script `evidence-suite`
+- **PR-04 网络加固（P0）**：`download_reference_files.py` 新增域名后缀黑名单（`rules.yaml suspect_domain_suffixes`，DNS 解析前匹配、重定向逐跳复用）+ `--audit-log` 输出机器可读 `audit_log.json`（全部下载/拦截/失败留痕）；`SECURITY.md` 补充说明
+- **PR-05 术语速查（P0）**：新增 `shared/references/glossary.md` 集中 claim_class / support_level / evidence_status / risk / authority / freshness / relation / locator 等枚举速查，README 链接
+- **PR-09 manifest 版本兼容（P1）**：`validate_manifest.py` 旧版本（0.1.0）从硬报错改为告警 + 提示迁移；新增 `migrate_manifest.py` 注册式幂等迁移（0.1.0→0.2.0 派生 relation + 默认 review_independence）；schema JSON 同步 enum 版本 + `compatibility_notes` + `boundary_notice`
+- **PR-10 locator 健壮性（P1）**：`validate_manifest.py` 支持 `locator_quality`（high/medium/low）枚举；schema 允许 `quote_hash: null`（扫描件降级章节级定位）；`evidence_boundary.py` 提供 `normalize_quote` / `quote_sha256`（空白归一化，排版漂移不失效）；`audit_provenance.py` 识别 locator_quality（locator_quality 本身不算定位）
+- **PR-11 eval 机器可读（P1）**：`eval/run_eval.py` 追加输出 `eval/report.json`（summary + 逐用例 pass/fail/problems）
+- **PR-19 贡献模板（P0）**：新增 `.github/PULL_REQUEST_TEMPLATE.md` + `.github/ISSUE_TEMPLATE/`（bug_report / feature_request / eval_case）；`CONTRIBUTING.md` 契约变更改为「登记 LEGACY_VERSIONS + MIGRATIONS 迁移」
+- **PR-20 路线图独立文件（P0）**：新增 `docs/roadmap.md`（里程碑 M1–M5 / 已完成 / 待办 PR 清单 / 版本计划）；README 路线图折叠指向该文件
 
 ### 架构与定位
 - README 重定位为 Evidence Integrity Layer，新增「定位：不是又一个研究引擎」与「互操作契约（Evidence Manifest）」两节
