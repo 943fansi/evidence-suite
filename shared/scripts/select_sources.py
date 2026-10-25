@@ -43,12 +43,12 @@ ROUTING = {
     "nuclear": [
         "international_regulator", "international_industry", "industry_technical",
         "nuclear_data", "china_regulator", "china_standard",
-        "technical_report_library", "international_standard",
+        "technical_report_library", "international_standard", "scholarly_index",
     ],
     "materials": [
         "materials_data", "materials_engineering_data", "materials_scientific_database",
         "international_standard", "china_standard", "nuclear_data",
-        "technical_report_library", "cross_technical_report_library",
+        "technical_report_library", "cross_technical_report_library", "scholarly_index",
     ],
     "energy": [
         "energy_international", "energy_data", "government_agency", "national_lab",

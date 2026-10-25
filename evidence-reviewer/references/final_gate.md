@@ -31,6 +31,7 @@
 - 正文深度下限：`check_citations.py 11_定稿.md --min-chars N`（按文档类型）
 - 语料自检：`validate_sources.py 04_validated_sources.json`（学位类加 `--quota-cn-journal 10`）
 - 框架深度门（框架类）：`check_framework_depth.py 11_定稿.md`
+- **期刊文风评分卡（paper_journal 类必跑）**：`check_journal_style.py {FINAL_DRAFT}_clean.md --tier {top|mid}`——硬项 0 分（摘要/关键词/0引言/结论末章/文献量/类型标记/字数）判 ⛔ 退回；总分率 < 85% 提示大修；输出的人工复核清单（引言逐篇评述、设备参数句、式中块）并入 D 项人工核查。
 - 阶段门禁：`inspect_pipeline.py --gates ./research_case`
 - 机器可审计性（provenance 已生成时）：`audit_provenance.py --claims research_case/provenance/report.claims.json`——R3/R4/N 高危 claim 的支撑证据须带 locator，缺 locator 判 ⛔ 退回补 locator。
 

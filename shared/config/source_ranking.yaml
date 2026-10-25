@@ -117,6 +117,28 @@ default_by_category:
 
 # 按 id 覆盖（核能领域重点来源显式标注 role / priority）
 sources:
+  # 中文文献数据库（discovery 定位：题录/卷期页核对入口，非直接证据源——
+  # 聚合站快照不作正式引用依据，须回原刊或 doi.org 核对后引用）
+  cnki:
+    authority: "C1"
+    priority: 62
+    role: [discovery, literature, cn_journal]
+    note: "知网：中文期刊题录/卷期页/作者核对入口；正式引用回原刊"
+  wanfang:
+    authority: "C1"
+    priority: 58
+    role: [discovery, literature, cn_journal]
+    note: "万方：中文期刊/学位论文题录核对入口"
+  cqvip:
+    authority: "C1"
+    priority: 55
+    role: [discovery, literature, cn_journal]
+    note: "维普：中文期刊题录核对入口"
+  doi_org:
+    authority: "C1"
+    priority: 70
+    role: [discovery, literature]
+    note: "doi.org 解析：卷期页/题名权威核对（中英文通用）"
   iaea:
     authority: "A1"
     priority: 100

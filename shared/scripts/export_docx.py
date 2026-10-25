@@ -84,9 +84,17 @@ def _set_first_line_chars(paragraph, chars: int = 200) -> None:
     ind.set(qn("w:firstLine"), "0")  # firstLineChars takes precedence in Word
 
 
+CITATION_RE = re.compile(r"(\[\d{1,3}(?:[-–,，]\d{1,3})*\])")
+
+
 def _add_runs(paragraph, text: str, *, eastasia: str, western: str,
-              size_pt: float, bold_all: bool = False) -> None:
-    """Add runs with **bold** and *italic* inline markdown support."""
+              size_pt: float, bold_all: bool = False,
+              superscript_citations: bool = False) -> None:
+    """Add runs with **bold**/**italic** inline markdown support.
+
+    superscript_citations=True 时把正文引用标记 [1]/[1-4]/[2,5] 渲染为上标
+    （GB/T 7714 期刊惯例）；参考文献表内的条目编号保持正常字号。
+    """
     for token in re.split(r"(\*\*[^*]+\*\*|\*[^*]+\*)", text):
         if not token:
             continue
@@ -94,12 +102,18 @@ def _add_runs(paragraph, text: str, *, eastasia: str, western: str,
         italic = (not bold) and token.startswith("*") and token.endswith("*") and len(token) > 2
         content = token[2:-2] if bold else (token[1:-1] if italic else token)
         content = content.replace("`", "")
-        run = paragraph.add_run(content)
-        run.font.name = western
-        _set_eastasia(run, eastasia)
-        run.font.size = None if size_pt is None else _pt(size_pt)
-        run.bold = bold or bold_all
-        run.italic = italic
+        pieces = CITATION_RE.split(content) if superscript_citations else [content]
+        for piece in pieces:
+            if not piece:
+                continue
+            run = paragraph.add_run(piece)
+            run.font.name = western
+            _set_eastasia(run, eastasia)
+            run.font.size = None if size_pt is None else _pt(size_pt)
+            run.bold = bold or bold_all
+            run.italic = italic
+            if superscript_citations and CITATION_RE.fullmatch(piece):
+                run.font.superscript = True
 
 
 def _pt(v: float):
@@ -141,7 +155,8 @@ def convert(md_path: Path, out_path: Path, *, body_size: float, line_spacing: fl
 
     def add_para(text: str, *, eastasia: str = songti, size: float = body_size,
                  bold: bool = False, align=WD_ALIGN_PARAGRAPH.JUSTIFY,
-                 first_indent: bool = False, left_indent_cm: float | None = None):
+                 first_indent: bool = False, left_indent_cm: float | None = None,
+                 superscript_citations: bool = False):
         p = doc.add_paragraph()
         p.alignment = align
         pf = p.paragraph_format
@@ -152,7 +167,8 @@ def convert(md_path: Path, out_path: Path, *, body_size: float, line_spacing: fl
             pf.left_indent = Cm(left_indent_cm)
         if text:
             _add_runs(p, text, eastasia=eastasia, western=western,
-                      size_pt=size, bold_all=bold)
+                      size_pt=size, bold_all=bold,
+                      superscript_citations=superscript_citations)
         return p
 
     def add_table(rows: list[list[str]]):
@@ -180,6 +196,7 @@ def convert(md_path: Path, out_path: Path, *, body_size: float, line_spacing: fl
     title_done = False
     mermaid_counter = [0]
     figures_dir = md_path.parent / "figures"
+    in_refs = False  # 参考文献表内条目编号 [n] 不上标（仅正文引用上标）
     while i < n:
         raw = lines[i]
         line = raw.rstrip()
@@ -187,6 +204,9 @@ def convert(md_path: Path, out_path: Path, *, body_size: float, line_spacing: fl
         if not line.strip():
             i += 1
             continue
+
+        if re.match(r"^#{1,6}\s*(?:\d+[.、]\s*)?(参考文献|References|Bibliography)\b", line):
+            in_refs = True
 
         # fenced code blocks → mermaid PNG embedding, else placeholder note
         if line.strip().startswith("```"):
@@ -273,12 +293,13 @@ def convert(md_path: Path, out_path: Path, *, body_size: float, line_spacing: fl
         m = re.match(r"^\s*[-*]\s+(.*)$", line)
         if m:
             add_para("• " + m.group(1), align=WD_ALIGN_PARAGRAPH.JUSTIFY,
-                     first_indent=False, left_indent_cm=0.74)
+                     first_indent=False, left_indent_cm=0.74,
+                     superscript_citations=not in_refs)
             i += 1
             continue
 
         # normal paragraph (claims "N. …", （注：…）, body prose) → 2-char indent
-        add_para(line.strip(), first_indent=True)
+        add_para(line.strip(), first_indent=True, superscript_citations=not in_refs)
         i += 1
 
     # review-kind footer + capability boundary disclosure (PR-01)

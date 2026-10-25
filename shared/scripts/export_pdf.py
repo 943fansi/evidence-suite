@@ -351,15 +351,30 @@ def main(argv: list[str]) -> int:
         text
     )
 
-    # Step 3: Write processed markdown with absolute paths
+    # Step 3: Write processed markdown with absolute paths.
+    # 3a: 正文引用 [n]/[1-4] 上标化（GB/T 7714 期刊惯例；参考文献表内条目编号不上标，
+    #     markdown 原生 HTML <sup> 同时透过 pandoc 与 python-markdown 两条路径）
+    text = _superscript_citations_md(text)
     processed = base_dir / f"_{args.input.stem}_processed.md"
     processed.write_text(text, encoding="utf-8")
-    print(f"Step 3: Processed markdown → {processed.name}")
+    print("Step 3: Processed markdown →", processed.name)
 
     try:
         return _run_pipeline(args, base_dir, figures_dir, text, processed, pandoc)
     finally:
         processed.unlink(missing_ok=True)
+
+
+CITATION_MD_RE = re.compile(r"(?<![!A-Za-z0-9\[^])\[(\d{1,3}(?:[-–,，]\d{1,3})*)\](?!\()")
+REFS_HEADING_RE = re.compile(r"^#{1,6}\s*(?:\d+[.、]\s*)?(参考文献|References|Bibliography)\b", re.M)
+
+
+def _superscript_citations_md(text: str) -> str:
+    """正文中的 [n]/[1-4]/[2,5] 引用标记 → <sup>[n]</sup>；参考文献表内不转换。"""
+    m = REFS_HEADING_RE.search(text)
+    head, tail = (text[:m.start()], text[m.start():]) if m else (text, "")
+    head = CITATION_MD_RE.sub(lambda c: f"<sup>[{c.group(1)}]</sup>", head)
+    return head + tail
 
 
 def _run_pipeline(args, base_dir: Path, figures_dir: Path, text: str,
