@@ -90,7 +90,7 @@ def check_urls_in_refs(refs_text: str, academic: bool = False) -> set[str]:
 
     Splits entries on the leading tag: `[Sx]` (default) or `[n]` (--academic).
     """
-    url_re = re.compile(r"https?://")
+    url_re = re.compile(r"(?:https?|file)://")  # file:// 本地语料(source_origin=user)视为有效 locator
     missing: set[str] = set()
     tag_re = re.compile(r"\[(S\d+|\d+)\]")
     split_re = re.compile(r"\n(?=\[(?:S\d+|\d+)\])")

@@ -183,6 +183,18 @@ JSON 顶层结构：
 2. 检索结果按同一 JSON schema 落盘 `02_raw_sources.json`。
 3. 若 WebSearch/WebFetch 也完全不可用，明确告知用户该阶段需要外部 API，**不要**自行编造来源或补齐缺口。
 
+## 本地文献库优先（Local Corpus First）
+
+用户已有本地参考文献库（PDF 文件夹）时，w2 的定位从「主检索」变为「补缺口」：
+
+1. 先在 w3 用 `ingest_local_corpus.py --pdf-dir <目录>` 摄取本地库（元数据自动抽取，`source_origin=user`），
+   再回到 w2 **只为缺口做定向检索**：本地库覆盖不到的现行标准原文、机构报告（IAEA/NRC/EPRI）、
+   反证资料、以及 `meta_confidence=low` 条目的权威版本（DOI/卷期页核对）。
+2. 本地条目进入检索结果 JSON 时照常带 `credibility_reason`（如「用户提供+PDF全文已抽取核验」），
+   `registry_id` 填 `"supplementary"`。
+3. 中文文献（知网/万方/维普收录）本地库通常已覆盖；联网补检时优先在出版物官网或 doi.org 核对卷期页，
+   不以聚合站快照为准。
+
 ## Usage
 
 1. Read this template

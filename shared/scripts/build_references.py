@@ -131,6 +131,35 @@ def replace_in_draft(draft_text: str, section: str) -> str:
     return "".join(lines[:start]) + heading.rstrip("\n") + "\n" + body + "\n" + "".join(lines[end:])
 
 
+def bilingual_line_gbt(source: dict) -> str:
+    """高档中文期刊的中文文献英文对照行（语料带 title_en 时输出，字段不全给骨架）。
+
+    语料可选字段：title_en / authors_en / journal_en / series_en(含 年, 卷(期): 页)。
+    任一缺失不虚构——title_en 缺失时返回空串（该条不配对照行）。
+    """
+    title_en = str(source.get("title_en", "")).strip()
+    if not title_en:
+        return ""
+    authors_en = str(source.get("authors_en", "")).strip()
+    series_en = str(source.get("series_en", "")).strip()
+    journal_en = str(source.get("journal_en", "")).strip()
+    year = source.get("year")
+    year_text = str(year).strip() if year is not None else ""
+    vol = str(source.get("volume", "")).strip()
+    iss = str(source.get("issue", "")).strip()
+    page = str(source.get("page", "")).strip()
+    if not series_en:
+        if journal_en and year_text:
+            series_en = f"{journal_en}, {year_text}"
+            if vol:
+                series_en += f", {vol}({iss or '?'})" + (f": {page}" if page else "")
+        elif year_text:
+            series_en = year_text
+    head = f"{authors_en}. " if authors_en else ""
+    tail = f" {series_en}." if series_en else ""
+    return f"{head}{title_en}[J].{tail}"
+
+
 def format_entry_gbt(source: dict) -> str:
     """GB/T 7714-2015 类型感知条目（学位论文/期刊投稿排版用）。
 
@@ -154,6 +183,11 @@ def format_entry_gbt(source: dict) -> str:
     if stype in ("journal_paper",):
         tag = "[J]"
         core = f"{authors}. {title}{tag}. {series}." if authors else f"{title}{tag}. {series}."
+        core = re.sub(r"\.\s*\.$", ".", core)          # series 空时 ". ." → "."
+        core = re.sub(r"\s{2,}", " ", core).strip()
+        en = bilingual_line_gbt(source)
+        if en:
+            core = core + "\n    " + en
         return core
     if stype in ("china_standard", "international_standard", "safety_standard"):
         tag = "[S]"

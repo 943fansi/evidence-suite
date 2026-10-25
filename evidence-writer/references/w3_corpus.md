@@ -11,6 +11,13 @@
 - 审核方已出具 `03_audit_report.md` 且判决允许进入 w3（不可跳过审计直接构造语料）。
 - 若审核方判决为"退回补搜"，先按清单补检索重走 w2→r1，再回来。
 - **`04_validated_sources.json` 由本阶段创建**：审核方 r1 不生成语料，只产 `03_audit_report.md`。
+- **本地 PDF 库入口（一等公民）**：用户已有本地参考文献库（文件夹内 PDF）时，**优先**用
+  `python ${SUITE_ROOT}/shared/scripts/ingest_local_corpus.py --pdf-dir <PDF目录> --case .`
+  一次性摄取：自动去重（md5）、抽取文献元数据（真实题名/作者/刊名/年卷期/DOI，抽不到的字段留空、
+  `meta_confidence` 分级并在报告尾列出待人工回填清单）、按套件命名约定复制到 `reference_files/`
+  并生成 `manifest.json`（`status=exists`）。摄取后照常执行 3c 文本抽取；网络检索（w2）只用于
+  **补缺口**（本地库覆盖不到的权威标准/机构报告/反证）。本地来源 `source_origin=user`、
+  `url=file:///…`（引用闭合门禁接受 file:// locator）。
 
 ## 执行步骤
 
