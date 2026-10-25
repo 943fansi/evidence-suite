@@ -15,7 +15,8 @@
 | 白皮书（whitepaper） | 12 | 5,000 |
 | 国防科技报告 / GF报告（report_gf） | 12 | 10,000 |
 | 项目实施方案（plan_implementation） | 12 | 8,000 |
-| 期刊论文（paper_journal） | 15 | 4,000 |
+| 期刊论文（paper_journal） | 16 | 6,000 |
+| 期刊论文·高档档（paper_journal + `--profile journal_top`） | 20 | 8,000 |
 | 专利申请技术交底书/申请草案（patent_disclosure / patent_application） | 8 | 5,000 |
 | 硕士论文（thesis_ms） | 40 | 20,000 |
 | 博士论文（thesis_phd） | 60 | 35,000 |

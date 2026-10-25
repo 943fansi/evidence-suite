@@ -18,6 +18,8 @@ schema_version: "0.1.0"
 # 场景档：对同一规则的整体微调（deep-merge）。
 #   medical       高险场景：提高权威要求与来源下限
 #   general_tech  普通技术调研：放宽部分来源权威要求与下限
+#   journal_top   高档中文期刊（对标《电力工程技术》级：~9页/文献≥20 含双语对照/
+#                 图≥6/正文≥8000字/硬指标摘要）；配合 check_journal_style.py --tier top
 scenario_profiles:
   medical:
     risk_tiers:
@@ -38,6 +40,17 @@ scenario_profiles:
       - jianshu.com
       - toutiao.com
       - zhihu.com
+  journal_top:
+    doc_minimums:
+      paper_journal:
+        min_sources: 20
+        min_chars: 8000
+    journal_style:
+      tier: "top"
+      min_refs_bilingual_ratio: 0.5
+      min_figures: 6
+      require_bilingual_captions: true
+      require_equations_with_symbol_defs: true
   general_tech:
     risk_tiers:
       R3:
@@ -197,8 +210,8 @@ doc_minimums:
     min_sources: 12
     min_chars: 8000
   paper_journal:
-    min_sources: 15
-    min_chars: 4000
+    min_sources: 16
+    min_chars: 6000
   patent_disclosure:
     min_sources: 8
     min_chars: 5000

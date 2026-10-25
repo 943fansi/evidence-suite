@@ -639,6 +639,14 @@ class RuleProfileTests(unittest.TestCase):
         self.assertEqual(rules["risk_tiers"]["R3"]["authority_min"], "B1")
         self.assertEqual(rules["doc_minimums"]["proposal"]["min_sources"], 10)
 
+    def test_journal_top_profile_overrides(self):
+        rules = self.rp.load_rules(profile="journal_top")
+        self.assertEqual(rules["doc_minimums"]["paper_journal"]["min_sources"], 20)
+        self.assertEqual(rules["doc_minimums"]["paper_journal"]["min_chars"], 8000)
+        self.assertEqual(rules["journal_style"]["tier"], "top")
+        self.assertEqual(rules["journal_style"]["min_figures"], 6)
+        self.assertEqual(rules["active_profile"], "journal_top")
+
     def test_unknown_profile_raises(self):
         with self.assertRaises(KeyError):
             self.rp.load_rules(profile="no_such_profile")

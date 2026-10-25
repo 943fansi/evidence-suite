@@ -28,12 +28,23 @@
 ## 三、[Sx] → [n] 引用体系对接（关键设计）
 
 - **起草阶段**：正文用 `[Sx]` 标注（保引用闭合校验与证据可追溯）。
-- **定稿交付**：`python scripts/build_references.py 04_validated_sources.json --style gbt -o 11_投稿版_参考文献.md` —— 输出顺序编号 `[1]..[n]` 的 GB/T 7714 骨架条目（题名. 出版者, 年. URL.），**附录附 [Sx]↔[n] 映射表**供作者核查；`--style gbt` 不支持 `--body` 原位回填（会破坏 [Sx] 版引用闭合门禁），投稿版骨架输出到 `-o` 文件后由作者按目标刊格式补全作者列表/卷期页，并手工替换正文 `[Sx]`→`[n]`（或交编辑处理）。
-- 期刊模式质量门以 [Sx] 版执行；`--style gbt` 版仅供投稿排版。
+- **定稿交付**：`python scripts/build_references.py 04_validated_sources.json --style gbt -o 11_投稿版_参考文献.md`
+  —— 输出顺序编号 `[1]..[n]` 的 GB/T 7714 条目 + `[Sx]↔[n]` 映射表。**条目完整度取决于语料元数据**：
+  - 语料带 `authors`/`series`（刊名, 年, 卷(期): 页）时输出**完整条目**（本地 PDF 库经
+    `ingest_local_corpus.py` 摄取的语料自动带这些字段；`meta_confidence=low` 的条目按报告尾清单人工回填）；
+  - 语料带 `title_en`/`authors_en`/`journal_en` 时中文条目自动附**英文对照行**（高档刊要求）；
+  - 缺失字段输出可回溯骨架，不虚构。
+- `--style gbt` 不支持 `--body` 原位回填（会破坏 [Sx] 版引用闭合门禁）；`finalize_draft.py --style gbt`
+  负责正文 `[Sx]`→`[n]` 转换，投稿版参考文献以 `-o` 输出文件为准。
+- 期刊模式质量门以 [Sx] 版执行；`--style gbt` 版供投稿排版。
 
 ## 四、流水线对接
 
-- 最低来源 15；正文深度 4,000 非空白字符；阶段 6 第 19 条专项（结构页序/0 引言/编号/上标引用骨架/双摘要对应/缩写规范）。
+- 默认档最低来源 16、正文 6 000 非空白字符；**高档档 `--profile journal_top`**：来源 ≥20、正文 ≥8 000、
+  中文文献双语对照 ≥50%、图 ≥6、图题中英双语、公式＋「式中：」符号说明（见 `rules.yaml` journal_style）。
+- 起草后自查：`python scripts/check_journal_style.py 11_定稿.md --tier top`（S1–S17 确定性评分 +
+  人工修辞清单；硬项 0 分不得送审）。逐段句式范例见 `references/journal_style_exemplar.md`。
+- 阶段 6 第 19 条专项（结构页序/0 引言/编号/上标引用骨架/双摘要对应/缩写规范）。
 - 技术路线图门在期刊类豁免（方法框架图即图1，非 3/3/3）。
 
-（本指南约 39 行；加载时机：stage5 起草期刊论文时 Read。）
+（本指南约 45 行；加载时机：stage5 起草期刊论文时 Read，句式模仿另 Read journal_style_exemplar.md。）
