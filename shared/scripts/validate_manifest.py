@@ -186,8 +186,8 @@ def _validate_mapping(data: dict) -> list[str]:
             problems.append(f"{prefix}.citation must match ^[S\\d+]$ (got {entry.get('citation')!r})")
         if not re.match(r"^\[\d+\]$", str(entry.get("mapped", ""))):
             problems.append(f"{prefix}.mapped must match ^[\\d+]$ (got {entry.get('mapped')!r})")
-        if entry.get("url") and not str(entry["url"]).startswith(("http://", "https://")):
-            problems.append(f"{prefix}.url must be an http(s) URL (got {entry.get('url')!r})")
+        if entry.get("url") and not str(entry["url"]).startswith(("http://", "https://", "file://")):
+            problems.append(f"{prefix}.url must be an http(s)/file URL (got {entry.get('url')!r})")
         for j, claim in enumerate(entry.get("claims") or []):
             cprefix = f"{prefix}.claims[{j}]"
             if not isinstance(claim, dict):

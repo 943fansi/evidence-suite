@@ -74,8 +74,8 @@ def split_sections(text: str) -> dict:
                                     ("front", "abs", "kw", "abs_en", "kw_en", "body", "concl", "refs")}
     mode = "front"
     marker = re.compile(
-        r"^#{0,6}\s*(摘\s*要|Abstract\s*[:：]?|关\s*键\s*词|Key\s*words|"
-        r"参\s*考\s*文\s*献|References|【参\s*考\s*文\s*献】)\s*[:：]?\s*", re.I)
+        r"^[#*\s]{0,10}(摘\s*要|Abstract\s*[:：]?|关\s*键\s*词|Key\s*words|"
+        r"参\s*考\s*文\s*献|References|【参\s*考\s*文\s*献】)\*{0,2}\s*[:：]?\s*", re.I)
     heading = re.compile(r"^#{1,6}\s")
     for ln in lines:
         s = ln.strip()
@@ -114,11 +114,17 @@ def nsp(s: str) -> int:
 
 
 def ref_entries(refs_block: str) -> list[str]:
-    out = []
-    for ln in refs_block.splitlines():
+    """Reference entries; continuation lines (bilingual EN translations, wraps)
+    are merged into the preceding entry so bilingual pairing is detectable."""
+    raw = [ln for ln in refs_block.splitlines() if ln.strip()]
+    out: list[str] = []
+    new_entry = re.compile(r"^\[?\d+\]?[\s.、]|^\[S[-_]?\d+\]")
+    for ln in raw:
         s = ln.strip().lstrip("#*- ").strip()
-        if re.match(r"^\[?\d+\]?[\s.、]", s) or re.match(r"^\[S[-_]?\d+\]", s):
+        if new_entry.match(s) or not out:
             out.append(s)
+        else:  # 缩进续行：双语对照英文/换行包裹
+            out[-1] += " " + s
     return out
 
 
@@ -156,7 +162,7 @@ def score(draft: str, tier: str, min_refs: int, min_chars: int) -> tuple[list[di
     # S5 英文块
     has_abs_en = bool(sec["abs_en"].strip())
     has_kw_en = bool(sec["kw_en"].strip())
-    has_title_en = bool(re.search(r"^[A-Z][A-Za-z0-9,\-() ]{15,}$", draft, re.M))
+    has_title_en = bool(re.search(r"^[#*\s]{0,6}\**[A-Z][A-Za-z0-9,\-() ]{15,}\**\s*$", draft, re.M))
     n_en = sum([has_abs_en, has_kw_en, has_title_en])
     add("S5", "英文题名/Abstract/Key words", 2 if n_en == 3 else 1 if n_en == 2 else 0,
         f"题名{int(has_title_en)}/Abstract{int(has_abs_en)}/Keywords{int(has_kw_en)}")
