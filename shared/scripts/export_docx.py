@@ -289,6 +289,22 @@ def convert(md_path: Path, out_path: Path, *, body_size: float, line_spacing: fl
                      align=WD_ALIGN_PARAGRAPH.LEFT, left_indent_cm=0.74)
             continue
 
+        # markdown image → embed (parity with export_pdf.py image handling)
+        mimg = re.match(r"^!\[([^\]]*)\]\((figures/[^)]+)\)\s*$", line.strip())
+        if mimg:
+            img_path = md_path.parent / mimg.group(2)
+            if img_path.exists():
+                p = doc.add_paragraph()
+                p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+                p.paragraph_format.line_spacing = line_spacing
+                p.add_run().add_picture(str(img_path), width=Cm(14.5))
+            else:
+                add_para(f"〔图片缺失：{mimg.group(2)}——请先生成 figures/ 下的图像文件〕",
+                         eastasia=kaiti, size=body_size - 1.5,
+                         align=WD_ALIGN_PARAGRAPH.LEFT, left_indent_cm=0.74)
+            i += 1
+            continue
+
         # list items
         m = re.match(r"^\s*[-*]\s+(.*)$", line)
         if m:
