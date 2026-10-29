@@ -54,6 +54,8 @@ COMMANDS = {
     "extract": ("extract_pdf_text.py", False),
     "validate-src": ("validate_sources.py", False),
     "select": ("select_sources.py", False),
+    "journal-style": ("check_journal_style.py", False),   # 期刊文风评分卡 S1–S17
+    "ingest-corpus": ("ingest_local_corpus.py", False),   # 本地 PDF 语料入库
     "provenance": ("export_provenance.py", False),
     "probe": ("probe_capabilities.py", False),
     "init-case": ("init_case.py", False),
@@ -62,6 +64,8 @@ COMMANDS = {
 
 SUBCMD_HELP = {
     "export": "export pdf <input.md> [--manifest …] | export docx <input.md> [--manifest …]",
+    "journal-style": "journal-style <paper.md> [--tier top|mid] [--json]",
+    "ingest-corpus": "ingest-corpus --pdf-dir <dir> [--case <name>] [--dry-run]",
 }
 
 

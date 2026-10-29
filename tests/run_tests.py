@@ -744,8 +744,12 @@ class ExportDocxTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         import importlib.util
-        if importlib.util.find_spec("docx") is None:
-            raise unittest.SkipTest("python-docx not installed — pip install python-docx")
+        # 缺依赖时不要在此 raise SkipTest：类级 SkipTest 会把本类全部用例
+        # 折叠成 1 条 skip，runner 的 testsRun 根本不递增，3 个用例静默消失、
+        # 「Ran N tests」与实际定义数对不上。改为标记 + 逐用例 skipTest。
+        cls._has_docx = importlib.util.find_spec("docx") is not None
+        if not cls._has_docx:
+            return
         sys.path.insert(0, str(SCRIPTS))
         spec = importlib.util.spec_from_file_location(
             "export_docx", SCRIPTS / "export_docx.py")
@@ -754,6 +758,8 @@ class ExportDocxTests(unittest.TestCase):
         cls.dx = mod
 
     def setUp(self):
+        if not self._has_docx:
+            self.skipTest("python-docx not installed — pip install python-docx")
         self._tmp = tempfile.TemporaryDirectory()
         self.tmp = Path(self._tmp.name)
 
@@ -1461,6 +1467,21 @@ class EvidenceSuiteCliTests(unittest.TestCase):
         rc, out, err = run(CLI, "validate", str(man))
         self.assertEqual(rc, 0, f"rc={rc}\nstdout={out}\nstderr={err}")
         self.assertIn("manifest: valid", out)
+
+    def test_every_script_is_reachable_from_cli(self):
+        """所有 shared/scripts 下带 argparse 的脚本都应能从统一 CLI 触达。
+
+        防回归：journal-top-tier 批次新增 check_journal_style.py /
+        ingest_local_corpus.py 后漏接 CLI，导致 README「封装全部脚本」失效。
+        """
+        rc, out, _ = run(CLI, "--list")
+        self.assertEqual(rc, 0)
+        listed = set(out.split())
+        for name in ("journal-style", "ingest-corpus"):
+            self.assertIn(name, listed, f"{name} 未注册进统一 CLI")
+        for name in ("journal-style", "ingest-corpus"):
+            rc, o, e = run(CLI, name, "--help")
+            self.assertEqual(rc, 0, f"{name} --help 派发失败:\n{o}\n{e}")
 
 
 class DownloadPolicyAuditTests(unittest.TestCase):
