@@ -4,6 +4,15 @@
 > 每个 PR 给出：目标 / 涉及文件 / 关键改动 / 验收标准 / 工作量。
 > 建议合并顺序见文末「依赖与排序」。
 
+**落地状态总览（2026-10-29 核对）**：
+
+| 状态 | PR |
+|------|-----|
+| ✅ 已落地（9） | PR-01 / PR-02 / PR-04 / PR-05 / PR-09 / PR-10 / PR-11 / PR-19 / PR-20 |
+| ⬜ 待办（11） | PR-03 / PR-06 / PR-07 / PR-08 / PR-12 / PR-13 / PR-14 / PR-15 / PR-16 / PR-17 / PR-18 |
+
+> 本文档是**设计提纲**，不是完成清单。各 PR 落地状态以 [`docs/roadmap.md`](roadmap.md) 为唯一事实来源，两者不一致时以 roadmap 为准；每个 PR 小节标题下的 ✅/⬜ 标记为快速索引。
+
 **审查校准说明（改动前必须读）**：
 - `schema_version` 当前是 schema `const`，且 `validate_manifest.py:82` 对版本不匹配**硬报错**；做版本迁移 PR 前需先改为「版本协商 + 告警」，否则旧 manifest 全部无法解析。
 - SSRF 逐跳重定向防护**已实现**（`download_reference_files.py:101-107` `redirect_request` 递归校验），P0 网络项不再重复实现，聚焦「域名黑名单 + 审计日志 + 补测试」。
@@ -15,6 +24,8 @@
 
 ### PR-01 风险披露强化 + 报告携带 review_kind
 
+> ✅ **已落地** — 实现与验收见 [`docs/roadmap.md`](roadmap.md)「已完成」列表；以下保留原始设计说明作为历史记录。
+
 - **目标**：让「评审类型、套件能力边界」在交付物层面可见，不只藏在 JSON。
 - **文件**：`README.md`、`shared/scripts/export_pdf.py`、`shared/scripts/export_docx.py`、`shared/scripts/finalize_draft.py`、`shared/templates/*`
 - **改动**：
@@ -25,6 +36,8 @@
 - **工作量**：S（~1d）
 
 ### PR-02 统一顶层 CLI 入口
+
+> ✅ **已落地** — 实现与验收见 [`docs/roadmap.md`](roadmap.md)「已完成」列表；以下保留原始设计说明作为历史记录。
 
 - **目标**：把分散脚本封装为 `evidence-suite` 子命令，降低集成门槛。
 - **文件**：新增 `pyproject.toml`、`shared/scripts/__main__.py`（或 `evidence_suite/cli.py`）、`README.md`
@@ -42,6 +55,8 @@
 
 ### PR-03 真实端到端示例（L3 全链路）
 
+> ⬜ **待办（计划项）** — 尚未实现；本节提到的 `examples/e2e/`、`docs/configuration.md`、`docs/agent-integration.md` 等文件当前仓库中**不存在**，勿按已完成理解。
+
 - **目标**：当前 `examples/quickstart` 仅演示最小闭环，缺真实业务样例。
 - **文件**：`examples/e2e/run_e2e.ps1`、`run_e2e.sh`、`examples/e2e/input_draft.md`（模拟技术调研报告草稿）、`examples/e2e/sources.json`、`examples/e2e/expected/`、`README.md`
 - **改动**：一份草稿一键跑通「草稿输入 → 提取 Claim → 证据校验 → 红队审查 → 导出 PDF/DOCX + manifest 五件套」，产出与 expected/ 对比。
@@ -49,6 +64,8 @@
 - **工作量**：M（~2d）
 
 ### PR-04 网络层加固（域名黑名单 + 审计日志 + 测试补齐）
+
+> ✅ **已落地** — 实现与验收见 [`docs/roadmap.md`](roadmap.md)「已完成」列表；以下保留原始设计说明作为历史记录。
 
 - **目标**：SSRF 逐跳防护已有，补域名维度与可追溯日志。
 - **文件**：`shared/scripts/download_reference_files.py`、`shared/config/rules.yaml`、`SECURITY.md`、`THREAT_MODEL.md`、`tests/run_tests.py`
@@ -60,6 +77,8 @@
 - **工作量**：S–M（~1.5d）
 
 ### PR-05 术语速查表
+
+> ✅ **已落地** — 实现与验收见 [`docs/roadmap.md`](roadmap.md)「已完成」列表；以下保留原始设计说明作为历史记录。
 
 - **目标**：`claim_class` 等术语分散在 `claim_evidence_layer.md`，新用户学习成本高。
 - **文件**：新增 `shared/references/glossary.md`、`README.md`
@@ -73,6 +92,8 @@
 
 ### PR-06 可 pip 安装的 core 包
 
+> ⬜ **待办（计划项）** — 尚未实现；本节提到的 `examples/e2e/`、`docs/configuration.md`、`docs/agent-integration.md` 等文件当前仓库中**不存在**，勿按已完成理解。
+
 - **目标**：`pip install evidence-suite-core` 即可集成，不必 clone 仓库。
 - **文件**：`pyproject.toml`、`shared/` 打包（`shared/schemas/`、`shared/config/`、`shared/templates/` 作为 package data）、`README.md`、`CHANGELOG.md`
 - **改动**：核心脚本 + schema + 规则配置打包；skill 提示、示例作为独立资源包（`evidence-suite-skills`）或仓库内可选目录；完整 git 仓库保留用于二次开发。
@@ -81,6 +102,8 @@
 
 ### PR-07 Docker Compose 开箱即用
 
+> ⬜ **待办（计划项）** — 尚未实现；本节提到的 `examples/e2e/`、`docs/configuration.md`、`docs/agent-integration.md` 等文件当前仓库中**不存在**，勿按已完成理解。
+
 - **目标**：当前仅 `docker/Dockerfile` + README，无开箱 compose。
 - **文件**：`docker/docker-compose.yml`、`docker/README.md`、`docker/Dockerfile`
 - **改动**：预装 pandoc / chrome / mermaid-cli / pdfplumber；`volumes` 挂载本地工作目录；`--offline` 断网模式（校验脚本不联网）；补充 Windows WSL / PowerShell 已知坑点说明。
@@ -88,6 +111,8 @@
 - **工作量**：M（~2d）
 
 ### PR-08 文档导航 + 配置参考 + Agent 集成指南
+
+> ⬜ **待办（计划项）** — 尚未实现；本节提到的 `examples/e2e/`、`docs/configuration.md`、`docs/agent-integration.md` 等文件当前仓库中**不存在**，勿按已完成理解。
 
 - **目标**：docs 缺结构化导航，`rules.yaml` 无字段级文档，SKILL.md 对人不友好。
 - **文件**：新增 `docs/index.md`、`docs/configuration.md`、`docs/agent-integration.md`、`docs/human-guide.md`；`README.md` 链接改造
@@ -101,6 +126,8 @@
 
 ### PR-09 Manifest 版本迁移与兼容告警
 
+> ✅ **已落地** — 实现与验收见 [`docs/roadmap.md`](roadmap.md)「已完成」列表；以下保留原始设计说明作为历史记录。
+
 - **目标**：schema 演进后旧 manifest 仍可解析。
 - **文件**：新增 `shared/scripts/migrate_manifest.py`、`shared/scripts/validate_manifest.py`、`shared/schemas/*.schema.json`、`tests/run_tests.py`
 - **改动**：
@@ -112,6 +139,8 @@
 
 ### PR-10 Locator 健壮性（质量分级 + 归一化哈希）
 
+> ✅ **已落地** — 实现与验收见 [`docs/roadmap.md`](roadmap.md)「已完成」列表；以下保留原始设计说明作为历史记录。
+
 - **目标**：PDF 版本 / 扫描件 / 排版变化导致 quote_hash 与页码漂移。
 - **文件**：`shared/scripts/extract_pdf_text.py`、`shared/scripts/audit_provenance.py`、`shared/scripts/validate_manifest.py`、`shared/schemas/*.schema.json`、`tests/run_tests.py`
 - **改动**：
@@ -122,6 +151,8 @@
 
 ### PR-11 eval 输出机器可读 JSON
 
+> ✅ **已落地** — 实现与验收见 [`docs/roadmap.md`](roadmap.md)「已完成」列表；以下保留原始设计说明作为历史记录。
+
 - **目标**：`eval/run_eval.py` 仅输出 markdown，不便批量实验。
 - **文件**：`eval/run_eval.py`、`eval/README.md`、`.github/workflows/ci.yml`
 - **改动**：默认追加 `eval/report.json`：每条用例 pass/fail、证据得分、风险、阻断情况、耗时；markdown 报告由 JSON 渲染。
@@ -129,6 +160,8 @@
 - **工作量**：S–M（~1.5d）
 
 ### PR-12 用户友好错误 + 依赖矩阵
+
+> ⬜ **待办（计划项）** — 尚未实现；本节提到的 `examples/e2e/`、`docs/configuration.md`、`docs/agent-integration.md` 等文件当前仓库中**不存在**，勿按已完成理解。
 
 - **目标**：脚本报错面向内部调试，缺使用者排错指引。
 - **文件**：`shared/scripts/*.py`（错误出口收敛）、`shared/scripts/probe_capabilities.py`、`README.md`
@@ -142,6 +175,8 @@
 
 ### PR-13 反证阶段落地（可配置开关）
 
+> ⬜ **待办（计划项）** — 尚未实现；本节提到的 `examples/e2e/`、`docs/configuration.md`、`docs/agent-integration.md` 等文件当前仓库中**不存在**，勿按已完成理解。
+
 - **目标**：反证从路线图变为可配置能力。
 - **文件**：`shared/config/rules.yaml`、新增 `shared/scripts/check_counter_evidence.py`、`shared/scripts/check_evidence_sufficiency.py`、`evidence-writer/SKILL.md`、`evidence-reviewer/SKILL.md`
 - **改动**：R3/R4 默认强制反证检索；配置项控制「未找到反证时告警 / 阻断」；manifest 增 `counter_evidence` 区块。
@@ -150,12 +185,16 @@
 
 ### PR-14 网页快照归档 + 来源缓存
 
+> ⬜ **待办（计划项）** — 尚未实现；本节提到的 `examples/e2e/`、`docs/configuration.md`、`docs/agent-integration.md` 等文件当前仓库中**不存在**，勿按已完成理解。
+
 - **目标**：网页改版/链接失效后证据不可复现；重复运行重复下载。
 - **文件**：`shared/scripts/download_reference_files.py`、`shared/schemas/*.schema.json`、`shared/config/rules.yaml`
 - **改动**：可选集成网页归档（如 wayback），manifest 保存 `archive_snapshot_url`；来源缓存目录（按 URL+内容哈希），重复运行命中缓存。
 - **工作量**：L（~1w）
 
 ### PR-15 HTML 导出器
+
+> ⬜ **待办（计划项）** — 尚未实现；本节提到的 `examples/e2e/`、`docs/configuration.md`、`docs/agent-integration.md` 等文件当前仓库中**不存在**，勿按已完成理解。
 
 - **目标**：当前仅 PDF/DOCX 排版导出，Web 场景受限。
 - **文件**：新增 `shared/scripts/export_html.py`、`shared/templates/`、CLI（PR-02 挂子命令）
@@ -164,6 +203,8 @@
 
 ### PR-16 并行 Claim 校验
 
+> ⬜ **待办（计划项）** — 尚未实现；本节提到的 `examples/e2e/`、`docs/configuration.md`、`docs/agent-integration.md` 等文件当前仓库中**不存在**，勿按已完成理解。
+
 - **目标**：长文档上百条 Claim 串行慢。
 - **文件**：`shared/scripts/check_evidence_sufficiency.py`
 - **改动**：`--parallel N` 并发校验独立 Claim，保持增量校验语义。
@@ -171,12 +212,16 @@
 
 ### PR-17 公开 benchmark 数据集 + 基线指标
 
+> ⬜ **待办（计划项）** — 尚未实现；本节提到的 `examples/e2e/`、`docs/configuration.md`、`docs/agent-integration.md` 等文件当前仓库中**不存在**，勿按已完成理解。
+
 - **目标**：`eval/golden` 无法被外部对比复现。
 - **文件**：`eval/golden/*` 公开子集、新增 `benchmarks/README.md`、`eval/README.md`
 - **改动**：开源部分 golden 用例（标注哪些需人工/第二模型评审）；配合 PR-11 给出基线指标（如「L3 下 reviewer 拦截幻觉 Claim 的比例」）。
 - **工作量**：L（~1w+）
 
 ### PR-18 多语言与海外标准适配
+
+> ⬜ **待办（计划项）** — 尚未实现；本节提到的 `examples/e2e/`、`docs/configuration.md`、`docs/agent-integration.md` 等文件当前仓库中**不存在**，勿按已完成理解。
 
 - **目标**：当前面向中文技术文档，英文/海外标准适配不足。
 - **文件**：`shared/references/claim_evidence_layer.md`、`shared/config/source_ranking.yaml`、locator/引用解析脚本
@@ -189,12 +234,16 @@
 
 ### PR-19 CONTRIBUTING 增强 + 模板
 
+> ✅ **已落地** — 实现与验收见 [`docs/roadmap.md`](roadmap.md)「已完成」列表；以下保留原始设计说明作为历史记录。
+
 - **目标**：PR/issue 流程化。
 - **文件**：新增 `.github/PULL_REQUEST_TEMPLATE.md`、`.github/ISSUE_TEMPLATE/{bug,feature,eval-case}.yml`；`CONTRIBUTING.md`
 - **改动**：PR 清单自动勾选回归测试、manifest schema 校验、changelog 更新；issue 三类模板。
 - **工作量**：S（~0.5d）
 
 ### PR-20 Roadmap 独立文件
+
+> ✅ **已落地** — 实现与验收见 [`docs/roadmap.md`](roadmap.md)「已完成」列表；以下保留原始设计说明作为历史记录。
 
 - **目标**：迭代计划从 README 底部移到 `docs/roadmap.md`。
 - **文件**：新增 `docs/roadmap.md`、`README.md`

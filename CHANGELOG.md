@@ -16,11 +16,30 @@
 
 ### 不变项
 - manifest schema 版本仍是 `0.2.0`（未触及）；回归测试（`tests/run_tests.py`，83 用例）+ eval golden（20 用例 / 15 自动判分）未增删。依赖齐全环境全绿；缺 `python-docx` / `PyYAML` 时，DOCX 排版 3 例与 pyyaml 等价性 1 例按预期**跳过**（`OK (skipped=2)`），不误报失败。
+  > **更正（2026-10-29）**：本条数字在当时为真（用例阶段 2 才增至 84），但 `skipped=2` 属缺陷表现——4 例实际被跳过，因 `ExportDocxTests` 用类级 `SkipTest` 把 3 例折叠成 1 条且不计入 `testsRun`，故只显示 2。该缺陷已修正（见「整理与对账批次」）：缺 `python-docx` 时如实报 `skipped=3`，两者都缺时 `skipped=4`。
 - 说明：此前 CHANGELOG 自 P9 批次（66→68 用例）后用例数断更，实际已增至 83；本条目一并校正。
 
 ## 未发布（Unreleased）
 
 > 定位已从「证据驱动写作 skill」收敛为「**研究 Agent 的证据校验与溯源层（Evidence Integrity Layer）**」。
+
+### 期刊高端档批次（2026-10-26，`journal_top`）— 本次补记
+
+> 本批次 6 个提交（阶段 0–4）此前未在任何文件登记，README 亦无对应说明；本次整理一并补记。
+
+- **阶段 0 期刊文风评分卡（新增 `check_journal_style.py`）**：从 50 篇电缆老化参考论文提炼 S1–S17 确定性检查（摘要四要素 / 关键词 5–6 / 中图分类号 / 英文块 / 「0 引言」编号 / 章节连续 / 结论编号式 / 文献量与 `[J][S][D]` 标记覆盖率 / 中文文献双语对照率 / 图表顺次 / 双语题注 / 公式编号 + 「式中：」块 / 禁用词 / 正文字数），`--tier top|mid` 两档阈值 + `--json` 机器可读；结构性硬项 S1/S3/S6/S8/S10/S11/S17 零分即 fail。基线测量 25/34（74%）。
+- **阶段 1 本地 PDF 语料一等公民（新增 `ingest_local_corpus.py`）**：本地 PDF 文件夹一键摄取（md5 去重、首屏文献元数据启发式抽取：题名/作者/刊名/年卷期/文章编号页码/DOI/语言），抽不到留空并给 `meta_confidence` 分级 + 待人工回填清单，**绝不虚构**；`build_references.py` 修复 `series` 为空时 `'. .'` 收尾、新增中文文献英文对照行（`title_en`/`authors_en`/`journal_en`/`series_en`）；`check_citations.py` URL 校验接受 `file://`（`source_origin=user` 的合法 locator）；w2 降级为补缺口检索、w3 采用 Local Corpus First。
+- **阶段 2 高档期刊档位**：`rules.yaml` 新增 `journal_top` 场景档（文献 ≥20 / 正文 ≥8000 字 / 双语对照 ≥50% / 图 ≥6 / 公式 + 式中块），默认档 `paper_journal` 上调至 16 源 / 6000 字；`paper_journal.md` 模板重写（0 引言四段修辞链 → 试验对象与方法（式中块）→ 结果分析 → 算例验证 → 编号式结论）；新增 `shared/references/journal_style_exemplar.md`（逐段句式范例）；w5 第 8d 条扩写。
+- **阶段 3 引用渲染与审查门转正**：`export_docx.py` 正文 `[n]`/`[1-4]`/`[2,5]` 渲染为上标 run（参考文献表内编号保持正常字号，GB/T 7714 惯例）；`export_pdf.py` 新增 `_superscript_citations_md` 预处理（pandoc 与 python-markdown 双路径通用，不误伤 markdown 链接）；`r4_draft_review.md` 第 19 条扩写 + `final_gate.md` C 门把评分卡转正为期刊类必跑门；`source_registry.json` / `select_sources.py` 新增知网/万方/维普（`scholarly_index`：题录核对入口，非直接证据源）与 doi.org。
+- **阶段 4 健壮性**：评分卡兼容 `**加粗**` 行内标记（摘要/关键词/参考文献标记/英文题名）、`ref_entries` 合并缩进续行以使双语英文对照行可配对检测 S12；`validate_manifest.py` 的 `mapping[].url` 接受 `file://`。试点终验：评分卡 34/34（100%），正文 8015 字 / 24 篇语料引用 / 19-20 中文条目双语对照 / 5 公式 + 4 式中块 / DOCX 65 处上标引用 run。
+- **`export_docx.py` 图片行嵌入**：正文 `![](figures/xxx.png)` 现居中嵌入（宽 14.5cm），文件缺失落可见占位而非静默忽略——此前 DOCX 仅支持 mermaid 围栏，matplotlib 数据图无法进终稿。
+
+### 整理与对账批次（2026-10-29）
+
+- **统一 CLI 补齐两个漏接子命令**：`check_journal_style.py` / `ingest_local_corpus.py` 在期刊批次中新增，但未注册进 `evidence_suite.py`，与 README「把分散脚本封装为子命令」的承诺不符。现补 `journal-style` / `ingest-corpus`，并新增回归用例 `test_every_script_is_reachable_from_cli` 锁住该约束。
+- **修复测试跳过的静默折叠**：`ExportDocxTests.setUpClass` 缺 `python-docx` 时 `raise unittest.SkipTest`，会把本类 3 个用例折叠成 1 条 skip 且 **runner 的 `testsRun` 根本不递增**——实际执行数与定义数（84）长期对不上，`Ran 81 (skipped=2)` 掩盖了 3 例。改为 `setUpClass` 仅探测、`setUp` 内逐用例 `skipTest`，缺依赖时如实报 `skipped=3`。
+- **数字口径对账**：README「26 个 Python 脚本」→ **28**（25 个带 argparse + 3 个库模块）、「83 用例」→ **85**；`benchmarks/README.md`「12 个 script 级自动判分」→ **15**（与 `eval/README.md`、golden 实际分布一致）。0.2.1 条目中的「83 用例 / skipped=2」按当时实测无误（用例在阶段 2 才增至 84），已在下方更正说明中标注而非改写历史。
+- **文档补充**：README 场景档补 `journal_top`，能力说明补期刊评分卡与本地语料入口；`docs/PR-improvement-plan.md` 已落地条目收敛为指向 `docs/roadmap.md` 的链接。
 
 ### Skill 对抗契约修正（2026-09-05 评审批次）
 - **响应说明表落点固定**：w6/w8 的「审查意见响应说明」表此前在 `w6_revision.md` 中写为「追加在文档末尾或单独交付」、在 `w8_expert_revision.md` 中「追加在修订版方案末尾」，落点不固定且会污染交付稿正文。现统一落盘 `research_case/13_审查意见响应说明.md`（w6/w8 各追加一节），`evidence-writer/SKILL.md` 工作目录契约树、对抗协议第 4 条、修订协议、`w6_revision.md`、`w8_expert_revision.md`、`evidence-reviewer/SKILL.md` 对抗交接第 4 条同步；w8 不再把响应表混入 `14_专家修订稿.md` 正文（终审门残留检查不再受其干扰）。

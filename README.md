@@ -33,6 +33,8 @@
 
 - **写作者（evidence-writer）**：w1 文档适配 → w2 来源检索 → w3 验证语料（下载 / 校验 / 抽原文）→ w4 证据图谱 → w5 起草 → w6 修订 → w8 专家修订 → w9 导出。
 - **审查者（evidence-reviewer）**：r1 来源审计 → r2 诚实性自评 → r3 框架深度门 → r4 初稿审查 → r5 外部专家评审 → 终审门。
+- **本地语料入口**：`ingest_local_corpus.py` 把本地 PDF 文件夹一键摄取为已验证语料（md5 去重、首屏题录启发式抽取、`meta_confidence` 分级、待人工回填清单）——**抽不到就留空，不虚构**；w2 相应降级为「补缺口检索」（Local Corpus First）。
+- **期刊文风门**：`check_journal_style.py` 按 S1–S17 对期刊论文做确定性评分（摘要四要素 / 关键词 / 中图分类号 / 英文块 / 章节编号 / 结论编号式 / 文献量与类型标记 / 中文文献双语对照率 / 图表顺次与双语题注 / 公式「式中：」块 / 禁用词 / 正文字数），`--tier top|mid` 两档阈值，结构性硬项 S1/S3/S6/S8/S10/S11/S17 零分即 fail；已并入 r4 审查与终审门 C 门。
 
 ## 定位：不是又一个研究引擎
 
@@ -125,17 +127,17 @@ evidence-suite/
 ├── evidence-writer/     # 写作方 SKILL.md + references/w1–w9
 ├── evidence-reviewer/   # 审查方 SKILL.md + references/r1–r5 + final_gate
 ├── shared/
-│   ├── scripts/         # 26 个 Python 脚本（确定性工具，Bash 执行）
+│   ├── scripts/         # 28 个 Python 脚本（25 个 CLI + 3 个库模块，确定性工具，Bash 执行）
 │   ├── schemas/         # manifest 互操作契约 JSON Schema（evidence_manifest / claim_manifest）
 │   ├── config/          # 规则配置（rules.yaml：risk_tiers / evidence_sufficiency / doc_minimums / …）
 │   ├── references/      # 按需加载的参考指南
-│   └── templates/       # 12 类文档模板
+│   └── templates/       # 12 类文档模板（+ index.md 选择器）
 ├── examples/            # 最小示例（quickstart：净化→manifest→充分性→Brief→Provenance→校验 一键复现）
 ├── eval/                # Eval/Golden 套件（run_eval.py 自动判分 + golden 用例）
 ├── runtime/             # 运行时能力配置（capability.yaml 模板 + probe_capabilities.py 探测结果）
 ├── docker/              # Docker 沙箱（隔离脚本执行，可断网）
-├── docs/                # 架构与方法论文档（architecture.md / methodology.md）
-├── tests/               # 回归测试（run_tests.py，83 用例）
+├── docs/                # 架构与方法论文档（architecture.md / methodology.md / roadmap.md）
+├── tests/               # 回归测试（run_tests.py，85 用例）
 ├── README.md
 ├── SECURITY.md
 ├── THREAT_MODEL.md      # 威胁模型与信任边界
@@ -164,9 +166,9 @@ evidence-suite/
 
 证据严谨度、文档下限、可疑域名、停止规则等参数集中在 `shared/config/rules.yaml`（单一事实来源），支持按业务场景覆盖：
 
-- **场景档**：`--profile medical`（提高权威要求：R2≥A2、R3≥A1，收紧来源下限）/ `--profile general_tech`（放宽 R3 至 B1、下调下限）等，deep-merge 生效。
+- **场景档**：`--profile medical`（提高权威要求：R2≥A2、R3≥A1，收紧来源下限）/ `--profile general_tech`（放宽 R3 至 B1、下调下限）/ `--profile journal_top`（高档中文期刊：文献 ≥20、正文 ≥8000 字、双语文献对照 ≥50%、图 ≥6、要求公式 + 「式中：」符号块，并联动 `check_journal_style.py --tier top`）等，deep-merge 生效。默认 `paper_journal` 下限为 16 源 / 6000 字。
 - **覆盖层**（优先级递增）：默认档 → `config/rules.user.yaml`（仓库级，自动加载）→ `--rules <path>` → `--profile <scenario>`。
-- **消费方**：`validate_sources.py --profile`（可疑域名 + 场景追加）、`check_citations.py --doc-type/--profile`（自动套用文档来源/深度下限）、Agent 规则引用（SKILL.md / `claim_evidence_layer.md`）。
+- **消费方**：`validate_sources.py --profile`（可疑域名 + 场景追加）、`check_citations.py --doc-type/--profile`（自动套用文档来源/深度下限）、`check_journal_style.py --tier/--threshold`（期刊类 S1–S17 评分卡，`rules.yaml` 的 `journal_style` 段提供各档阈值）、Agent 规则引用（SKILL.md / `claim_evidence_layer.md`）。
 - 解析器 `shared/scripts/rule_profile.py` 优先用 PyYAML，缺失时用内置最小 YAML 子集解析器（core 脚本保持纯标准库）。
 
 ## 安装与使用
@@ -183,6 +185,8 @@ evidence-suite/
 python shared/scripts/evidence_suite.py validate examples/quickstart/output/evidence_manifest.json
 python shared/scripts/evidence_suite.py export pdf 11_定稿.md --manifest out/manifest.json
 python shared/scripts/evidence_suite.py sufficiency examples/quickstart/evidence_map.json examples/quickstart/sources.json
+python shared/scripts/evidence_suite.py journal-style 11_定稿.md --tier top   # 期刊文风评分卡
+python shared/scripts/evidence_suite.py ingest-corpus --pdf-dir refs/ --case my_case
 python shared/scripts/evidence_suite.py --list   # 全部子命令
 ```
 
@@ -205,7 +209,7 @@ python shared/scripts/evidence_suite.py --list   # 全部子命令
 ## 测试与评测
 
 ```bash
-python tests/run_tests.py      # 回归：83 用例，核心门禁仅标准库（DOCX 排版 3 例需 python-docx）
+python tests/run_tests.py      # 回归：85 用例，核心门禁仅标准库（DOCX 排版 3 例需 python-docx）
 python eval/run_eval.py        # Eval/Golden：自动判分 + 人工打分表
 ```
 
