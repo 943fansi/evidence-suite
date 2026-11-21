@@ -631,6 +631,76 @@
     "usageHint": "中文期刊题录核对（第三交叉验证源）",
     "allowFullText": false,
     "notes": "discovery 定位"
+   },
+   {
+    "id": "cac",
+    "name": "国家互联网信息办公室 (CAC 网信办)",
+    "url": "https://www.cac.gov.cn/",
+    "category": "china_regulator",
+    "description": "《生成式人工智能服务管理暂行办法》《人工智能生成合成内容标识办法》（2025-09-01 施行）等 AI 内容监管法规发布机关",
+    "usageHint": "核查 AI 生成内容标识显式/隐式双轨要求、平台义务与禁则条款；配套强制国标 GB 45438-2025 在国家标准全文公开系统 (openstd.samr.gov.cn) 核查现行性",
+    "allowFullText": true,
+    "notes": "A1 监管来源；法规全文公开；AI 写作合规引用的第一手依据"
+   },
+   {
+    "id": "eu_ai_act",
+    "name": "EU AI Act 官方法规文本 (EUR-Lex)",
+    "url": "https://eur-lex.europa.eu/eli/reg/2024/1683/oj",
+    "category": "ai_policy",
+    "description": "欧盟《人工智能法案》官方文本（ Regulation (EU) 2024/1683），第 50 条透明度义务 2026-08-02 生效：生成式 AI 输出须机器可读标记",
+    "usageHint": "核查 AI 生成内容标记、深伪披露义务（Art.50）与适用时间表；欧委会 2026-10《AI 生成内容透明度实践守则》见 digital-strategy.ec.europa.eu；第三方追踪站 artificialintelligenceact.eu 仅作导读，不作为条文依据",
+    "allowFullText": true,
+    "notes": "官方一手；引用须标注条款号与生效日期"
+   },
+   {
+    "id": "c2pa",
+    "name": "C2PA 内容凭证联盟",
+    "url": "https://c2pa.org/",
+    "category": "ai_standard",
+    "description": "Content Credentials 内容溯源开放规范（加密签名的创建者/编辑史凭证），2026-07 发布 AI 生成内容标注实施指南，规范支持 durable credentials",
+    "usageHint": "内容溯源凭证设计、AI 生成媒体标注参照；注意其为联盟规范而非 ISO/W3C 正式标准，权威分级降为 B1",
+    "allowFullText": true,
+    "notes": "联盟规范（Linux 基金会项目）；规范与实施指南全文公开"
+   },
+   {
+    "id": "w3c_prov",
+    "name": "W3C PROV 溯源标准",
+    "url": "https://www.w3.org/TR/prov-overview/",
+    "category": "ai_standard",
+    "description": "W3C PROV 家族推荐标准（PROV-DM 数据模型 / PROV-O 本体 / PROV-N 记法），实体-活动-代理溯源图的通用交换模型",
+    "usageHint": "证据链与 provenance 图的标准化表达参照；manifest 的 source→claim 映射如需对外交换可对标 PROV-N 断言",
+    "allowFullText": true,
+    "notes": "W3C 正式推荐标准（2013 起），全文公开"
+   },
+   {
+    "id": "mcp_spec",
+    "name": "Model Context Protocol 规范",
+    "url": "https://spec.modelcontextprotocol.io/",
+    "category": "ai_standard",
+    "description": "Agent-工具互操作开放协议（2026-07-28 版为发布以来最大修订），事实上的 agent 生态通信标准",
+    "usageHint": "evidence_manifest.json 作为 MCP 工具响应/resource 附载的集成参照；协议文本与变更日志官方公开",
+    "allowFullText": true,
+    "notes": "开放协议规范（Anthropic 发起），非 ISO/W3C 正式标准，权威分级降为 B1"
+   },
+   {
+    "id": "cope",
+    "name": "国际出版伦理委员会 (COPE)",
+    "url": "https://publicationethics.org/",
+    "category": "ai_policy",
+    "description": "学术出版伦理权威机构，Authorship and AI Tools 立场（AI 不可署名、作者须对内容负责）",
+    "usageHint": "期刊投稿 AI 披露与署名合规核查；与 ICMJE 建议互为参照",
+    "allowFullText": true,
+    "notes": "立场文件与流程指南官方公开"
+   },
+   {
+    "id": "icmje",
+    "name": "国际医学期刊编辑委员会 (ICMJE)",
+    "url": "https://www.icmje.org/recommendations/browse/artificial-intelligence/ai-use-by-authors.html",
+    "category": "ai_policy",
+    "description": "ICMJE 建议 2025-04 更新：投稿须显式披露 AI 使用——写作辅助入致谢、数据分析入 Methods，须写明工具名与用途",
+    "usageHint": "医学/学术投稿 AI 披露段落的写作依据；journal_top 场景的披露合规参照",
+    "allowFullText": true,
+    "notes": "Recommendations 官方公开；引用须标注建议版本年月"
    }
   ],
   "forbidSources": [

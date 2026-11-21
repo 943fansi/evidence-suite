@@ -59,7 +59,7 @@ ROUTING = {
     ],
     "ai": [
         "ai_research", "ai_index", "ai_policy", "ai_standard",
-        "ai_china_standard", "china_technical", "scholarly_index",
+        "ai_china_standard", "china_regulator", "china_technical", "scholarly_index",
     ],
     "funding": [
         "china_funding_repository", "china_tech_report_system",

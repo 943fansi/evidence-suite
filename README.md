@@ -136,7 +136,7 @@ evidence-suite/
 ├── eval/                # Eval/Golden 套件（run_eval.py 自动判分 + golden 用例）
 ├── runtime/             # 运行时能力配置（capability.yaml 模板 + probe_capabilities.py 探测结果）
 ├── docker/              # Docker 沙箱（隔离脚本执行，可断网）
-├── docs/                # 架构与方法论文档（architecture.md / methodology.md / roadmap.md）
+├── docs/                # 架构与方法论文档（architecture.md / methodology.md / roadmap.md / landscape-2026-11.md 领域动态）
 ├── tests/               # 回归测试（run_tests.py，85 用例）
 ├── README.md
 ├── SECURITY.md
@@ -239,7 +239,7 @@ examples/quickstart/run_demo.sh
 
 ## 路线图
 
-完整版本计划、里程碑与 PR 提纲见 **[docs/roadmap.md](docs/roadmap.md)**。当前已落地：
+完整版本计划、里程碑与 PR 提纲见 **[docs/roadmap.md](docs/roadmap.md)**；外部环境（监管/标准/评测/对标系统）动态见 **[docs/landscape-2026-11.md](docs/landscape-2026-11.md)**。当前已落地：
 统一 CLI（`evidence-suite`）、manifest 版本迁移（`migrate_manifest.py`）、locator 质量分级、
 域名后缀黑名单 + `--audit-log` 网络审计、eval 机器可读 `report.json`、术语速查表、
 issue/PR 模板。

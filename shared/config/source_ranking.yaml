@@ -70,6 +70,12 @@ default_by_category:
     authority: "B1"
     priority: 62
     role: [policy]
+  # 2026-11 补：registry 的 nist_ai / iso_iec_sc42 / w3c_prov 均用 ai_standard category，
+  # 但此前 default_by_category 从未定义该类，导致这三条一直处于未分级状态（authority 空）
+  ai_standard:
+    authority: "A2"
+    priority: 90
+    role: [normative]
   materials_engineering_data:
     authority: "B2"
     priority: 60
@@ -207,3 +213,14 @@ sources:
     authority: "C1"
     priority: 40
     role: [discovery]
+  # 联盟/开放协议规范（2026-11 新增）：非 ISO/IEC/W3C 正式标准，从 ai_standard 默认 A2 降为 B1
+  c2pa:
+    authority: "B1"
+    priority: 75
+    role: [normative, provenance, media_labeling]
+    note: "C2PA 联盟规范：内容凭证/AI 生成媒体标注；非正式国际标准故降级"
+  mcp_spec:
+    authority: "B1"
+    priority: 72
+    role: [normative, interop]
+    note: "MCP 开放协议规范：agent 互操作与 manifest 附载参照；非正式国际标准故降级"

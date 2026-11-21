@@ -23,6 +23,17 @@
 
 > 定位已从「证据驱动写作 skill」收敛为「**研究 Agent 的证据校验与溯源层（Evidence Integrity Layer）**」。
 
+### 领域资料批次（2026-11-21）
+
+> 文献调研批次（非实测）：梳理证据校验/引用归因/内容溯源领域的外部环境变化，全部标注来源性质并映射到 roadmap 待办。详见 `docs/landscape-2026-11.md`。
+
+- **新增 `docs/landscape-2026-11.md`**：监管层（EU AI Act 第 50 条 2026-08-02 生效 + 2026-10 欧委会透明度实践守则；中国《人工智能生成合成内容标识办法》2025-09-01 施行 + 强制国标 GB 45438-2025；C2PA 2026-07 实施指南与 durable credentials；COPE/ICMJE 学术披露政策）、评测层（ALCE/AIS 公共评测框架、CiteRAG、HHEM 家族与「确定性检测优于 LLM-as-judge」证据——印证本套件确定性脚本门禁的分工路线）、对标层（NVIDIA AI-Q 2026-05 已开源 blueprint、Anthropic Citations 字符级 provenance、MCP 2026-07-28 大修订——manifest 可作为 MCP 附载物）。
+- **`source_registry.json` +7 条**：`cac`（网信办，A1）、`eu_ai_act`（EUR-Lex 官方文本）、`c2pa`、`w3c_prov`、`mcp_spec`、`cope`、`icmje`——均为 AI 写作合规与溯源标准的权威核查入口。
+- **`source_ranking.yaml`**：`c2pa` / `mcp_spec` 显式降级为 B1（联盟/开放协议规范，非 ISO/W3C 正式标准）并标注 role。
+- **顺带修复既有缺陷**：`default_by_category` 从未定义 `ai_standard` 类目——registry 中 `nist_ai` / `iso_iec_sc42` 两条**原有**来源一直处于未分级状态（authority 空、priority 兜底 50）。现补 `ai_standard: A2/90`（role: normative），三条 AI 正式标准来源（含新增 `w3c_prov`）恢复正确分级。
+- **`select_sources.py`**：`--domain ai` ROUTING 补 `china_regulator`（AI 监管法规属 A1 级规范来源，此前 ai 域无法选中）。
+- **README**：docs 行补 landscape 链接。
+
 ### 期刊高端档批次（2026-10-26，`journal_top`）— 本次补记
 
 > 本批次 6 个提交（阶段 0–4）此前未在任何文件登记，README 亦无对应说明；本次整理一并补记。
