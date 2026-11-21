@@ -129,14 +129,14 @@ evidence-suite/
 ├── shared/
 │   ├── scripts/         # 28 个 Python 脚本（25 个 CLI + 3 个库模块，确定性工具，Bash 执行）
 │   ├── schemas/         # manifest 互操作契约 JSON Schema（evidence_manifest / claim_manifest）
-│   ├── config/          # 规则配置（rules.yaml：risk_tiers / evidence_sufficiency / doc_minimums / …）
+│   ├── config/          # 规则配置（rules.yaml：risk_tiers / evidence_sufficiency / doc_minimums / …；validators.yaml：校验器声明清单）
 │   ├── references/      # 按需加载的参考指南
 │   └── templates/       # 12 类文档模板（+ index.md 选择器）
 ├── examples/            # 最小示例（quickstart：净化→manifest→充分性→Brief→Provenance→校验 一键复现）
 ├── eval/                # Eval/Golden 套件（run_eval.py 自动判分 + golden 用例）
 ├── runtime/             # 运行时能力配置（capability.yaml 模板 + probe_capabilities.py 探测结果）
 ├── docker/              # Docker 沙箱（隔离脚本执行，可断网）
-├── docs/                # 架构与方法论文档（architecture.md / methodology.md / roadmap.md / landscape-2026-11.md 领域动态）
+├── docs/                # 架构与方法论文档（architecture.md / methodology.md / roadmap.md / agent-integration.md / landscape-2026-11.md / optimization-plan-2026-11.md）
 ├── tests/               # 回归测试（run_tests.py，85 用例）
 ├── README.md
 ├── SECURITY.md

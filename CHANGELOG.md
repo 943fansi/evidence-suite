@@ -23,6 +23,15 @@
 
 > 定位已从「证据驱动写作 skill」收敛为「**研究 Agent 的证据校验与溯源层（Evidence Integrity Layer）**」。
 
+### P1 前置批次 + 全量测试（2026-11-21）
+
+> 按 `docs/optimization-plan-2026-11.md` 落地 P1 中两项纯文档产物（P1-3 上游对接矩阵、P1-4 validator 声明层），并完成一次全量测试（回归 + eval + quickstart 实跑）。
+
+- **新增 `docs/agent-integration.md`（PR-08 骨架）**：上游 agent 对接矩阵——NVIDIA AI-Q / STORM / GPT-Researcher / OpenScholar / OpenAI Deep Research / Anthropic Citations API / 纯文本草稿七类输入形态 → 各自的消费入口与落点脚本，附对接成本排序（Citations ≈ STORM < AI-Q < GPT-Researcher < Deep Research 导出 < 纯文本）；宿主三种形态（SKILL.md / 统一 CLI / MCP server 薄包装规划）；审查独立性提醒（跨模型编排须如实填 `review_independence`）。
+- **新增 `shared/config/validators.yaml`（PR-06 前置）**：8 个校验器的机器可读声明（script / cli 子命令 / gate 位 / 输入与参数 / 判定语义 / 退出码），退出码全局约定 0=通过 / 1=阻断 / 2=用法 / 3=finalize 专有「OUTPUT NOT TRUSTED」不可逆契约；声明性清单，运行时消费者待 pip 化接入。
+- **README**：docs 行与 config 行同步。
+- **全量测试记录**：`tests/run_tests.py` 85/85 通过；`eval/run_eval.py` 自动判分 15/15（manual 5 项待真实 agent）；`examples/quickstart/run_demo.sh` 一键闭环实跑通过（净化→双 manifest→充分性→Brief→Provenance→契约校验）。
+
 ### P0 优化落地批次（2026-11-21）
 
 > 按 `docs/optimization-plan-2026-11.md` 的 P0 提案落地三项（纯规则/文档，不动核心代码）。验证：回归 85/85、eval 自动判分 15/15。

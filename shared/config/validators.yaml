@@ -1,0 +1,69 @@
+# Validator 清单（PR-06 前置：校验器声明层）
+#
+# 机器可读地声明每个校验脚本的「输入 / 判定语义 / 退出码」，用于：
+#   1) 宿主 agent / MCP 包装时按清单组合调用（docs/agent-integration.md 第二节）；
+#   2) pip 化（PR-06）时把 validator 层与 skill 层分离发布。
+# 当前为声明性清单（无运行时消费者）；退出码语义以各脚本源码为准，本文件与源码同步维护。
+#
+# 退出码全局约定（finalize_draft 的 3 除外）：0 = 通过 / 1 = 判定失败或阻断 / 2 = 用法或输入错误。
+# 门禁位：gate=true 的 validator 由审查方（r1–r5 / 终审门）运行并出具判决；
+#         gate=false 的可被写作者自查使用，但自查结果不代表审查通过（见 SKILL.md）。
+
+validators:
+  citations:
+    script: shared/scripts/check_citations.py
+    cli: evidence-suite check
+    gate: true
+    input: 定稿 Markdown + 04_validated_sources.json（--doc-type / --profile / --min-chars / --academic）
+    semantic: 引用闭合（正文 [n] ↔ [Sx] ↔ 语料三向对账）、参考文献 URL 完整性、来源数量与正文深度下限、数字引文规范
+    exit_codes: {pass: 0, fail: 1, usage: 2}
+  sources:
+    script: shared/scripts/validate_sources.py
+    cli: evidence-suite validate-src
+    gate: true
+    input: 04_validated_sources.json（--profile / --rules / --allow-discovery 配合 select_sources.py）
+    semantic: 来源合法性（registry_id、URL、可疑域名、authority/freshness/superseded、source_origin 四类声明）
+    exit_codes: {pass: 0, fail: 1, usage: 2}
+  sufficiency:
+    script: shared/scripts/check_evidence_sufficiency.py
+    cli: evidence-suite sufficiency
+    gate: true
+    input: 06_evidence_map.json + 04_validated_sources.json（--review-mode conservative|balanced|exploratory；--changed C-001,C-003 增量；--score 输出 Evidence Score）
+    semantic: claim 级证据充分性（按 risk tier 判 primary / 独立来源 / 现行性 / 反证覆盖；直接度 > 数量）
+    exit_codes: {pass: 0, fail: 1, usage: 2}
+  framework_depth:
+    script: shared/scripts/check_framework_depth.py
+    cli: evidence-suite framework
+    gate: true
+    input: 草稿 Markdown + 文档类型（--doc-type）
+    semantic: 框架深度门（r3）：章节结构、关键问题/技术覆盖、深度规则（rules.yaml framework_depth）
+    exit_codes: {pass: 0, fail: 1, usage: 2}
+  journal_style:
+    script: shared/scripts/check_journal_style.py
+    cli: evidence-suite journal-style
+    gate: true
+    input: 期刊类定稿 Markdown（--tier top|mid / --threshold / --json；阈值来自 rules.yaml journal_style）
+    semantic: 期刊文风评分卡 S1–S17（摘要四要素/关键词/中图分类号/章节编号/文献量与类型标记/双语对照/图表顺次/式中块/禁用词/字数）；结构硬项 0 分即 fail
+    exit_codes: {pass: 0, fail: 1, usage: 2}
+  provenance_audit:
+    script: shared/scripts/audit_provenance.py
+    cli: evidence-suite audit-provenance
+    gate: true
+    input: evidence/claim manifest（--claims）
+    semantic: 机器可审计性门——manifest locator/quote_hash 与 source-map 对账，locator_quality 仅作分级不作定位
+    exit_codes: {pass: 0, fail: 1, usage: 2}
+  manifest_schema:
+    script: shared/scripts/validate_manifest.py
+    cli: evidence-suite validate
+    gate: true
+    input: evidence_manifest.json / claim_manifest.json（对照 shared/schemas/*.schema.json）
+    semantic: manifest 契约校验（schema_version 0.2.0 强校验；旧版 0.1.0 告警不阻断，迁移用 migrate_manifest.py）
+    exit_codes: {pass: 0, fail: 1, usage: 2}
+  finalize:
+    script: shared/scripts/finalize_draft.py
+    cli: evidence-suite finalize
+    gate: true
+    input: 定稿 Markdown（--manifest / --claim-manifest / --sources / --review-kind；--check 只校验、--dry-run 不落盘）
+    semantic: 定稿净化 + manifest 产出；写盘后 body 校验失败不可逆
+    exit_codes: {pass: 0, fail: 1, usage: 2, broken_manifest: 3}
+    note: exit 3 = OUTPUT NOT TRUSTED（final_gate 契约「不可逆」，仍写文件供人工检查）
