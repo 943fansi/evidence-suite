@@ -250,7 +250,7 @@ disallowed_tools: []  # live r1 模式允许 WebSearch/WebFetch；其余默认 s
 ## 按需加载的参考指南（审查者相关，仅相关阶段 Read）
 
 - `${SUITE_ROOT}/shared/references/source-safety.md` — 来源内容安全规则（最高优先级）
-- `${SUITE_ROOT}/shared/references/claim_evidence_layer.md` — Claim Class / support_level / reconciliation（r2/r4 必读）
+- `${SUITE_ROOT}/shared/references/claim_evidence_layer.md` — Claim Class / 原子性 / support_level / reconciliation（r2/r4 必读；r4 检查项 #21 用原子性节）
 - `${SUITE_ROOT}/shared/references/anti_marketing_rules.md` — 反套路/反营销话术触发词与叙事模式（r4 必读）
 - `${SUITE_ROOT}/shared/references/domain_routing.md` — 题目域 → 权威源路由表（r1 registry_id 复核）
 - `${SUITE_ROOT}/shared/references/patent_writing_guide.md` — 专利类专项检查（r4 第 16 条）

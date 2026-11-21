@@ -30,6 +30,7 @@
 
 10. **对每个 evidence_map 条目执行 Claim-Evidence 分离**（参考 `${SUITE_ROOT}/shared/references/claim_evidence_layer.md`）：
    - 将每个 `claim_to_write` 分解为 5 层：Observation → Interpretation → Assumption → Claim → Confidence
+   - **原子性检查（Claim Atomicity）**：复合断言（并列「A 且 B」/因果「A 因此 B」/比较「A 比 B 更 X」）必须先拆分为可独立验证的子 claim（`parent_claim` 字段保留层级，父条目标 `composite: true`），再逐子 claim 走 5 层分解——判定标准：单条来源的一段原文即可独立判定 support_level
    - 对每个 claim 输出反方证据（evidence_for / evidence_against / unknown）；`evidence_against` 须合并 w2 主动反证检索结果（`02_raw_sources.json` 的 `counter_evidence` / `counter_evidence_search`），不得只从支持性来源里被动挑反例
    - 标注 claim_type 并检查 required_evidence 是否满足
    - 若 required_evidence 不满足：降级 claim_type（如 superiority_claim → assumption）或标记为 `narrative`

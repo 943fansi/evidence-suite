@@ -80,4 +80,6 @@ manual 维度不映射脚本：`prompt_injection` / `source_mismatch` / `contrad
 
 `benchmarks/README.md` 保留 18 个 agent 行为场景与量化指标（激活率/来源核验率/
 充分性检出/误阻断率/灌水率），供真跑 agent 时横向对比；`eval/` 是可执行、
-可判分的 golden 用例实现。
+可判分的 golden 用例实现。公开 benchmark（roadmap PR-17）发布时采用学术口径
+（citation recall/precision、factual precision、claim-level entailment），定义见
+`benchmarks/README.md` 的「学术指标口径对照」节——golden 用例回填打分时也按该口径记录。

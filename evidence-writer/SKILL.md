@@ -310,7 +310,7 @@ w6 / w8 修订规则：
 - `${SUITE_ROOT}/shared/references/gap_adjacent_strategy.md` — 核心论断即研究空白时的邻接证据拼接（w5）
 - `${SUITE_ROOT}/shared/references/significance_writing_guide.md` — 研究意义写作（w5）
 - `${SUITE_ROOT}/shared/references/source-safety.md` — 来源内容安全规则（最高优先级，w2/w3 必读）
-- `${SUITE_ROOT}/shared/references/claim_evidence_layer.md` — 论断—证据分层规范（w4/w5）
+- `${SUITE_ROOT}/shared/references/claim_evidence_layer.md` — 论断—证据分层规范 + claim 原子性拆分（w4 必读 / w5）
 - `${SUITE_ROOT}/shared/references/domain_routing.md` — 题目域 → category → 权威源路由表（w1/w2 必读）
 - `${SUITE_ROOT}/shared/references/patent_writing_guide.md` — 专利交底书/申请草案写法（w5 专利类必读）
 - `${SUITE_ROOT}/shared/references/gf_report_format.md` — GF 报告格式（w5 GF 类必读）

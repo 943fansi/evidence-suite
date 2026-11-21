@@ -53,6 +53,35 @@ Every claim must expose:
 
 现有 `claim_type`（superiority / causal / novelty …）仍保留，但**只在 E/M/N/L 类内**作为"该外部证据需要什么"的细分：`claim_class` 决定"要不要外部证据"，`claim_type` 决定"要哪种外部证据"。
 
+## Claim Atomicity（原子性：一个 claim = 一个可独立验证的断言）
+
+> 借鉴 FActScore（原子事实分解）/ SAFE（逐原子搜索验证）/ DecMetrics（分解质量）范式：**逐条验证的前提是 claim 足够原子**。原子性在 w4 建 evidence_map 时执行（`w4_evidence_map.md` 第 10 条），在 r4 复查（检查项 #21）。
+
+### 判定规则
+
+一个 claim 是原子的，当且仅当：**单条来源的一段原文（一个 locator）即可独立判定 support_level**。复合断言必须拆分为可分别挂 `[Sx]` 的子 claim，用 `parent_claim` 字段保留层级：
+
+| 复合模式 | 例 | 拆分 |
+|---------|----|----|
+| 并列（A 且 B） | 「X 在 A 场景达标且成本低于 Y」 | claim-a（A 场景性能 [S1]）+ claim-b（成本对比 [S2]） |
+| 因果（A 因此 B） | 「本方案性能高，因此具备产业化条件」 | claim-a（性能证据 [S1]）+ claim-b（产业化条件——J 类推理链，不强行挂源） |
+| 比较（A 比 B 更 X） | 「本方案优于现有方案」 | claim-a（现有方案基线 [S2]）+ claim-b（本方案指标 [S3]）+ claim-c（对比结论 J/C 类） |
+| 条件（在 C 下 A 成立） | 「高温环境下寿命 ≥ 20 年」 | claim-a（20 年数据及其条件边界 [S1]）——**条件本身是断言的一部分**，不得隐去条件宣称 |
+
+### 与 5-Layer 分解的关系
+
+- **5-Layer `claim_decomposition`**（observation→interpretation→assumption→claim→confidence）：拆的是**单条 claim 内部的推理层**。
+- **原子性拆分**：拆的是**claim 之间的组合关系**（把复合断言变成多条独立 claim）。
+- 两者正交：**先原子化，再逐条做 5-Layer**。
+
+### 判定红旗（r4 检查项 #21 的依据）
+
+- 一条 claim 挂 ≥3 个 `[Sx]` 且没有任何单一来源能独立支撑全句 → 疑似复合断言未拆分。
+- 「性能 X 且成本 Y 且可靠性 Z」式排比结论 → 必须拆分。
+- 拆分后的子 claim 缺来源，或未按 max(子 risk) 继承风险等级 → 退回。
+
+evidence_map 条目可选字段：`"parent_claim": "C-012"`（子 claim 指向父复合断言的 id；父条目保留原句并标 `composite: true`，其 `evidence_status` 由子 claim 聚合）。
+
 ## Risk Tier（风险分级：决定证据严谨度）
 
 > **规则配置**：Risk Tier 的权威取值以 `${SUITE_ROOT}/shared/config/rules.yaml` 的 `risk_tiers` 为准，本表为默认档的文档化快照。业务场景可覆盖：`medical` 提高权威要求（R2≥A2、R3≥A1）、`general_tech` 放宽（R3≥B1 且可不 live），通过 `--profile <scenario>` 或 `config/rules.user.yaml` 应用。
@@ -318,4 +347,4 @@ Option A is preferred for inline正文, Option B for附录/提案正文的 margi
 
 ## Token Budget
 
-This file (~114 lines) is loaded on demand in Stage 4 (evidence map), Stage 5 (draft), and Stage 6 (self-review).
+This file is loaded on demand: Stage 4 (evidence map — Claim Class / Atomicity), Stage 5 (draft), Stage 6 / r2 / r4 (self-review & audit). 按节加载即可，无需整文进上下文。

@@ -23,6 +23,24 @@
 
 > 定位已从「证据驱动写作 skill」收敛为「**研究 Agent 的证据校验与溯源层（Evidence Integrity Layer）**」。
 
+### P0 优化落地批次（2026-11-21）
+
+> 按 `docs/optimization-plan-2026-11.md` 的 P0 提案落地三项（纯规则/文档，不动核心代码）。验证：回归 85/85、eval 自动判分 15/15。
+
+- **P0-1 Claim 原子性规范（补短板 G1，借 FActScore/SAFE/DecMetrics 范式）**：
+  `claim_evidence_layer.md` 新增 **Claim Atomicity 节**——判定规则（单条来源一段原文即可独立判定 support_level）、
+  四种复合模式拆分表（并列/因果/比较/条件，条件本身是断言的一部分）、与 5-Layer 分解的正交关系
+  （先原子化、再逐条 5-Layer）、判定红旗、evidence_map 可选字段 `parent_claim`（父条目标 `composite: true`，状态由子 claim 聚合）；
+  `w4_evidence_map.md` 第 10 条加原子性检查子项；`r4_draft_review.md` 新增**检查项 #21**（复合断言未拆分 / 子 claim 缺来源 / risk 未按 max 继承 → 🔄 退回拆分）；两侧 SKILL.md 的 reference 条目同步标注。
+- **P0-2 渐进披露审计（对照 anthropics/skills 规范）**：结论为**符合**——两 SKILL.md 分别 357/276 行（未超 500 行红线）、
+  frontmatter 含触发/不触发/运行要求、「按需加载的参考指南」节逐条带加载时机、脚本节明确「勿直接 Read 进上下文」；
+  顺带修正 `claim_evidence_layer.md` 尾部 Token Budget 自述（~114 行为过时数字，且按节加载即可）。
+  死链扫描（SKILL.md → references/ 全部引用）确认零断链。
+- **P0-3 学术指标口径对齐（补 G3 地基，为 PR-17 铺路）**：`benchmarks/README.md` 新增**「学术指标口径对照」节**——
+  citation recall/precision（ALCE）、factual precision（FActScore/SAFE，聚合前先按 Claim Atomicity 拆原子）、
+  claim-level entailment（RAGChecker）四口径与现有 skill 行为指标的映射；
+  `eval/README.md` 同步声明 golden 回填与 PR-17 发布均按该口径记录；并注明 LLM-as-judge 仅作初筛（约 62% 准确率）须人工/专用模型复核。
+
 ### 同类对标与优化提案批次（2026-11-21）
 
 > 方案批次（未实施）：搜集同类 skill/项目（anthropics/skills 工程规范、FActScore/SAFE/VeriScore 事实性评测、OpenScholar/STORM/GPT-Researcher 上游 agent、RAGChecker 诊断框架、Guardrails/TLM 护栏形态），渐进推导（现状自评 → 对照 → 借鉴 → 分级提案），产出 P0/P1/P2 优化路线。详见 `docs/optimization-plan-2026-11.md`。

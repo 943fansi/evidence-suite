@@ -13,6 +13,19 @@
 | `false_blocker` | 无问题却被判定 BLOCK 的比例 | 低 |
 | `citation_padding` | 引用与结论无关 / 填充的比例 | 低 |
 
+## 学术指标口径对照（2026-11，为 PR-17 公开 benchmark 铺路）
+
+上表是 skill 行为指标。PR-17 发布公开数据集时，采用学术界已收敛的三口径（定义对齐后直接复用，避免自造口径不可比）：
+
+| 学术口径 | 定义 | 对应本套件指标 | 出处 |
+|---------|------|--------------|------|
+| **citation recall** | 应引用的论断中，实际发出了正确引用的比例 | `source_verification`（agent 版） | ALCE |
+| **citation precision** | 发出的引用中，真支撑该论断的比例 | `citation_padding` 的补集 / `claim_source_alignment` | ALCE |
+| **factual precision（FActScore 式）** | 原子化 claim 逐条判定后，被来源支持的占比——**聚合前先按 Claim Atomicity 拆原子** | `unsupported_detection` + `claim_source_alignment` 的文档级聚合 | FActScore / SAFE |
+| **claim-level entailment** | 逐 claim 对来源做蕴含判定（支撑/矛盾/无关），按 support_level 对账 | RAGChecker 的 claim 级校验，与本套件 `check_evidence_sufficiency.py` 同型 | RAGChecker |
+
+> 口径依据见 `docs/optimization-plan-2026-11.md` 第二节；Agreement：LLM-as-judge 式自动打分仅作初筛（对比研究显示 judge 准确率约 62%），正式数字须人工或专用模型（HHEM 类）复核——与 `landscape-2026-11.md` 第二节一致。
+
 ## 用例集
 
 每个用例：给定输入 → 期望行为 → 命中的指标。

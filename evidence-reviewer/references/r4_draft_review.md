@@ -44,6 +44,7 @@
 18. **项目实施方案类专项检查**（plan_implementation.md 类型）：11 章结构完整；依据章三分类且标准清单带现行性声明；任务书技术要求逐条可验收；图表公式按章编号；进度表（D0+X 月）成果形式与第 9 章交付物对应；验收条件与 3.2 技术要求呼应；组织机构含角色职责与接口管理；机组参数/任务书数值/试验数据均已标 [待内部确认]。
 19. **期刊论文类专项检查**（paper_journal.md 类型）：双摘要（中英严格对应）/关键词/中图分类号与文献标志码占位；引言编号 0 且四段修辞链完整（工程重要性分组引用→机理危害→现状评述**逐篇指不足**→本文工作段）；正文章节编号 1/1.1 连续、图表全文顺次编号且被正文引用；公式编号＋「式中：」符号说明块；结论编号式逐条对应方法与验证；首字母缩写首现给中英文全称；设备型号＋参数逐项。**机器评分卡（必跑）**：`python ${SUITE_ROOT}/shared/scripts/check_journal_style.py {DRAFT} --tier {top|mid}`——硬项（S1 摘要/S3 关键词/S6 0引言/S8 结论末章/S10 文献量/S11 类型标记/S17 字数）0 分即判 🔄 大修后重审；修辞项按输出的人工复核清单逐条核对。高档档（journal_top profile）用 `--tier top`。[Sx] 版先过门禁、投稿版另出（--style gbt）。
 20. **高可信度主张回源复验（独立性）**：对 `evidence_status ∈ {inferred, unsupported, contradicted}` 或 claim_type 为核心（superiority_claim / novelty_claim / causal_claim）的主张，**不得仅信任 `06_evidence_map.json`**，须回到 `04_validated_sources.json`（必要时 `02_raw_sources.json`）逐条核对原文/URL 是否真实支撑；map 与原始来源不一致时，以原始来源为准。
+21. **Claim 原子性**（对照 `claim_evidence_layer.md` 的 Claim Atomicity 节）：复合断言（并列「A 且 B」/因果「A 因此 B」/比较「A 比 B 更 X」）是否已拆分为可独立验证的子 claim（`parent_claim` 保留层级）？判定红旗：一条 claim 挂 ≥3 个 `[Sx]` 且无任何单一来源能独立支撑全句、或「性能 X 且成本 Y 且可靠性 Z」式排比结论未拆分；拆分后的子 claim 是否各自有来源、risk 是否取 max(子 risk) 继承？未拆分的复合断言判 🔄 退回拆分。
 ```
 
 ## 反营销修辞检查

@@ -56,7 +56,7 @@
 
 ### P0 · 低成本高确定性（每项 ≤1 天，纯规则/文档/eval 口径，不动核心代码）
 
-**P0-1 claim 原子性规范 + 审查检查项（补 G1）**
+**P0-1 ✅ 已落地（2026-11-21）claim 原子性规范 + 审查检查项（补 G1）**
 - `claim_evidence_layer.md` 增补「原子性操作定义」：一个 claim = 一个可独立验证的断言；
   复合断言（"A 且 B"、"A 因此 B"、"A 比 B 更 X"）必须拆分为可分别挂 `[Sx]` 的子 claim；
   分解产物在 `06_evidence_map.json` 以 `parent_claim` 字段保留层级。
@@ -64,13 +64,13 @@
 - 借鉴依据：FActScore（原子化是逐条验证的前提）、DecMetrics（分解质量本身需检查）、RAGChecker（claim 级 entailment）。
 - 成本：约 30 行规则文本；风险：无（新增检查项走 r4 人工/审查路径）。
 
-**P0-2 SKILL.md 渐进披露自审（补 G5）**
+**P0-2 ✅ 已落地（2026-11-21，审计结论：符合）SKILL.md 渐进披露自审（补 G5）**
 - 对照官方三级披露做一次审计：frontmatter `description` 是否含全部触发场景与不适用场景；
   body 是否只保留"流程骨架 + 分支判断"，细则全部下沉 references；
   每个 reference 的**加载时机**在 body 中显式写出（"当出现 X 时读 `references/y.md`"）。
 - 依据：anthropics/skills 500 行规则 + 渐进披露原则。现状 357/276 行未越线，属"体检"而非重写。
 
-**P0-3 eval 指标口径对齐（补 G3 的地基）**
+**P0-3 ✅ 已落地（2026-11-21）eval 指标口径对齐（补 G3 的地基）**
 - `eval/README.md` 与 `benchmarks/README.md` 增加**指标定义节**：citation recall / citation precision（ALCE 定义）、
   factual precision（FActScore 定义）、claim-level entailment（RAGChecker 定义）——先对齐口径，PR-17 发布时直接复用。
 - 成本：文档节 + golden 用例的 expected 字段补齐指标数值。
