@@ -23,6 +23,13 @@
 
 > 定位已从「证据驱动写作 skill」收敛为「**研究 Agent 的证据校验与溯源层（Evidence Integrity Layer）**」。
 
+### 同类对标与优化提案批次（2026-11-21）
+
+> 方案批次（未实施）：搜集同类 skill/项目（anthropics/skills 工程规范、FActScore/SAFE/VeriScore 事实性评测、OpenScholar/STORM/GPT-Researcher 上游 agent、RAGChecker 诊断框架、Guardrails/TLM 护栏形态），渐进推导（现状自评 → 对照 → 借鉴 → 分级提案），产出 P0/P1/P2 优化路线。详见 `docs/optimization-plan-2026-11.md`。
+
+- **新增 `docs/optimization-plan-2026-11.md`**：现状自评（强项 7 项 / 短板 G1–G6）、对照表（9 个同类项目全部定位为上游/互补/规范，无竞品）、逐项借鉴映射到 roadmap。核心提案：P0-1 claim 原子性规范+审查检查项（借 FActScore/DecMetrics，补「分解无质量门」短板）、P0-2 SKILL.md 渐进披露自审（对齐官方 500 行/三级披露规范）、P0-3 eval 指标对齐学术口径（ALCE citation R/P + FActScore factual precision + RAGChecker entailment，为 PR-17 铺路）；P1：PR-13 反证采用 SAFE 式搜索验证、PR-03 用开源上游报告做 e2e、PR-08 上游对接矩阵+MCP、PR-06 前置 validator 分层（借 Guardrails 形态）。
+- **README**：路线图行补 optimization-plan 链接。
+
 ### 领域资料批次（2026-11-21）
 
 > 文献调研批次（非实测）：梳理证据校验/引用归因/内容溯源领域的外部环境变化，全部标注来源性质并映射到 roadmap 待办。详见 `docs/landscape-2026-11.md`。
